@@ -796,9 +796,20 @@ public class BatteryStatsManager {
     @WorkerThread
     @NonNull
     private HourlyResult getHourlyStatsBlocking(String packageName, int hours) {
-        long now          = System.currentTimeMillis();
-        long startAligned = now - (long) hours * 3600_000L;
-        long endAligned   = now;
+        long now = System.currentTimeMillis();
+
+        // Round current time DOWN to the nearest whole hour.
+        // E.g. 23:18 → 23:00. This is the fixed end boundary of the chart.
+        java.util.Calendar endCal = java.util.Calendar.getInstance();
+        endCal.setTimeInMillis(now);
+        endCal.set(java.util.Calendar.MINUTE, 0);
+        endCal.set(java.util.Calendar.SECOND, 0);
+        endCal.set(java.util.Calendar.MILLISECOND, 0);
+        long endAligned   = endCal.getTimeInMillis();
+
+        // Start is exactly `hours` hours before the rounded end.
+        // E.g. period=2h, end=23:00 → start=21:00.
+        long startAligned = endAligned - (long) hours * 3600_000L;
 
         List<ResourceSnapshot> snaps =
                 dao.getSnapshotsForPackageBetween(packageName, startAligned, endAligned);
@@ -865,22 +876,28 @@ public class BatteryStatsManager {
                 bucketLastRawBatch = curr.totalRawPwiBatch;
             }
 
-            if (bucketRamCount == 0) continue; // no pairs in this bucket
+            // Always emit a point for this hour — even if no snapshots fell in it.
+            // This guarantees the X-axis always spans the full requested period,
+            // regardless of data gaps. Empty buckets get zero values.
+            double cpuPct = 0.0;
+            double batteryMah = 0.0;
+            double ram = 0.0;
 
-            double cpuDenominatorMs = bucketJiffies > 0
-                    ? (bucketJiffies * 10.0)
-                    : (double)(bucketLastTs - bucketFirstTs);
-            double cpuPct = Math.min(100.0, cpuDenominatorMs > 0
-                    ? (bucketCpuMs / cpuDenominatorMs) * 100.0
-                    : 0.0);
+            if (bucketRamCount > 0) {
+                double cpuDenominatorMs = bucketJiffies > 0
+                        ? (bucketJiffies * 10.0)
+                        : (double)(bucketLastTs - bucketFirstTs);
+                cpuPct = Math.min(100.0, cpuDenominatorMs > 0
+                        ? (bucketCpuMs / cpuDenominatorMs) * 100.0
+                        : 0.0);
 
-            double batteryMah = 0;
-            if (bucketBatRaw > 0 && bucketLastRawBatch > 0 && bucketDrainPct > 0) {
-                batteryMah = (bucketBatRaw / bucketLastRawBatch)
-                        * (bucketDrainPct / 100.0 * getBatteryCapacityMah());
+                if (bucketBatRaw > 0 && bucketLastRawBatch > 0 && bucketDrainPct > 0) {
+                    batteryMah = (bucketBatRaw / bucketLastRawBatch)
+                            * (bucketDrainPct / 100.0 * getBatteryCapacityMah());
+                }
+
+                ram = bucketRamSum / bucketRamCount;
             }
-
-            double ram = bucketRamCount > 0 ? bucketRamSum / bucketRamCount : 0;
 
             java.util.Calendar labelCal = java.util.Calendar.getInstance();
             labelCal.setTimeInMillis(bucketStart);
