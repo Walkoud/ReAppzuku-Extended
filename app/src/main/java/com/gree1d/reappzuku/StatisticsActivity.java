@@ -417,9 +417,6 @@ public class StatisticsActivity extends BaseActivity {
                     String pkg = tag != null ? tag.toString() : pe.getLabel();
                     BatteryStatsManager.AppResourceStats found = findByPkg(sorted, pkg);
                     float pct = found != null ? (float)(metricValue(found, metric) / finalTotal * 100) : 0f;
-                    String info = String.format(Locale.US, "%s\n%.1f%%  %s",
-                            pe.getLabel(), pct, formatMetricValue(found, metric));
-                    Toast.makeText(StatisticsActivity.this, info, Toast.LENGTH_SHORT).show();
                     openAppDetail(pkg, pe.getLabel());
                 }
             }
@@ -461,20 +458,9 @@ public class StatisticsActivity extends BaseActivity {
     }
 
     private void openAppDetail(String packageName, String appName) {
-        // Compute totals across all apps for the current period —
-        // used by AppResourceDetailActivity to classify activity level per slot.
-        double totalCpuPct = 0, totalRamMb = 0;
-        if (currentSorted != null) {
-            for (BatteryStatsManager.AppResourceStats s : currentSorted) {
-                totalCpuPct += s.cpuPct;
-                totalRamMb  += s.ramMb;
-            }
-        }
         Intent intent = new Intent(this, AppResourceDetailActivity.class);
         intent.putExtra(AppResourceDetailActivity.EXTRA_PACKAGE_NAME, packageName);
         intent.putExtra(AppResourceDetailActivity.EXTRA_APP_NAME, appName);
-        intent.putExtra(AppResourceDetailActivity.EXTRA_TOTAL_CPU_PCT, totalCpuPct);
-        intent.putExtra(AppResourceDetailActivity.EXTRA_TOTAL_RAM_MB, totalRamMb);
         startActivity(intent);
     }
 

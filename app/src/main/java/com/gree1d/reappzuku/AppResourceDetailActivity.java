@@ -290,25 +290,23 @@ public class AppResourceDetailActivity extends BaseActivity {
             }
         });
 
-        boolean is24h = h == 24;
+        boolean isScrollable = h >= 12;
         binding.chartDetailActivity.getAxisRight().setEnabled(false);
         binding.chartDetailActivity.setData(new LineData(dataSet));
         binding.chartDetailActivity.getDescription().setEnabled(false);
         binding.chartDetailActivity.getLegend().setEnabled(false);
         binding.chartDetailActivity.setTouchEnabled(true);
-        binding.chartDetailActivity.setDragEnabled(is24h);
-        binding.chartDetailActivity.setScaleXEnabled(is24h);
+        binding.chartDetailActivity.setDragEnabled(isScrollable);
+        binding.chartDetailActivity.setScaleXEnabled(isScrollable);
         binding.chartDetailActivity.setScaleYEnabled(false);
         binding.chartDetailActivity.setPinchZoom(false);
-        if (is24h) {
-            // Show ~6 hours worth of slots at a time (6h × 2 slots = 12 visible slots)
+        if (isScrollable) {
             binding.chartDetailActivity.setVisibleXRangeMaximum(12f);
-            // Start from the rightmost data (most recent)
             binding.chartDetailActivity.moveViewToX(entries.size());
         } else {
             binding.chartDetailActivity.fitScreen();
         }
-        if (is24h) {
+        if (isScrollable) {
             binding.chartDetailActivity.setOnChartGestureListener(
                     new com.github.mikephil.charting.listener.OnChartGestureListener() {
                 @Override public void onChartGestureStart(android.view.MotionEvent me,
@@ -326,6 +324,10 @@ public class AppResourceDetailActivity extends BaseActivity {
                 @Override public void onChartScale(android.view.MotionEvent me, float sx, float sy) {}
                 @Override public void onChartTranslate(android.view.MotionEvent me, float dx, float dy) {}
             });
+            com.google.android.material.snackbar.Snackbar
+                    .make(binding.getRoot(), getString(R.string.hint_12_24_scroll),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+                    .show();
         } else {
             binding.chartDetailActivity.setOnChartGestureListener(null);
         }
