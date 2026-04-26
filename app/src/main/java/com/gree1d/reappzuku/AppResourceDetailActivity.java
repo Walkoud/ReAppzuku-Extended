@@ -194,12 +194,15 @@ public class AppResourceDetailActivity extends BaseActivity {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void buildActivityChart(List<BatteryStatsManager.ActivitySlice> slices) {
-        List<Entry> entries = new ArrayList<>();
-        String[] labels = new String[slices.size()];
+        int h = hours();
+        boolean sparseLabels = h >= 12;
 
+        List<Entry> entries = new ArrayList<>();
+        // For sparse mode: only label slots with activity.
+        // For dense mode: label every slot normally.
+        String[] labels = new String[slices.size()];
         for (int i = 0; i < slices.size(); i++) {
             BatteryStatsManager.ActivitySlice slice = slices.get(i);
-            labels[i] = slice.label;
             float y;
             switch (slice.level) {
                 case LOW:    y = Y_LOW;    break;
@@ -208,9 +211,17 @@ public class AppResourceDetailActivity extends BaseActivity {
                 default:     y = Y_NONE;   break;
             }
             entries.add(new Entry(i, y));
+            if (sparseLabels) {
+                // Show label only on active slots so 24×2=48 labels don't crowd the axis.
+                labels[i] = slice.level != BatteryStatsManager.ActivityLevel.NONE
+                        ? slice.label : "";
+            } else {
+                labels[i] = slice.label;
+            }
         }
 
-        int color = ContextCompat.getColor(this, R.color.stats_cpu);
+        // Colors: graph line → stats_ram (blue), fill same
+        int color = ContextCompat.getColor(this, R.color.stats_ram);
 
         LineDataSet dataSet = new LineDataSet(entries, "");
         dataSet.setColor(color);
@@ -219,7 +230,7 @@ public class AppResourceDetailActivity extends BaseActivity {
         dataSet.setCircleRadius(3f);
         dataSet.setDrawCircleHole(false);
         dataSet.setDrawValues(false);
-        dataSet.setMode(LineDataSet.Mode.STEPPED);
+        dataSet.setMode(LineDataSet.Mode.CUBIC_BEZIER);   // smooth waves
         dataSet.setDrawFilled(true);
         dataSet.setFillAlpha(40);
         dataSet.setFillColor(color);
@@ -227,12 +238,12 @@ public class AppResourceDetailActivity extends BaseActivity {
         dataSet.setHighlightLineWidth(1f);
         dataSet.enableDashedHighlightLine(6f, 3f, 0f);
 
-        // X axis — show only every other label to avoid crowding
+        // X axis
         XAxis xAxis = binding.chartDetailActivity.getXAxis();
         xAxis.setValueFormatter(new IndexAxisValueFormatter(labels));
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setGranularity(1f);
-        xAxis.setLabelCount(Math.min(slices.size(), hours() <= 6 ? slices.size() : 8), true);
+        xAxis.setLabelCount(slices.size(), false);
         xAxis.setTextSize(9f);
         xAxis.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
         xAxis.setDrawGridLines(false);
