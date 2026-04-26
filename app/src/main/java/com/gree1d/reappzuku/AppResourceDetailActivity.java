@@ -324,10 +324,8 @@ public class AppResourceDetailActivity extends BaseActivity {
                 @Override public void onChartScale(android.view.MotionEvent me, float sx, float sy) {}
                 @Override public void onChartTranslate(android.view.MotionEvent me, float dx, float dy) {}
             });
-            com.google.android.material.snackbar.Snackbar
-                    .make(binding.getRoot(), getString(R.string.hint_12_24_scroll),
-                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
-                    .show();
+            android.widget.Toast.makeText(this, getString(R.string.hint_12_24_scroll),
+                    android.widget.Toast.LENGTH_SHORT).show();
         } else {
             binding.chartDetailActivity.setOnChartGestureListener(null);
         }
