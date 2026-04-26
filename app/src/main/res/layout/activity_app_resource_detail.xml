@@ -222,7 +222,7 @@
                             android:layout_weight="1"
                             android:gravity="center"
                             android:textSize="12sp"
-                            android:textColor="@color/stats_battery" />
+                            android:textColor="@color/stats_graph" />
 
                         <TextView
                             android:id="@+id/tv_battery_avg"
@@ -232,7 +232,7 @@
                             android:gravity="center"
                             android:textSize="12sp"
                             android:textStyle="bold"
-                            android:textColor="@color/stats_battery" />
+                            android:textColor="@color/stats_graph" />
 
                         <TextView
                             android:id="@+id/tv_battery_max"
@@ -241,7 +241,7 @@
                             android:layout_weight="1"
                             android:gravity="center"
                             android:textSize="12sp"
-                            android:textColor="@color/stats_battery" />
+                            android:textColor="@color/stats_graph" />
                     </LinearLayout>
 
                     <!-- CPU row -->
@@ -323,7 +323,7 @@
                             android:layout_weight="1"
                             android:gravity="center"
                             android:textSize="12sp"
-                            android:textColor="@color/stats_ram" />
+                            android:textColor="@color/stats_battery" />
 
                         <TextView
                             android:id="@+id/tv_ram_avg"
@@ -333,7 +333,7 @@
                             android:gravity="center"
                             android:textSize="12sp"
                             android:textStyle="bold"
-                            android:textColor="@color/stats_ram" />
+                            android:textColor="@color/stats_battery" />
 
                         <TextView
                             android:id="@+id/tv_ram_max"
@@ -342,7 +342,7 @@
                             android:layout_weight="1"
                             android:gravity="center"
                             android:textSize="12sp"
-                            android:textColor="@color/stats_ram" />
+                            android:textColor="@color/stats_battery" />
                     </LinearLayout>
 
                 </LinearLayout>
