@@ -198,11 +198,11 @@ public class AppResourceDetailActivity extends BaseActivity {
         boolean sparseLabels = h >= 12;
 
         List<Entry> entries = new ArrayList<>();
-        // For sparse mode: only label slots with activity.
-        // For dense mode: label every slot normally.
         String[] labels = new String[slices.size()];
+
         for (int i = 0; i < slices.size(); i++) {
             BatteryStatsManager.ActivitySlice slice = slices.get(i);
+            boolean active = slice.level != BatteryStatsManager.ActivityLevel.NONE;
             float y;
             switch (slice.level) {
                 case LOW:    y = Y_LOW;    break;
@@ -211,12 +211,31 @@ public class AppResourceDetailActivity extends BaseActivity {
                 default:     y = Y_NONE;   break;
             }
             entries.add(new Entry(i, y));
-            if (sparseLabels) {
-                // Show label only on active slots so 24×2=48 labels don't crowd the axis.
-                labels[i] = slice.level != BatteryStatsManager.ActivityLevel.NONE
-                        ? slice.label : "";
-            } else {
+
+            if (!sparseLabels) {
+                // 2h / 6h: show all labels
                 labels[i] = slice.label;
+            } else {
+                // 12h / 24h: for half-hour slots (odd index = :30 slot)
+                // hide the label only if BOTH neighbors (prev and next on-the-hour slots) are active.
+                // i%2==0 → on-the-hour slot → always show if active, hide if not.
+                // i%2==1 → :30 slot → show if prev (i-1) or next (i+1) neighbor is inactive.
+                boolean isHalfHour = (i % 2 == 1);
+                boolean showLabel;
+                if (!active) {
+                    showLabel = false;
+                } else if (!isHalfHour) {
+                    // On-the-hour slot with activity → always show
+                    showLabel = true;
+                } else {
+                    // :30 slot — show unless both neighbors are active
+                    boolean prevActive = i > 0
+                            && slices.get(i - 1).level != BatteryStatsManager.ActivityLevel.NONE;
+                    boolean nextActive = i < slices.size() - 1
+                            && slices.get(i + 1).level != BatteryStatsManager.ActivityLevel.NONE;
+                    showLabel = !(prevActive && nextActive);
+                }
+                labels[i] = showLabel ? slice.label : "";
             }
         }
 
