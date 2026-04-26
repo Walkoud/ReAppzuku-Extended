@@ -43,6 +43,13 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN totalRawPwiBatch REAL NOT NULL DEFAULT 0");
+        }
+    };
+
     public abstract AppStatsDao appStatsDao();
     public abstract ResourceSnapshotDao resourceSnapshotDao();
 
@@ -50,7 +57,8 @@ public abstract class AppDatabase extends RoomDatabase {
         if (instance == null) {
             instance = Room.databaseBuilder(context.getApplicationContext(),
                     AppDatabase.class, "appzuku_db")
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .fallbackToDestructiveMigration()
                     .build();
         }
         return instance;
