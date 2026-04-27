@@ -191,7 +191,7 @@
     <string name="settings_sleep_mode_subtitle">Freeze apps during sleep mode</string>
     <string name="settings_sleep_mode_apps_title">Sleep mode app list</string>
     <string name="settings_sleep_mode_apps_subtitle">Select apps to freeze during sleep mode</string>
-    <string name="settings_sleep_mode_delay_title">Freeze timer</string>
+    <string name="settings_sleep_mode_delay_title">Time until freeze</string>
     <string name="settings_sleep_mode_delay_subtitle">Idle period before apps are frozen</string>
     <string name="settings_sleep_mode_delay_fallback">After %1$d minutes</string>
 
