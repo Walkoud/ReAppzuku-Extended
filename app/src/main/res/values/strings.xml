@@ -523,6 +523,11 @@
     <string name="triggers_bindings_gms_note"> Google Play Services (GMS) is a common culprit: it holds push connections and account sync bindings.</string>
     <string name="triggers_bindings_push_note"> A push/FCM binding was detected: the app is waiting for incoming notifications in real time.</string>
     <string name="triggers_bindings_overflow"> and %1$d more</string>
+
+    <!-- Time units -->
+    <string name="time_unit_sec">s</string>
+    <string name="time_unit_min">min</string>
+    <string name="time_unit_hour">h</string>
     
     <!-- ── Charts ── -->
     <string name="chart_others_label">Others</string>
