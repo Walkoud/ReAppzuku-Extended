@@ -474,6 +474,55 @@
     <!-- Sync Adapter -->
     <string name="triggers_sync_detail">%1$d account(s)</string>
     <string name="triggers_sync_explanation">The app has a Sync Adapter registered with the system. Android periodically launches it to synchronize account data, even if the app itself is not running.</string>
+
+    <!-- Broadcast History -->
+    <string name="triggers_cat_broadcast_history">Chain launch (history)</string>
+    <string name="triggers_broadcast_history_explanation">The broadcast history shows that third-party apps have triggered this package via Intent. The chain is displayed as: who sent it → which event.</string>
+    <string name="triggers_broadcast_history_overflow">\nand %1$d more source(s)</string>
+
+    <!-- PendingIntents -->
+    <string name="triggers_cat_pending_intents">PendingIntent (%1$d)</string>
+    <string name="triggers_pending_activity">%1$d Activity</string>
+    <string name="triggers_pending_service">%1$d Service</string>
+    <string name="triggers_pending_broadcast">%1$d Broadcast</string>
+    <string name="triggers_pending_explanation">The app holds registered PendingIntents. The system or other apps can activate them at any moment — via a notification, AlarmManager, or a system event — which will start the process.</string>
+
+    <!-- Boot Receivers -->
+    <string name="triggers_cat_boot">Boot autostart</string>
+    <string name="triggers_boot_detail_normal">BOOT_COMPLETED</string>
+    <string name="triggers_boot_detail_locked">LOCKED_BOOT_COMPLETED</string>
+    <string name="triggers_boot_detail_both">BOOT_COMPLETED + LOCKED_BOOT_COMPLETED</string>
+    <string name="triggers_boot_explanation_normal">The app starts on every device boot via a BOOT_COMPLETED receiver. It launches after storage is unlocked.</string>
+    <string name="triggers_boot_explanation_locked">The app starts before the lock screen appears (LOCKED_BOOT_COMPLETED) — at a very early boot stage, before PIN/password entry.</string>
+    <string name="triggers_boot_explanation_both">The app starts twice on boot: immediately after the system starts (LOCKED_BOOT) and again after storage is unlocked (BOOT_COMPLETED).</string>
+
+    <!-- App Standby Bucket -->
+    <string name="triggers_cat_bucket">App Standby Bucket</string>
+    <string name="triggers_bucket_active_explanation">The app is in the ACTIVE bucket — the system applies no background restrictions. If you haven\'t used it recently, this is suspicious: something is keeping it active.</string>
+    <string name="triggers_bucket_working_set_explanation">WORKING_SET bucket — the app is used frequently or the system considers it important. Restrictions are minimal; jobs and alarms run on schedule.</string>
+    <string name="triggers_bucket_frequent_explanation">FREQUENT bucket — the app is used regularly. Some restrictions on rare background operations apply.</string>
+    <string name="triggers_bucket_rare_explanation">RARE or RESTRICTED bucket — the system has limited this app\'s background activity. Jobs and alarms are heavily delayed or blocked.</string>
+
+    <!-- Battery Stats -->
+    <string name="triggers_cat_batterystats">Battery usage history</string>
+    <string name="triggers_batterystats_wakelock">WakeLock: %1$d times / %2$s</string>
+    <string name="triggers_batterystats_alarms">%1$d alarm wake-ups</string>
+    <string name="triggers_batterystats_jobs">%1$d job runs</string>
+    <string name="triggers_batterystats_syncs">%1$d syncs</string>
+    <string name="triggers_batterystats_explanation">Historical statistics since the last charge reset. Shows the app\'s real battery impact over time — unlike the current state snapshot.</string>
+
+    <!-- Network Activity -->
+    <string name="triggers_cat_network">Network activity</string>
+    <string name="triggers_network_active_connections">Active TCP connections</string>
+    <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s traffic</string>
+    <string name="triggers_network_explanation">The app has active background network activity. Open TCP connections indicate ongoing data exchange with a server — typical for messengers, push clients, and real-time sync apps.</string>
+
+    <!-- Bindings (new keys) -->
+    <string name="triggers_cat_bindings">Held by bindings (%1$d)</string>
+    <string name="triggers_bindings_explanation_base">One or more processes hold an active binding to this app\'s service. While the binding is held, Android cannot kill the process.</string>
+    <string name="triggers_bindings_gms_note"> Google Play Services (GMS) is a common culprit: it holds push connections and account sync bindings.</string>
+    <string name="triggers_bindings_push_note"> A push/FCM binding was detected: the app is waiting for incoming notifications in real time.</string>
+    <string name="triggers_bindings_overflow"> and %1$d more</string>
     
     <!-- ── Charts ── -->
     <string name="chart_others_label">Others</string>
