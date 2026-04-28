@@ -111,7 +111,6 @@
 
     <!-- Stats / Kill history -->
     <string name="stats_kill_detail">Auto-Killed %1$dx</string>
-    <string name="stats_last_kill_time"> (Last %1$s)</string>
     <string name="stats_relaunch_detail">Relaunches %1$dx</string>
     <string name="stats_last_relaunch_time"> (Last %1$s)</string>
     <string name="stats_recovered_ram">RAM freed %1$s</string>
@@ -509,8 +508,6 @@
     <string name="stats_chart_total_battery">Total %.1f mAh</string>
     <string name="stats_chart_total_ram">Avg. %s</string>
     <string name="stats_self_overhead_label">ReAppzuku overhead:</string>
-    <string name="info_card_battery_saved">Battery saved</string>
-    <string name="info_card_cpu_reduced">CPU load reduced</string>
     <string name="stats_self_overhead">ReAppzuku overhead: %1$s · %2$s · %3$s</string>
     <string name="chart_nav_prev">Previous chart</string>
     <string name="chart_nav_next">Next chart</string>
