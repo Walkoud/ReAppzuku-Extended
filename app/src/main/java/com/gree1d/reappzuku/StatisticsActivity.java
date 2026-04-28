@@ -245,6 +245,17 @@ public class StatisticsActivity extends BaseActivity {
     // ─────────────────────────────────────────────────────────────────────────
 
     private void loadCharts(int hours) {
+        // Stats are only collected while the background service is running.
+        // If the service is off, show a prompt and hide the charts area.
+        if (!ShappkyService.isRunning()) {
+            showChartsLoading(false);
+            binding.cardNoData.setVisibility(View.VISIBLE);
+            binding.tvNoDataHint.setText(getString(R.string.stats_service_inactive_hint));
+            binding.cardChartsPager.setVisibility(View.GONE);
+            binding.tvPartialDataWarning.setVisibility(View.GONE);
+            return;
+        }
+
         showChartsLoading(true);
         batteryStatsManager.getStatsForPeriodAsync(hours, periodStats -> {
             showChartsLoading(false);
@@ -520,7 +531,7 @@ public class StatisticsActivity extends BaseActivity {
             label.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
                     0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
             label.setText(String.format(Locale.US, "%.1f%% — %s", pct, name));
-            label.setTextSize(13f);
+            label.setTextSize(15f);
             label.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
             label.setMaxLines(2);
             label.setEllipsize(android.text.TextUtils.TruncateAt.END);
