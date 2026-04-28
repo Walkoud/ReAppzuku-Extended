@@ -260,7 +260,10 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
 
                     <!-- Navigation row: arrow left | title + total | arrow right -->
                     <LinearLayout
@@ -320,15 +323,16 @@
                     <!-- Chart row: pie chart left + legend right -->
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="240dp"
-                        android:orientation="horizontal">
+                        android:layout_height="270dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
 
                         <!-- Battery chart -->
                         <com.github.mikephil.charting.charts.PieChart
                             android:id="@+id/chart_battery"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
-                            android:layout_weight="1"
+                            android:layout_weight="5"
                             android:visibility="visible" />
 
                         <!-- CPU chart -->
@@ -336,7 +340,7 @@
                             android:id="@+id/chart_cpu"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
-                            android:layout_weight="1"
+                            android:layout_weight="5"
                             android:visibility="gone" />
 
                         <!-- RAM chart -->
@@ -344,18 +348,17 @@
                             android:id="@+id/chart_ram"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
-                            android:layout_weight="1"
+                            android:layout_weight="5"
                             android:visibility="gone" />
 
-                        <!-- Legend panel (scrollable) -->
+                        <!-- Legend panel (scrollable), vertically centered -->
                         <androidx.core.widget.NestedScrollView
                             android:id="@+id/scroll_chart_legend"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:paddingStart="4dp"
+                            android:layout_weight="4"
+                            android:paddingStart="6dp"
                             android:paddingEnd="4dp"
-                            android:paddingTop="4dp"
                             android:clipToPadding="false">
 
                             <LinearLayout
@@ -363,7 +366,7 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:orientation="vertical"
-                                android:gravity="start" />
+                                android:gravity="center_vertical|start" />
 
                         </androidx.core.widget.NestedScrollView>
 
