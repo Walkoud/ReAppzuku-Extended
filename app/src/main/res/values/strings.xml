@@ -523,6 +523,7 @@
     <string name="unit_mb_precise">%.2f MB</string>
     <string name="unit_gb">%.1f GB</string>
     <string name="unit_gb_precise">%.2f GB</string>
+    <string name="stats_service_inactive_hint">Statistics are only collected while the background service is active. Enable the service in the app settings.</string>
 
     <!-- Предупреждение о неполных данных (период 2ч, данных меньше ~2ч) -->
     <string name="stats_partial_data_warning">⚠ Неполные данные: история ещё накапливается</string>
