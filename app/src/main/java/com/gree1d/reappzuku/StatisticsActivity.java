@@ -375,7 +375,8 @@ public class StatisticsActivity extends BaseActivity {
             }
         }
         if (othersValue > 0) {
-            entries.add(new PieEntry((float) othersValue, getString(R.string.chart_others_label), "__others__"));
+            // Empty label — text shown only in legend, not on the chart slice
+            entries.add(new PieEntry((float) othersValue, "", "__others__"));
         }
 
         List<Integer> colors = buildMultiColors(entries.size());
@@ -397,26 +398,10 @@ public class StatisticsActivity extends BaseActivity {
         chart.getDescription().setEnabled(false);
         chart.getLegend().setEnabled(false);
         chart.setRotationEnabled(false);
-        chart.setHighlightPerTapEnabled(true);
+        // Clicks handled by legend rows — disable tap on slices
+        chart.setHighlightPerTapEnabled(false);
+        chart.setOnChartValueSelectedListener(null);
         chart.animateY(800, Easing.EaseInOutQuad);
-
-        chart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
-            @Override
-            public void onValueSelected(Entry e, Highlight h) {
-                if (!(e instanceof PieEntry)) return;
-                PieEntry pe = (PieEntry) e;
-                Object tag = pe.getData();
-                if ("__others__".equals(tag)) {
-                    showOthersDialog(othersList, metric, finalTotal);
-                } else {
-                    String pkg = tag != null ? tag.toString() : pe.getLabel();
-                    BatteryStatsManager.AppResourceStats found = findByPkg(sorted, pkg);
-                    float pct = found != null ? (float)(metricValue(found, metric) / finalTotal * 100) : 0f;
-                    openAppDetail(pkg, pe.getLabel());
-                }
-            }
-            @Override public void onNothingSelected() {}
-        });
 
         chart.invalidate();
         // Others list hidden in new design — shown via dialog on tap
@@ -460,16 +445,22 @@ public class StatisticsActivity extends BaseActivity {
             int color = colors.get(i);
             float pct = total > 0 ? (float)(pe.getValue() / total * 100) : 0f;
 
-            // Determine app name
+            // Determine app name and package
             String name;
+            final String pkg;
             Object tag = pe.getData();
-            if ("__others__".equals(tag)) {
+            final boolean isOthers = "__others__".equals(tag);
+            if (isOthers) {
                 name = getString(R.string.chart_others_label);
+                pkg  = "__others__";
             } else {
-                String pkg = tag != null ? tag.toString() : "";
+                pkg = tag != null ? tag.toString() : "";
                 BatteryStatsManager.AppResourceStats found = findByPkg(byCurrent, pkg);
                 name = (found != null && found.appName != null) ? found.appName : pkg;
             }
+            final String finalName = name;
+            final List<BatteryStatsManager.AppResourceStats> finalOthers = othersList;
+            final double finalTotal = total;
 
             // Row container
             android.widget.LinearLayout row = new android.widget.LinearLayout(this);
@@ -481,6 +472,18 @@ public class StatisticsActivity extends BaseActivity {
             row.setLayoutParams(rowLp);
             row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
             row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setBackground(obtainStyledAttributes(
+                    new int[]{android.R.attr.selectableItemBackground})
+                    .getDrawable(0));
+            row.setClickable(true);
+            row.setFocusable(true);
+            row.setOnClickListener(v -> {
+                if (isOthers) {
+                    showOthersDialog(finalOthers, metric, finalTotal);
+                } else {
+                    openAppDetail(pkg, finalName);
+                }
+            });
 
             // Colored dot
             android.widget.TextView dot = new android.widget.TextView(this);
