@@ -464,6 +464,55 @@
     <string name="triggers_sync_detail">%1$d аккаунт(ов)</string>
     <string name="triggers_sync_explanation">У приложения зарегистрирован Sync Adapter. Android периодически запускает его для синхронизации данных аккаунта, даже если само приложение не запущено.</string>
 
+    <!-- Broadcast History (цепной запуск) -->
+    <string name="triggers_cat_broadcast_history">Цепной запуск (история)</string>
+    <string name="triggers_broadcast_history_explanation">В истории broadcast-очереди обнаружены случаи, когда сторонние приложения запускали этот пакет через Intent. Показана цепочка: кто отправил → какое событие.</string>
+    <string name="triggers_broadcast_history_overflow">\nи ещё %1$d источник(ов)</string>
+
+    <!-- PendingIntents -->
+    <string name="triggers_cat_pending_intents">PendingIntent (%1$d)</string>
+    <string name="triggers_pending_activity">%1$d Activity</string>
+    <string name="triggers_pending_service">%1$d Service</string>
+    <string name="triggers_pending_broadcast">%1$d Broadcast</string>
+    <string name="triggers_pending_explanation">Приложение держит зарегистрированные PendingIntent-ы. Система или другие приложения могут активировать их в любой момент — например, через уведомление, AlarmManager или системное событие — и это запустит процесс.</string>
+
+    <!-- Boot Receivers -->
+    <string name="triggers_cat_boot">Автозапуск при загрузке</string>
+    <string name="triggers_boot_detail_normal">BOOT_COMPLETED</string>
+    <string name="triggers_boot_detail_locked">LOCKED_BOOT_COMPLETED</string>
+    <string name="triggers_boot_detail_both">BOOT_COMPLETED + LOCKED_BOOT_COMPLETED</string>
+    <string name="triggers_boot_explanation_normal">Приложение запускается при каждой загрузке устройства через receiver на BOOT_COMPLETED. Стартует после разблокировки хранилища.</string>
+    <string name="triggers_boot_explanation_locked">Приложение запускается ещё до разблокировки экрана (LOCKED_BOOT_COMPLETED) — на очень раннем этапе загрузки, до ввода PIN/пароля.</string>
+    <string name="triggers_boot_explanation_both">Приложение запускается дважды при загрузке: сразу после старта системы (LOCKED_BOOT) и ещё раз после разблокировки хранилища (BOOT_COMPLETED).</string>
+
+    <!-- App Standby Bucket -->
+    <string name="triggers_cat_bucket">App Standby Bucket</string>
+    <string name="triggers_bucket_active_explanation">Приложение находится в bucket ACTIVE — система не накладывает никаких ограничений на его фоновую активность. Если вы недавно не пользовались им, это подозрительно: что-то держит его в активном состоянии.</string>
+    <string name="triggers_bucket_working_set_explanation">Bucket WORKING_SET — приложение часто используется или система считает его важным. Ограничения минимальны, jobs и алармы выполняются в штатном режиме.</string>
+    <string name="triggers_bucket_frequent_explanation">Bucket FREQUENT — приложение используется регулярно. Некоторые ограничения на редкие фоновые операции применяются.</string>
+    <string name="triggers_bucket_rare_explanation">Bucket RARE или RESTRICTED — система сама ограничила фоновую активность этого приложения. Jobs и алармы сильно задерживаются или блокируются.</string>
+
+    <!-- Battery Stats -->
+    <string name="triggers_cat_batterystats">История нагрузки на батарею</string>
+    <string name="triggers_batterystats_wakelock">WakeLock: %1$d раз / %2$s</string>
+    <string name="triggers_batterystats_alarms">%1$d пробуждений будильником</string>
+    <string name="triggers_batterystats_jobs">%1$d запусков задания</string>
+    <string name="triggers_batterystats_syncs">%1$d синхронизаций</string>
+    <string name="triggers_batterystats_explanation">Историческая статистика с момента последнего сброса заряда. Показывает реальную нагрузку приложения на батарею со временем — в отличие от текущего снимка состояния.</string>
+
+    <!-- Network Activity -->
+    <string name="triggers_cat_network">Сетевая активность</string>
+    <string name="triggers_network_active_connections">Активные TCP-соединения</string>
+    <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s трафика</string>
+    <string name="triggers_network_explanation">Приложение имеет активную сетевую активность в фоне. Открытые TCP-соединения означают постоянный обмен данными с сервером — типично для мессенджеров, push-клиентов и приложений с real-time синхронизацией.</string>
+
+    <!-- Bindings (новые ключи, которых не было) -->
+    <string name="triggers_cat_bindings">Удерживается привязками (%1$d)</string>
+    <string name="triggers_bindings_explanation_base">Один или несколько процессов держат активную привязку (bind) к сервису этого приложения. Пока привязка не отпущена, Android не может убить процесс.</string>
+    <string name="triggers_bindings_gms_note"> Google Play Services (GMS) — частый источник: держит push-соединения и синхронизацию аккаунтов.</string>
+    <string name="triggers_bindings_push_note"> Обнаружен push/FCM-биндинг: приложение ждёт входящих уведомлений в реальном времени.</string>
+    <string name="triggers_bindings_overflow"> и ещё %1$d</string>
+    
     <!-- Stats Graphics Info -->
 
     <string name="chart_others_label">Прочие</string>
