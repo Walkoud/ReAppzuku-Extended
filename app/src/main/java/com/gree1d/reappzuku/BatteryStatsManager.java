@@ -436,9 +436,9 @@ public class BatteryStatsManager {
             "/sys/class/power_supply/battery/charge_full"
         };
         for (String path : sysPaths) {
-            try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.FileReader(path))) {
-                String line = br.readLine();
-                if (line != null) {
+            try {
+                String line = shellManager.runCommandAndGetOutput("cat " + path);
+                if (line != null && !line.isEmpty()) {
                     long uah = Long.parseLong(line.trim());
                     if (uah > 100_000) { // sanity: >100 mAh
                         cachedCapacityMah = uah / 1000.0;
@@ -510,11 +510,11 @@ public class BatteryStatsManager {
     @WorkerThread
     private int getCpuCoreCount() {
         if (cachedCpuCoreCount > 0) return cachedCpuCoreCount;
-        try (java.io.BufferedReader br = new java.io.BufferedReader(
-                new java.io.FileReader("/sys/devices/system/cpu/present"))) {
-            String line = br.readLine();
-            if (line != null) {
-                String[] parts = line.trim().split("-");
+        try {
+            String output = shellManager.runCommandAndGetOutput(
+                    "cat /sys/devices/system/cpu/present");
+            if (output != null && !output.isEmpty()) {
+                String[] parts = output.trim().split("-");
                 cachedCpuCoreCount = parts.length == 2
                         ? Integer.parseInt(parts[1]) + 1
                         : 1;
@@ -820,10 +820,13 @@ public class BatteryStatsManager {
     @WorkerThread
     @NonNull
     private long[] readProcStatJiffies() {
-        try (java.io.BufferedReader br = new java.io.BufferedReader(
-                new java.io.FileReader("/proc/stat"))) {
-            String line = br.readLine(); // first line: "cpu  ..."
-            if (line == null || !line.startsWith("cpu ")) return new long[]{0, 0};
+        try {
+            String output = shellManager.runCommandAndGetOutput("cat /proc/stat");
+            if (output == null || output.isEmpty()) return new long[]{0, 0};
+
+            // First line: "cpu  user nice system idle iowait irq softirq steal guest guest_nice"
+            String line = output.split("\n")[0];
+            if (!line.startsWith("cpu ")) return new long[]{0, 0};
 
             String[] parts = line.trim().split("\\s+");
             // parts[0] = "cpu", parts[1..] = jiffie fields
