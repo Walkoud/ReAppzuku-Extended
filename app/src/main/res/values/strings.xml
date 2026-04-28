@@ -509,8 +509,6 @@
     <string name="stats_chart_total_ram">Avg. %s</string>
     <string name="stats_self_overhead_label">ReAppzuku overhead:</string>
     <string name="stats_self_overhead">ReAppzuku overhead: %1$s · %2$s · %3$s</string>
-    <string name="chart_nav_prev">Previous chart</string>
-    <string name="chart_nav_next">Next chart</string>
     
     <!-- Stats — no data hints -->
     <string name="stats_no_data_hint_no_snapshot">No data collected yet. Please wait ~30 mins.</string>
