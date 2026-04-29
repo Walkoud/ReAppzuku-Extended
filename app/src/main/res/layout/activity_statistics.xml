@@ -129,8 +129,8 @@
                         android:gravity="center_vertical">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
                             android:src="@drawable/ic_info"
                             android:layout_marginEnd="8dp" />
 
@@ -198,8 +198,6 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginBottom="8dp"
                 android:padding="10dp"
-                android:drawableStart="@android:drawable/ic_dialog_info"
-                android:drawablePadding="8dp"
                 android:gravity="center_vertical"
                 android:textSize="12sp"
                 android:textColor="@color/text_secondary"
