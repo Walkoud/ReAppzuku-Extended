@@ -133,7 +133,24 @@ public class MainActivity extends BaseActivity {
             return;
         }
         loadSettingsAndApplyToManager();
+        ensureServiceRunning();
         loadBackgroundApps();
+    }
+
+    /**
+     * Запускает ShappkyService если он был включён в настройках, но сейчас не работает.
+     * Heartbeat — вызывается при каждом открытии приложения.
+     */
+    private void ensureServiceRunning() {
+        if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
+                && !ShappkyService.isRunning()) {
+            Intent intent = new Intent(this, ShappkyService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        }
     }
 
     private void loadSettingsAndApplyToManager() {

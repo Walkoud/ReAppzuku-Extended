@@ -37,6 +37,9 @@ public class ShellManager {
     private volatile Boolean hasRoot = null;
     private final AtomicBoolean rootCheckInProgress = new AtomicBoolean(false);
 
+    // Called on main thread once root check completes
+    private volatile Runnable onRootCheckComplete;
+
     @SuppressWarnings("deprecation")
     private Shizuku.OnRequestPermissionResultListener shizukuPermissionListener;
 
@@ -61,8 +64,26 @@ public class ShellManager {
                     Log.d(TAG, "Root access check complete: " + hasRoot);
                 } finally {
                     rootCheckInProgress.set(false);
+                    Runnable cb = onRootCheckComplete;
+                    if (cb != null) {
+                        onRootCheckComplete = null;
+                        handler.post(cb);
+                    }
                 }
             });
+        }
+    }
+
+    /**
+     * Calls {@code listener} once the root check is complete.
+     * If the check has already finished, calls {@code listener} immediately on the current thread.
+     * Safe to call from any thread.
+     */
+    public void setOnRootCheckCompleteListener(Runnable listener) {
+        if (hasRoot != null) {
+            listener.run();
+        } else {
+            onRootCheckComplete = listener;
         }
     }
 

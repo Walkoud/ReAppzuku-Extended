@@ -115,7 +115,7 @@ public class ShappkyService extends Service {
         scheduleNextKill();
         
         cancelShizukuLostNotification();
-        scheduleShizukuCheck();
+        shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
         scheduleSnapshotCollection();
 
         appManager.reapplySavedBackgroundRestrictions(null);
