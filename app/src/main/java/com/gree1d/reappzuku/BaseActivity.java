@@ -93,6 +93,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         }
 
         super.onCreate(savedInstanceState);
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         // Шаг 3: статус-бар — светлые иконки только если тема тёмная
         applyStatusBarAppearance(isAmoled, theme);
@@ -126,5 +127,14 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     protected void applyTheme() {
         // Оставляем для обратной совместимости
+    }
+
+    protected void applyNavBarInsets(View bottomNav) {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(bottomNav, (v, insets) -> {
+            int navBarHeight = insets.getInsets(
+                    androidx.core.view.WindowInsetsCompat.Type.navigationBars()).bottom;
+            v.setPadding(0, 0, 0, navBarHeight);
+            return insets;
+        });
     }
 }

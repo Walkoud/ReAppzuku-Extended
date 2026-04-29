@@ -166,6 +166,7 @@ public class StatisticsActivity extends BaseActivity {
             finish();
         });
         binding.bottomNavigation.navBtnStatistics.setOnClickListener(v -> {});
+        applyNavBarInsets(binding.bottomNavigation.getRoot());
     }
 
     private void setupPeriodTabs() {

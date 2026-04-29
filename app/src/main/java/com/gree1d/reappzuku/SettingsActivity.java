@@ -113,6 +113,7 @@ public class SettingsActivity extends BaseActivity {
             startActivity(new Intent(this, StatisticsActivity.class));
             finish();
         });
+        applyNavBarInsets(binding.bottomNavigation.getRoot());
     }
 
     private void loadSettings() {

@@ -119,6 +119,7 @@ public class MainActivity extends BaseActivity {
                 startActivity(new Intent(this, SettingsActivity.class)));
         binding.bottomNavigation.navBtnStatistics.setOnClickListener(v ->
                 startActivity(new Intent(this, StatisticsActivity.class)));
+        applyNavBarInsets(binding.bottomNavigation.getRoot());
     }
 
     @Override
