@@ -391,7 +391,6 @@
     <string name="triggers_none_explanation">Приложение может быть в памяти, но не удерживает себя явно.</string>
 
     <!-- Category names -->
-    <string name="triggers_cat_caller">Запущено другим приложением</string>
     <string name="triggers_cat_fg_service">Foreground Service</string>
     <string name="triggers_cat_receivers">Broadcast Receivers (%1$d)</string>
     <string name="triggers_cat_alarms">Alarms</string>
@@ -401,9 +400,6 @@
     <string name="triggers_cat_sticky">Sticky Service</string>
     <string name="triggers_cat_provider">Content Provider</string>
     <string name="triggers_cat_sync">Sync Adapter</string>
-
-    <!-- Caller app -->
-    <string name="triggers_caller_explanation">%1$s инициировало запуск этого приложения. Это цепной запуск — приложение было запущено не пользователем напрямую.</string>
 
     <!-- Foreground Service -->
     <string name="triggers_fg_service_explanation">Приложение запустило фоновый сервис с постоянным уведомлением. Это самый надёжный способ не быть убитым системой — Android не трогает такие процессы, пока уведомление видно.</string>
@@ -462,11 +458,20 @@
     <!-- Sync Adapter -->
     <string name="triggers_sync_detail">%1$d аккаунт(ов)</string>
     <string name="triggers_sync_explanation">У приложения зарегистрирован Sync Adapter. Android периодически запускает его для синхронизации данных аккаунта, даже если само приложение не запущено.</string>
+    
+    <!-- Категория — одна на оба подтипа -->
+<string name="triggers_cat_chain_launch">Цепной запуск</string>
 
-    <!-- Broadcast History (цепной запуск) -->
-    <string name="triggers_cat_broadcast_history">Цепной запуск (история)</string>
-    <string name="triggers_broadcast_history_explanation">В истории broadcast-очереди обнаружены случаи, когда сторонние приложения запускали этот пакет через Intent. Показана цепочка: кто отправил → какое событие.</string>
-    <string name="triggers_broadcast_history_overflow">\nи ещё %1$d источник(ов)</string>
+    <!-- Direct call -->
+    <string name="triggers_chain_direct_detail">Прямой вызов от %s</string>
+    <string name="triggers_chain_direct_explanation">Приложение %1$s напрямую запустило этот процесс через вызов сервиса или активности (callingPackage / clientPackage).</string>
+    
+    <!-- Broadcast -->
+    <string name="triggers_chain_broadcast_detail">Broadcast от %1$s → %2$s</string>
+    <string name="triggers_chain_broadcast_explanation">Приложение %1$s отправило broadcast с действием %2$s, который поднял этот процесс.</string>
+    
+    <!-- Overflow если callers больше 3 -->
+    <string name="triggers_chain_overflow">\n…ещё %d</string>
 
     <!-- PendingIntents -->
     <string name="triggers_cat_pending_intents">PendingIntent (%1$d)</string>
