@@ -117,7 +117,6 @@
     <string name="stats_summary_12h">Last 12 hours: %1$d apps | Auto-Kills %2$d | Relaunches %3$d | RAM freed %4$s</string>
     <string name="stats_no_activity_12h">No activity in the last 12 hours.</string>
     <string name="stats_dialog_subtitle">Last 12 hours</string>
-    <string name="stats_restrict_high_relaunch">Restrict resource-heavy apps from running in the background.</string>
     <string name="stats_loading">Loading…</string>
 
     <!-- Top offenders -->
