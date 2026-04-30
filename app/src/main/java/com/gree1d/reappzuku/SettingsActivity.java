@@ -543,8 +543,8 @@ public class SettingsActivity extends BaseActivity {
         restrictionDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         restrictionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
-        appManager.loadBackgroundRestrictionApps(allApps -> {
-            allApps = filterOutProtected(allApps);
+        appManager.loadBackgroundRestrictionApps(rawApps -> {
+            List<AppModel> allApps = filterOutProtected(rawApps);
             Set<String> desiredRestrictedApps = appManager.getBackgroundRestrictedApps();
             Set<String> hardRestrictedApps = appManager.getHardRestrictedApps();
 
