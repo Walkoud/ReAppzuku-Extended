@@ -17,8 +17,8 @@
   - [Automation](#-automation)
   - [Auto-Kill settings](#-auto-kill-settings)
   - [Additional tools](#-additional-tools)
-  - [Statistics and logs](#-statistics-and-logs)
   - [About](#-about)
+- [Statistics and logs](#-statistics-and-logs)
 - [Protected apps](#protected-apps)
 - [Configuration examples](#configuration-examples)
 - [FAQ](#faq)
@@ -384,6 +384,18 @@ Export and import all settings to a JSON file. Saves the whitelist, blacklist, h
 
 ---
 
+### ℹ️ About
+
+#### Source code
+
+Link to the GitHub repository.
+
+#### Check for updates
+
+Link to the GitHub releases page.
+
+---
+
 ### 📊 Statistics and Logs
 
 Statistics and Logs are now available as a **separate screen** with detailed usage data for all monitored apps.
@@ -429,18 +441,6 @@ Detailed log of background restriction operations. Stored in cache, maximum 200 
 | `Verification unavailable` | Could not query the actual state from the system |
 | `Removed from whitelist` | App removed from battery optimization exceptions |
 | `Restored to whitelist` | App restored to battery optimization exceptions |
-
----
-
-### ℹ️ About
-
-#### Source code
-
-Link to the GitHub repository.
-
-#### Check for updates
-
-Link to the GitHub releases page.
 
 ---
 
