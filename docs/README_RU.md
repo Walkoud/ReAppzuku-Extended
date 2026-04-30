@@ -5,9 +5,9 @@
 ![Logo](https://github.com/gree1d/ReAppzuku/blob/main/docs/images/logo.png)
 <p align="center">
 <img src="https://img.shields.io/github/v/release/gree1d/ReAppzuku?label=Release&logo=github" alt="Latest Release">
-<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=Downloads&logo=github&color=purple" alt="Downloads">
-<img src="https://img.shields.io/badge/License-GPLv3-brown.svg"/>
-<img src="https://img.shields.io/badge/Android-6.0%2B-yellow.svg"/>
+<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=Downloads&logo=github&color=a855f7" alt="Downloads">
+<img src="https://img.shields.io/badge/License-GPLv3-64748b.svg" alt="License">
+<img src="https://img.shields.io/badge/Android-6.0%2B-f97316.svg" alt="Android">
 <img src="https://img.shields.io/badge/Root-Supported-brightgreen.svg"/>
 <img src="https://img.shields.io/badge/Shizuku-Supported-brightgreen.svg"/>
 </p>
