@@ -117,7 +117,6 @@
     <string name="stats_summary_12h">Последние 12 часов: %1$d приложений | Auto-Kills %2$d | Перезапусков %3$d | Освобождено ОЗУ %4$s</string>
     <string name="stats_no_activity_12h">Нет активности за последние 12 часов.</string>
     <string name="stats_dialog_subtitle">Последние 12 часов</string>
-    <string name="stats_restrict_high_relaunch">Ограничить работу ресурсоемких приложений в фоновом режиме.</string>
     <string name="stats_loading">Загрузка…</string>
 
     <!-- Top offenders -->
