@@ -577,4 +577,24 @@
     <string name="detail_avg_battery">Ср. %.2f mAh/ч</string>
     <string name="detail_avg_cpu">Ср. %.1f%%</string>
     <string name="detail_avg_ram">Ср. %.0f МБ</string>
+
+    <!-- Заголовки строк в карточке мин/сред/макс -->
+    <string name="detail_stat_min">мин</string>
+    <string name="detail_stat_avg">сред</string>
+    <string name="detail_stat_max">макс</string>
+
+    <string name="detail_row_battery">Батарея</string>
+    <string name="detail_row_cpu">CPU</string>
+    <string name="detail_row_ram">ОЗУ</string>
+
+    <!-- Заголовок графика активности -->
+    <string name="detail_chart_activity">Активность приложения</string>
+
+    <!-- Уровни активности на оси Y графика -->
+    <string name="detail_activity_none">—</string>
+    <string name="detail_activity_low">мин</string>
+    <string name="detail_activity_medium">сред</string>
+    <string name="detail_activity_high">выс</string>
+
+    <string name="hint_12_24_scroll">График можно прокручивать влево/вправо</string>
 </resources>
