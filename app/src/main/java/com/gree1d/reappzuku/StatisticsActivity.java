@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -629,7 +628,6 @@ public class StatisticsActivity extends BaseActivity {
                     .getInstance(this).appStatsDao();
             java.util.List<com.gree1d.reappzuku.db.AppStats> statsList = appStatsDao.getAllStatsSince(twelveHoursAgo);
 
-            final List<String> highRelaunchPackages = new ArrayList<>();
             List<KillHistoryEntry> historyEntries = new ArrayList<>();
             int totalKills = 0;
             int totalRelaunches = 0;
@@ -639,10 +637,6 @@ public class StatisticsActivity extends BaseActivity {
             for (com.gree1d.reappzuku.db.AppStats stats : statsList) {
                 if (stats == null || stats.packageName == null) continue;
                 if (stats.killCount <= 0 && stats.relaunchCount <= 0) continue;
-
-                if (stats.relaunchCount > RELAUNCH_GREEDY_THRESHOLD) {
-                    highRelaunchPackages.add(stats.packageName);
-                }
 
                 List<String> detailParts = new ArrayList<>();
                 if (stats.killCount > 0) {
@@ -702,13 +696,6 @@ public class StatisticsActivity extends BaseActivity {
                         getString(R.string.stats_dialog_subtitle),
                         content.rootView);
                 dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
-                if (appManager.supportsBackgroundRestriction() && !highRelaunchPackages.isEmpty()) {
-                    dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.stats_restrict_high_relaunch), (d, w) -> {
-                        Set<String> currentRestricted = appManager.getBackgroundRestrictedApps();
-                        currentRestricted.addAll(highRelaunchPackages);
-                        appManager.applyBackgroundRestriction(currentRestricted, null);
-                    });
-                }
                 dialog.show();
                 styleDialogButtons(dialog);
             });
