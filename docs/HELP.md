@@ -11,6 +11,7 @@
 - [Background operation setup](#background-operation-setup)
 - [Quick start](#quick-start)
 - [Manual control](#manual-control)
+- [Main](#main)
 - [Settings](#settings)
   - [Information](#-information)
   - [Appearance](#-appearance)
@@ -223,6 +224,58 @@ A home screen widget — one tap runs Auto-Kill and shows the current RAM state.
 ### Shortcut
 
 A static shortcut via long-press on the app icon — kills the current foreground app.
+
+---
+
+## Main
+
+The main screen shows a list of all active background apps with real-time RAM usage. At the top — overall stats: number of active apps and current RAM load.
+
+### Toolbar
+
+Three buttons in the top toolbar:
+
+| Button | Action |
+|---|---|
+| 🔍 Search | Filter the list by app name or package |
+| 🔽 Sort | Configure the display order |
+| ☑️ Select all | Select all apps for Kill in one tap |
+
+### Sorting
+
+The list can be sorted by:
+- **Default** — user apps first, then system apps
+- **RAM usage: High → Low** — heaviest apps at the top
+- **RAM usage: Low → High**
+- **Name A → Z** / **Name Z → A** — alphabetical order
+
+You can also toggle visibility of system apps and critical apps.
+
+### App actions
+
+Tapping an app in the list opens a quick actions menu:
+
+- **App info** — opens the standard system app info page
+- **App triggers** — detailed analysis of background activity causes (see below)
+- **Uninstall** — remove the app from the device (unavailable for system apps)
+- **Add to...** — quickly add to one of the lists:
+  - Whitelist
+  - Blacklist
+  - Hidden
+  - Background restriction
+
+### App triggers
+
+A powerful tool for analyzing why a specific app runs in the background. Shows a detailed breakdown across **15 factors**, including:
+
+- **Foreground Service** — presence of active foreground services
+- **Sticky Service** — services that automatically restart after Kill
+- **PendingIntent** — scheduled actions (Activity, Service, Broadcast)
+- **App Standby Bucket** — system priority of the app (ACTIVE / WORKING\_SET / RARE, etc.)
+- **Battery load history** — number of alarm wakeups and job launches
+- Chain launches, service bindings, boot receivers, active TCP connections, and other factors
+
+> 💡 Triggers help you understand **why** an app comes back after Kill, and choose the right tool — Background restrictions, Sleep Mode, or interval-based Kill.
 
 ---
 
