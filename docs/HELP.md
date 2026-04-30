@@ -550,15 +550,46 @@ Detailed log of background restriction operations. Stored in cache, maximum 200 
 
 ## Protected apps
 
-The following apps are **never affected** by Auto-Kill regardless of settings:
+The following apps are **never affected** by Auto-Kill and other restrictions regardless of settings:
 
-- ReAppzuku (itself)
-- Google Play Services
+### Core Android & Google
+- **ReAppzuku** (itself)
+- Google Play Services & Google Services Framework
 - System UI
+- Android Settings
+- Phone / Dialer, Contacts, SMS Service, Telecom Server
 - Bluetooth
-- External storage
-- Current keyboard (detected automatically)
-- Current launcher (detected automatically)
+- External storage & Media Module
+- Package Installer & Permission Controller (AOSP and Google variants)
+- Gboard (Google Keyboard)
+- ADB/Shell service
+- Android Keychain (TLS/VPN/Wi-Fi)
+- Settings, Telephony & SMS/MMS providers
+- NFC
+- Network Stack, Tethering stack, DNS resolver, VPN dialogs
+
+### Shizuku
+- Shizuku (both `rikka.shizuku.common` and `moe.shizuku.privileged.api`)
+
+### Root managers
+- Magisk
+- KernelSU
+- KernelSU Next
+- APatch
+- SukiSU / SukiSU Ultra
+
+### OEM system apps (per manufacturer)
+| Manufacturer | Protected apps |
+|---|---|
+| **Xiaomi / MIUI / HyperOS** | Security Center, Home launcher, Wallpaper, Camera, Security Guard, Core Services, PowerKeeper |
+| **Samsung (One UI)** | Device Care, Device Security, One UI Home, Phone UI, Telecom Server |
+| **Oppo / Realme / OnePlus (ColorOS)** | Phone Manager, System Launcher, Smart Assistant |
+| **Vivo / iQOO (Funtouch / OriginOS)** | iManager, Vivo Launcher |
+| **Huawei / Honor (EMUI / MagicOS)** | System Optimizer, Huawei Home, Honor System Manager |
+
+### Dynamically detected
+- Current keyboard (detected automatically at runtime)
+- Current launcher (detected automatically at runtime)
 
 ---
 
