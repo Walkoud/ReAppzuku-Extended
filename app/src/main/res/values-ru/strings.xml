@@ -535,7 +535,7 @@
     <string name="stats_loading_charts">Загрузка данных…</string>
     <string name="stats_no_data_hint">Недостаточно данных.\nСнапшоты собираются каждые 30–60 мин.\nЗайдите позже.</string>
     <string name="stats_no_data_hint_short">Накапливаются данные…</string>
-    <string name="stats_disclaimer">Оценочные данные на основе Android batterystats / procstats. Реальные значения могут отличаться. Статистика батареи сбрасывается при полной зарядке.</string>
+    <string name="stats_disclaimer">Оценочные данные на основе Android batterystats / procstats. Реальные значения могут отличаться. Статистика батареи может быть неточной, если телефон долгое время был на зарядке.</string>
 
     <string name="chart_title_battery">Потребление батареи</string>
     <string name="chart_title_cpu">Использование CPU</string>
