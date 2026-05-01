@@ -69,10 +69,10 @@ public class UpdateChecker {
     public static void checkForUpdatesAuto(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         long lastCheck = prefs.getLong(KEY_LAST_CHECK_MS, 0);
-//        if (System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
-//            Log.d(TAG, "Auto-check skipped: within throttle window");
-//            return;
-//        }
+        if (System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
+            Log.d(TAG, "Auto-check skipped: within throttle window");
+            return;
+        }
 
         if (!isConnected(context)) {
             Log.d(TAG, "Auto-check skipped: no internet");
