@@ -519,7 +519,7 @@ Interactive charts showing RAM, CPU, and battery consumption across all tracked 
 | 12 hours | Last 12 hours |
 | 24 hours | Last 24 hours |
 
-> 💡 Tap on any **app in the chart legend** to open its **personal activity graph** — an individual breakdown of RAM, CPU, or battery usage for the same selectable time periods.
+> 💡 Tap on any **app in the chart legend** to open its **personal activity graph**
 
 #### Auto-Kill log
 
