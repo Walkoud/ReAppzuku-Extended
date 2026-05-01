@@ -595,6 +595,9 @@
     <string name="detail_activity_low">мин</string>
     <string name="detail_activity_medium">сред</string>
     <string name="detail_activity_high">выс</string>
-
     <string name="hint_12_24_scroll">График можно прокручивать влево/вправо</string>
+
+    <string name="update_dialog_title">Найдено обновление</string>
+    <string name="update_dialog_download">Скачать</string>
+    <string name="update_dialog_close">Закрыть</string>
 </resources>
