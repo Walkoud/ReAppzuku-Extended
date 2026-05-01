@@ -253,16 +253,16 @@ public class BatteryStatsManager {
 
     /** One 30-minute slot on the activity chart. */
     public static class ActivitySlice {
-        public final String label;       // e.g. "23:00", "23:30"
+        public final long slotTimestamp; // slot start time in ms — formatted by the UI layer
         public final ActivityLevel level;
         public final double cpuPercent;
         public final double ramMb;
 
-        ActivitySlice(String label, ActivityLevel level, double cpuPercent, double ramMb) {
-            this.label      = label;
-            this.level      = level;
-            this.cpuPercent = cpuPercent;
-            this.ramMb      = ramMb;
+        ActivitySlice(long slotTimestamp, ActivityLevel level, double cpuPercent, double ramMb) {
+            this.slotTimestamp = slotTimestamp;
+            this.level         = level;
+            this.cpuPercent    = cpuPercent;
+            this.ramMb         = ramMb;
         }
     }
 
@@ -1116,13 +1116,7 @@ public class BatteryStatsManager {
                 else                    level = ActivityLevel.HIGH;
             }
 
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.setTimeInMillis(slotStart);
-            String label = String.format(Locale.US, "%02d:%02d",
-                    cal.get(java.util.Calendar.HOUR_OF_DAY),
-                    cal.get(java.util.Calendar.MINUTE));
-
-            slices.add(new ActivitySlice(label, level, slotCpu, slotRam));
+            slices.add(new ActivitySlice(slotStart, level, slotCpu, slotRam));
             if (slotRamCount > 0) {
                 slotBatList.add(slotBat);
                 slotCpuList.add(slotCpu);
@@ -1130,12 +1124,7 @@ public class BatteryStatsManager {
             }
         }
 
-        java.util.Calendar endLabelCal = java.util.Calendar.getInstance();
-        endLabelCal.setTimeInMillis(endAligned);
-        String endLabel = String.format(Locale.US, "%02d:%02d",
-                endLabelCal.get(java.util.Calendar.HOUR_OF_DAY),
-                endLabelCal.get(java.util.Calendar.MINUTE));
-        slices.add(new ActivitySlice(endLabel, ActivityLevel.NONE, 0, 0));
+        slices.add(new ActivitySlice(endAligned, ActivityLevel.NONE, 0, 0));
 
         HourlyPeriodStats periodStats = null;
         if (!slotBatList.isEmpty()) {

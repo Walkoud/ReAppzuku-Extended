@@ -200,6 +200,8 @@ public class AppResourceDetailActivity extends BaseActivity {
         int h = hours();
         boolean sparseLabels = h >= 12;
 
+        java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
+
         List<Entry> entries = new ArrayList<>();
         String[] labels = new String[slices.size()];
 
@@ -215,9 +217,11 @@ public class AppResourceDetailActivity extends BaseActivity {
             }
             entries.add(new Entry(i, y));
 
+            String timeLabel = timeFormat.format(new java.util.Date(slice.slotTimestamp));
+
             if (!sparseLabels) {
                 // 2h / 6h: show all labels
-                labels[i] = slice.label;
+                labels[i] = timeLabel;
             } else {
                 // 12h / 24h: for half-hour slots (odd index = :30 slot)
                 // hide the label only if BOTH neighbors (prev and next on-the-hour slots) are active.
@@ -238,7 +242,7 @@ public class AppResourceDetailActivity extends BaseActivity {
                             && slices.get(i + 1).level != BatteryStatsManager.ActivityLevel.NONE;
                     showLabel = !(prevActive && nextActive);
                 }
-                labels[i] = showLabel ? slice.label : "";
+                labels[i] = showLabel ? timeLabel : "";
             }
         }
 
