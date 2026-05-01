@@ -40,6 +40,12 @@ public interface AppStatsDao {
     @Query("UPDATE app_stats SET appName = :appName WHERE packageName = :packageName")
     void updateAppName(String packageName, String appName);
     
-    @Query("DELETE FROM app_stats WHERE lastKillTime < :threshold AND lastRelaunchTime < :threshold")
-    void deleteOldStats(long threshold);
+    @Query("SELECT COUNT(*) FROM app_stats")
+    int getCount();
+
+    @Query("DELETE FROM app_stats WHERE packageName IN (" +
+           "SELECT packageName FROM app_stats " +
+           "ORDER BY (CASE WHEN lastKillTime > lastRelaunchTime THEN lastKillTime ELSE lastRelaunchTime END) ASC " +
+           "LIMIT :deleteCount)")
+    void deleteOldestStats(int deleteCount);
 }
