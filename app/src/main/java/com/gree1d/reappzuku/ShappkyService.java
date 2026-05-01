@@ -121,6 +121,7 @@ public class ShappkyService extends Service {
         appManager.reapplySavedBackgroundRestrictions(null);
         
         UpdateChecker.checkForUpdatesAuto(getApplicationContext());
+        schedulePeriodicUpdateCheck();
     }
 
     @Override
@@ -309,6 +310,7 @@ public class ShappkyService extends Service {
     }
 
     private static final long SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000L; // 15 minutes
+    private static final long UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L; // 24 hours
 
     /**
      * Periodically collects battery/RAM snapshots so that Statistics history
@@ -328,6 +330,22 @@ public class ShappkyService extends Service {
         };
         // Delay slightly (2 s) to let ShellManager finish its init before the first command.
         handler.postDelayed(snapshotRunnable, 2_000L);
+    }
+
+    /**
+     * Schedules a periodic update check every 24 hours while the service is running.
+     * Covers the case where the service stays alive for a long time without restarting.
+     * The throttle inside UpdateChecker prevents duplicate requests on restarts.
+     */
+    private void schedulePeriodicUpdateCheck() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isRunning) return;
+                UpdateChecker.checkForUpdatesAuto(getApplicationContext());
+                handler.postDelayed(this, UPDATE_CHECK_INTERVAL_MS);
+            }
+        }, UPDATE_CHECK_INTERVAL_MS);
     }
 
     private void scheduleNextKill() {
