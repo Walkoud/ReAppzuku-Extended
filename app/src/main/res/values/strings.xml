@@ -581,20 +581,20 @@
     <string name="unit_gb_precise">%.2f GB</string>
     <string name="stats_service_inactive_hint">Statistics are only collected while the background service is active. Enable the service in the app settings.</string>
 
-    <!-- Предупреждение о неполных данных (период 2ч, данных меньше ~2ч) -->
+    <!-- warning -->
     <string name="stats_partial_data_warning">⚠ Incomplete data: history is still accumulating</string>
 
-    <!-- Единицы измерения для графиков (detail activity) -->
+    <!--  (detail activity) -->
     <string name="unit_mah">mAh</string>
     <string name="unit_percent">%</string>
     <string name="unit_mb_short">MB</string>
 
-    <!-- Средние значения для detail activity -->
+    <!-- detail activity -->
     <string name="detail_avg_battery">Avg. %.2f mAh/h</string>
     <string name="detail_avg_cpu">Avg. %.1f%%</string>
     <string name="detail_avg_ram">Avg. %.0f MB</string>
 
-    <!-- Заголовки строк в карточке мин/сред/макс -->
+    <!-- Detail graph Titles -->
     <string name="detail_stat_min">min</string>
     <string name="detail_stat_avg">avg</string>
     <string name="detail_stat_max">max</string>
@@ -603,10 +603,10 @@
     <string name="detail_row_cpu">CPU</string>
     <string name="detail_row_ram">RAM</string>
     
-    <!-- Заголовок графика активности -->
+    <!-- Graph title -->
     <string name="detail_chart_activity">App activity</string>
     
-    <!-- Уровни активности на оси Y графика -->
+    <!-- Graph activity levels-->
     <string name="detail_activity_none">—</string>
     <string name="detail_activity_low">low</string>
     <string name="detail_activity_medium">med</string>
@@ -616,4 +616,6 @@
     <string name="update_dialog_title">Update available</string>
     <string name="update_dialog_download">Download</string>
     <string name="update_dialog_close">Close</string>
+    <string name="update_up_to_date">Up to date (%s)</string>
+    <string name="update_check_failed">Failed to check for updates</string>
 </resources>
