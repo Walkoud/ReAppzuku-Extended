@@ -177,9 +177,15 @@ public class SettingsActivity extends BaseActivity {
         binding.layoutNotificationMode.setOnClickListener(v -> showNotificationModeDialog());
 
         binding.switchAutoKill.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !hasPrivilege()) {
+                buttonView.setChecked(false);
+                Toast.makeText(this, getString(R.string.settings_requires_privilege), Toast.LENGTH_LONG).show();
+                return;
+            }
             sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, isChecked).apply();
             boolean periodicEnabled = binding.switchPeriodicKill.isChecked();
             updateAutomationOptionsVisibility(isChecked, periodicEnabled);
+            applyServiceDependentState(isChecked);
             if (isChecked) {
                 startAutomationService();
                 AutoKillWorker.schedule(this);
@@ -205,15 +211,29 @@ public class SettingsActivity extends BaseActivity {
         });
 
         binding.layoutKillInterval.setOnClickListener(v -> showKillIntervalDialog());
-        binding.layoutWhitelist.setOnClickListener(v -> showWhitelistDialog());
         binding.layoutHiddenApps.setOnClickListener(v -> showHiddenAppsDialog());
 
+        // Whitelist / Blacklist — требуют включённого сервиса
+        binding.layoutWhitelist.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showWhitelistDialog();
+        });
+        binding.layoutBlacklist.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showBlacklistDialog();
+        });
+
+        // Background Restrictions — требуют включённого сервиса
         binding.layoutBackgroundRestriction.setVisibility(
                 appManager.supportsBackgroundRestriction() ? View.VISIBLE : View.GONE);
-        binding.layoutBackgroundRestriction.setOnClickListener(v -> showBackgroundRestrictionDialog());
+        binding.layoutBackgroundRestriction.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showBackgroundRestrictionDialog();
+        });
         binding.layoutReapplyRestrictions.setVisibility(
                 appManager.supportsBackgroundRestriction() ? View.VISIBLE : View.GONE);
         binding.layoutReapplyRestrictions.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
             Set<String> savedRestrictions = appManager.getBackgroundRestrictedApps();
             if (savedRestrictions.isEmpty()) {
                 Toast.makeText(this, getString(R.string.settings_no_saved_restrictions), Toast.LENGTH_SHORT).show();
@@ -222,8 +242,14 @@ public class SettingsActivity extends BaseActivity {
             appManager.reapplySavedBackgroundRestrictions(null);
         });
 
+        // Sleep Mode — переключатель и под-опции требуют включённого сервиса
         binding.switchSleepMode.setChecked(sleepModeManager.isSleepModeEnabled());
         binding.switchSleepMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                buttonView.setChecked(false);
+                showServiceRequiredToast();
+                return;
+            }
             if (isChecked) {
                 new AlertDialog.Builder(this)
                         .setTitle(getString(R.string.settings_sleep_mode_title))
@@ -240,12 +266,24 @@ public class SettingsActivity extends BaseActivity {
                 sleepModeManager.setSleepModeEnabled(false);
             }
         });
-        binding.layoutSleepModeApps.setOnClickListener(v -> showSleepModeAppsDialog());
-        binding.layoutSleepModeDelay.setOnClickListener(v -> showSleepModeDelayDialog());
+        binding.layoutSleepModeApps.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showSleepModeAppsDialog();
+        });
+        binding.layoutSleepModeDelay.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showSleepModeDelayDialog();
+        });
 
-        binding.layoutKillMode.setOnClickListener(v -> showKillModeDialog());
-        binding.layoutBlacklist.setOnClickListener(v -> showBlacklistDialog());
-        binding.layoutAutoKillType.setOnClickListener(v -> showAutoKillTypeDialog());
+        // Kill Mode / Kill Type — требуют включённого сервиса
+        binding.layoutKillMode.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showKillModeDialog();
+        });
+        binding.layoutAutoKillType.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAutoKillTypeDialog();
+        });
 
         binding.layoutHelp.setOnClickListener(v -> openUrl(getString(R.string.url_help)));
 
@@ -262,6 +300,7 @@ public class SettingsActivity extends BaseActivity {
         binding.layoutTelegram.setOnClickListener(v -> openUrl("https://t.me/AkM0o"));
 
         updateKillModeVisibility();
+        applyServiceDependentState(isServiceEnabled());
     }
 
     private void updateKillModeVisibility() {
@@ -271,8 +310,49 @@ public class SettingsActivity extends BaseActivity {
         binding.layoutWhitelist.setVisibility(mode == 0 ? View.VISIBLE : View.GONE);
     }
 
+    /** Есть ли Root или Shizuku. */
+    private boolean hasPrivilege() {
+        return shellManager.hasShizukuPermission() || shellManager.resolveAnyShellPermission();
+    }
+
+    /** Включён ли фоновый сервис в настройках. */
+    private boolean isServiceEnabled() {
+        return sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+    }
+
+    /** Toast "Включите фоновый сервис". */
+    private void showServiceRequiredToast() {
+        Toast.makeText(this, getString(R.string.settings_requires_service_enabled), Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Применяет визуальное состояние (alpha) элементов, которые требуют активного сервиса.
+     * Вызывается при инициализации и при переключении switchAutoKill.
+     */
+    private void applyServiceDependentState(boolean serviceEnabled) {
+        float alpha = serviceEnabled ? 1.0f : 0.5f;
+
+        // Kill Mode / Kill Type / Whitelist / Blacklist
+        binding.layoutKillMode.setAlpha(alpha);
+        binding.layoutAutoKillType.setAlpha(alpha);
+        binding.layoutWhitelist.setAlpha(alpha);
+        binding.layoutBlacklist.setAlpha(alpha);
+
+        // Background Restrictions
+        if (appManager.supportsBackgroundRestriction()) {
+            binding.layoutBackgroundRestriction.setAlpha(alpha);
+            binding.layoutReapplyRestrictions.setAlpha(alpha);
+        }
+
+        // Sleep Mode
+        binding.switchSleepMode.setEnabled(serviceEnabled);
+        binding.layoutSleepModeApps.setAlpha(alpha);
+        binding.layoutSleepModeDelay.setAlpha(alpha);
+    }
+
     private void updateShellModeText() {
         executor.execute(() -> {
+            final boolean privileged = shellManager.hasShizukuPermission() || shellManager.resolveAnyShellPermission();
             final String text;
             if (shellManager.hasShizukuPermission()) {
                 text = getString(R.string.settings_shell_shizuku_ok);
@@ -281,7 +361,25 @@ public class SettingsActivity extends BaseActivity {
             } else {
                 text = getString(R.string.settings_shell_no_access);
             }
-            handler.post(() -> binding.textShellMode.setText(text));
+            handler.post(() -> {
+                binding.textShellMode.setText(text);
+                if (!privileged) {
+                    // Нет привилегий — блокируем переключатель сервиса
+                    binding.switchAutoKill.setEnabled(false);
+                    binding.switchAutoKill.setAlpha(0.5f);
+                    // Если сервис каким-то образом был включён — принудительно выключаем
+                    if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)) {
+                        sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, false).apply();
+                        binding.switchAutoKill.setChecked(false);
+                        stopService(new Intent(SettingsActivity.this, ShappkyService.class));
+                        AutoKillWorker.cancel(SettingsActivity.this);
+                    }
+                    applyServiceDependentState(false);
+                } else {
+                    binding.switchAutoKill.setEnabled(true);
+                    binding.switchAutoKill.setAlpha(1.0f);
+                }
+            });
         });
     }
 
