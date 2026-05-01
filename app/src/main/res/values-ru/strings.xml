@@ -158,7 +158,7 @@
     <string name="settings_accent_title">Цветовой акцент</string>
     <string name="settings_accent_subtitle">Основной цвет интерфейса</string>
     <string name="settings_background_service_title">Фоновый сервис</string>
-    <string name="settings_background_service_subtitle">Необходим для работы Auto-Kill по интервалу и при выключении экрана</string>
+    <string name="settings_background_service_subtitle">Необходим для стабильной работы всех функций приложения</string>
     <string name="settings_periodic_kill_title">Периодический Auto-Kill</string>
     <string name="settings_periodic_kill_subtitle">Выполнять Auto-Kill по интервалу</string>
     <string name="settings_check_frequency_title">Интервал Auto-Kill</string>
