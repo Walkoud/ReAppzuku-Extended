@@ -612,4 +612,8 @@
     <string name="detail_activity_medium">med</string>
     <string name="detail_activity_high">high</string>
     <string name="hint_12_24_scroll">Chart can be scrolled left/right</string>
+
+    <string name="update_dialog_title">Update available</string>
+    <string name="update_dialog_download">Download</string>
+    <string name="update_dialog_close">Close</string>
 </resources>
