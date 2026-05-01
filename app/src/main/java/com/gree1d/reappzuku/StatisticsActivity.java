@@ -282,21 +282,10 @@ public class StatisticsActivity extends BaseActivity {
             currentSorted = sorted;
             currentTotalHours = periodStats.actualHours;
 
-            // ── Compute totals for self-overhead row ──────────────────────
+            // ── Find self entry for overhead row ──────────────────────────
             BatteryStatsManager.AppResourceStats selfStats = null;
             for (BatteryStatsManager.AppResourceStats s : sorted) {
                 if (s.isSelf) { selfStats = s; break; }
-            }
-
-            // ── Self overhead row ─────────────────────────────────────────
-            if (selfStats != null) {
-                double selfBatPct = (selfStats.batteryMah / batteryCapacityMah) * 100.0;
-                binding.tvSelfBat.setText(String.format(Locale.US, "%.1f%%", selfBatPct));
-                binding.tvSelfCpu.setText(String.format(Locale.US, "%.1f%%", selfStats.cpuPct));
-                binding.tvSelfRam.setText(formatRamMb(selfStats.ramMb));
-                binding.layoutSelfOverhead.setVisibility(View.VISIBLE);
-            } else {
-                binding.layoutSelfOverhead.setVisibility(View.GONE);
             }
 
             // ── Build all 3 charts ─────────────────────────────────────────
@@ -306,6 +295,20 @@ public class StatisticsActivity extends BaseActivity {
                     sorted, ChartMetric.CPU, CHART_CPU);
             buildPieChart(binding.chartRam, binding.layoutRamOthers,
                     sorted, ChartMetric.RAM, CHART_RAM);
+
+            // ── Self overhead row — uses same totals as pie charts ─────────
+            if (selfStats != null) {
+                double totalBat = chartTotals[CHART_BATTERY];
+                double totalCpu = chartTotals[CHART_CPU];
+                double selfBatPct = totalBat > 0 ? (selfStats.batteryMah / totalBat) * 100.0 : 0;
+                double selfCpuPct = totalCpu > 0 ? (selfStats.cpuPct / totalCpu) * 100.0 : 0;
+                binding.tvSelfBat.setText(String.format(Locale.US, "%.1f%%", selfBatPct));
+                binding.tvSelfCpu.setText(String.format(Locale.US, "%.1f%%", selfCpuPct));
+                binding.tvSelfRam.setText(formatRamMb(selfStats.ramMb));
+                binding.layoutSelfOverhead.setVisibility(View.VISIBLE);
+            } else {
+                binding.layoutSelfOverhead.setVisibility(View.GONE);
+            }
 
             // Update total label for current chart
             showActiveChart(sorted, periodStats.actualHours);
