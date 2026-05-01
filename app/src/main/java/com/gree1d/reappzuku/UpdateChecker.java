@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -171,7 +170,7 @@ public class UpdateChecker {
                 }
             }
 
-            return new ReleaseInfo(tagName, body.trim(), downloadUrl);
+            return new ReleaseInfo(tagName, body.trim(), downloadUrl, htmlUrl);
 
         } catch (Exception e) {
             Log.e(TAG, "Failed to fetch release info", e);
@@ -255,7 +254,7 @@ public class UpdateChecker {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notification)   // reuse existing notification icon
+                .setSmallIcon(R.drawable.ic_shappky)
                 .setContentTitle("ReAppzuku " + info.tagName + " available")
                 .setContentText("Tap to download the latest release")
                 .setStyle(new NotificationCompat.BigTextStyle()
@@ -265,6 +264,15 @@ public class UpdateChecker {
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+        // Fallback: on Android 13+ silently skip if POST_NOTIFICATIONS was not granted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "POST_NOTIFICATIONS not granted, skipping update notification");
+                return;
+            }
+        }
 
         nm.notify(NOTIF_ID, builder.build());
     }
@@ -277,18 +285,18 @@ public class UpdateChecker {
                 : "Version " + info.tagName + " is available.\n\n" + info.changelog;
 
         AlertDialog dialog = new AlertDialog.Builder(context)
-                .setTitle("Update available")
+                .setTitle(context.getString(R.string.update_dialog_title))
                 .setMessage(message)
-                .setPositiveButton("Download", (d, w) -> {
+                .setPositiveButton(context.getString(R.string.update_dialog_download), (d, w) -> {
                     d.dismiss();
                     try {
                         context.startActivity(new Intent(
-                                Intent.ACTION_VIEW, Uri.parse(info.downloadUrl)));
+                                Intent.ACTION_VIEW, Uri.parse(info.releasePageUrl)));
                     } catch (Exception e) {
-                        Log.e(TAG, "Failed to open download URL", e);
+                        Log.e(TAG, "Failed to open release page URL", e);
                     }
                 })
-                .setNegativeButton("Close", null)
+                .setNegativeButton(context.getString(R.string.update_dialog_close), null)
                 .create();
 
         if (dialog.getWindow() != null) {
@@ -310,12 +318,14 @@ public class UpdateChecker {
     private static class ReleaseInfo {
         final String tagName;
         final String changelog;
-        final String downloadUrl;
+        final String downloadUrl;    // direct APK asset URL (fallback: release page)
+        final String releasePageUrl; // always the HTML release page
 
-        ReleaseInfo(String tagName, String changelog, String downloadUrl) {
-            this.tagName     = tagName;
-            this.changelog   = changelog;
-            this.downloadUrl = downloadUrl;
+        ReleaseInfo(String tagName, String changelog, String downloadUrl, String releasePageUrl) {
+            this.tagName        = tagName;
+            this.changelog      = changelog;
+            this.downloadUrl    = downloadUrl;
+            this.releasePageUrl = releasePageUrl;
         }
     }
 }
