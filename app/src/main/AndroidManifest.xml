@@ -91,11 +91,15 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".BootReceiver" android:exported="false">
+        <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".RestrictionsScheduler$SchedulerReceiver"
+            android:exported="false" />
         
         <receiver android:name=".AppzukuWidget" android:exported="true">
             <intent-filter>
