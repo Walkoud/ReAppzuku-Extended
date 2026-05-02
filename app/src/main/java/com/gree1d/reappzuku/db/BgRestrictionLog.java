@@ -1,6 +1,5 @@
 package com.gree1d.reappzuku.db;
 
-import androidx.room.Dao;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.Insert;
@@ -27,7 +26,7 @@ public class BgRestrictionLog {
     public String outcome;
     public String detail;
 
-    @Dao
+    @androidx.room.Dao
     public interface Dao {
 
         @Insert

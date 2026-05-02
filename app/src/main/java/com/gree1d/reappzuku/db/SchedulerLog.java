@@ -1,6 +1,5 @@
 package com.gree1d.reappzuku.db;
 
-import androidx.room.Dao;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.Insert;
@@ -30,7 +29,7 @@ public class SchedulerLog {
     /** "lift" → "action=launch"/"action=none"; "restore" → "stop=force-stop"/"stop=am-kill" */
     public String detail;
 
-    @Dao
+    @androidx.room.Dao
     public interface Dao {
 
         @Insert

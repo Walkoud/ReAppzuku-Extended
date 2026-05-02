@@ -1,6 +1,5 @@
 package com.gree1d.reappzuku.db;
 
-import androidx.room.Dao;
 import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.Insert;
@@ -28,7 +27,7 @@ public class SleepModeLog {
     /** "ok" / "error" */
     public String outcome;
 
-    @Dao
+    @androidx.room.Dao
     public interface Dao {
 
         @Insert
