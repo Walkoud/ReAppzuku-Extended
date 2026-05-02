@@ -1148,12 +1148,12 @@ public class SettingsActivity extends BaseActivity {
                 }, endHour[0], endMinute[0], use24h).show());
 
         android.widget.RadioGroup rgAction = dialogView.findViewById(R.id.scheduler_rg_action);
-        rgAction.check(onActivateAction[0] == RestrictionsScheduler.ON_ACTIVATE_LAUNCH_APP
+        rgAction.check(onActivateAction[0] == RestrictionsScheduler.ON_ACTIVATE_ACTIVITY
                 ? R.id.scheduler_rb_launch
                 : R.id.scheduler_rb_none);
         rgAction.setOnCheckedChangeListener((rg, id) ->
                 onActivateAction[0] = (id == R.id.scheduler_rb_launch)
-                        ? RestrictionsScheduler.ON_ACTIVATE_LAUNCH_APP
+                        ? RestrictionsScheduler.ON_ACTIVATE_ACTIVITY
                         : RestrictionsScheduler.ON_ACTIVATE_NOTHING);
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
