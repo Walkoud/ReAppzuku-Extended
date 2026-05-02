@@ -47,6 +47,7 @@ public class BackgroundAppManager {
     private boolean showSystemApps = false;
     private boolean showPersistentApps = false;
     private SharedPreferences sharedpreferences;
+    private RestrictionsScheduler scheduler;
 
     public BackgroundAppManager(Context context, Handler handler, ExecutorService executor,
             ShellManager shellManager) {
@@ -55,6 +56,10 @@ public class BackgroundAppManager {
         this.executor = executor;
         this.shellManager = shellManager;
         this.sharedpreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+    }
+
+    public void setScheduler(RestrictionsScheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
     private String runPs(String psCommand) {
@@ -487,6 +492,10 @@ public class BackgroundAppManager {
         executor.execute(() -> {
             boolean success = true;
             for (String packageName : desired) {
+                if (scheduler != null && scheduler.isProtected(packageName, RestrictionsScheduler.PROTECT_BG_RESTRICTIONS)) {
+                    Log.d(TAG, "reapply SKIP (temp protected): " + packageName);
+                    continue;
+                }
                 boolean isHard = hard.contains(packageName);
 
                 ShellManager.ShellResult result = isHard

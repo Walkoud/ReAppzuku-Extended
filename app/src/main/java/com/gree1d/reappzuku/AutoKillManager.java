@@ -35,6 +35,7 @@ public class AutoKillManager {
     private final ShellManager shellManager;
     private final SharedPreferences sharedpreferences;
     private final List<AppModel> currentAppsList;
+    private RestrictionsScheduler scheduler;
 
     public AutoKillManager(Context context, Handler handler, ExecutorService executor,
             ShellManager shellManager, List<AppModel> currentAppsList) {
@@ -44,6 +45,10 @@ public class AutoKillManager {
         this.shellManager = shellManager;
         this.currentAppsList = currentAppsList;
         this.sharedpreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+    }
+
+    public void setScheduler(RestrictionsScheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
     public void performAutoKill(Runnable onComplete) {
@@ -110,6 +115,10 @@ public class AutoKillManager {
                             }
                             if (ProtectedApps.isProtected(context, pkg)) {
                                 Log.d(TAG, "SKIP (protected): " + pkg);
+                                return false;
+                            }
+                            if (scheduler != null && scheduler.isProtected(pkg, RestrictionsScheduler.PROTECT_AUTO_KILL)) {
+                                Log.d(TAG, "SKIP (temp protected): " + pkg);
                                 return false;
                             }
                             if (containsPackage(dumpOutput, pkg)) {

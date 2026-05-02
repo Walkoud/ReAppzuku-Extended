@@ -44,6 +44,7 @@ public class ShappkyService extends Service {
     private AutoKillManager autoKillManager;
     private SleepModeManager sleepModeManager;
     private BatteryStatsManager batteryStatsManager;
+    private RestrictionsScheduler scheduler;
     private KillTriggerReceiver screenOffReceiver;
 
     // True if background restricted apps are currently frozen
@@ -96,6 +97,10 @@ public class ShappkyService extends Service {
         autoKillManager = new AutoKillManager(this, handler, executor, shellManager, appManager.getCurrentAppsList());
         sleepModeManager = new SleepModeManager(this, handler, executor, shellManager);
         batteryStatsManager = new BatteryStatsManager(this, shellManager);
+        scheduler = new RestrictionsScheduler(this, shellManager, appManager, handler, executor);
+        autoKillManager.setScheduler(scheduler);
+        sleepModeManager.setScheduler(scheduler);
+        appManager.setScheduler(scheduler);
         createNotificationChannel();
 
         // The foreground service notification is always shown (critical — keeps the service alive).
@@ -117,6 +122,7 @@ public class ShappkyService extends Service {
         registerReceiver(screenOffReceiver, filter);
 
         scheduleNextKill();
+        scheduler.scheduleNext();
         
         cancelShizukuLostNotification();
         shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
@@ -198,6 +204,10 @@ public class ShappkyService extends Service {
                     isFrozen = true;
                     Log.d(TAG, "Apps frozen successfully");
                 });
+                break;
+
+            case "SCHEDULER_TICK":
+                scheduler.tick();
                 break;
         }
 

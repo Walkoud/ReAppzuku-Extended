@@ -538,12 +538,64 @@ public class RestrictionsScheduler {
         Log.d(TAG, "scheduleNext: alarm in " + ((nearest - now) / 1000 / 60) + " min");
     }
 
+    /**
+     * Static variant for use from BootReceiver where a full RestrictionsScheduler
+     * instance is not available. Reads schedules from SharedPreferences and sets
+     * the next AlarmManager alarm. Shares getAlarmIntent() so the PendingIntent
+     * is identical to the one used by the instance method.
+     */
+    public static void scheduleNextStatic(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        String json = prefs.getString(KEY_SCHEDULES, null);
+        if (json == null || json.isEmpty()) return;
+
+        List<ScheduleEntry> schedules = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                schedules.add(ScheduleEntry.fromJson(arr.getJSONObject(i)));
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "scheduleNextStatic: parse error", e);
+            return;
+        }
+
+        long now     = System.currentTimeMillis();
+        long nearest = Long.MAX_VALUE;
+        Calendar cal = Calendar.getInstance();
+        int h = cal.get(Calendar.HOUR_OF_DAY);
+        int m = cal.get(Calendar.MINUTE);
+
+        for (ScheduleEntry e : schedules) {
+            if (!e.enabled) continue;
+            long candidate = e.isActiveNow(h, m) ? e.nextEndMillis() : e.nextStartMillis();
+            if (candidate < nearest) nearest = candidate;
+        }
+
+        if (nearest == Long.MAX_VALUE || nearest <= now) return;
+
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+
+        PendingIntent pi = getAlarmIntent(context);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nearest, pi);
+        } else {
+            am.setExact(AlarmManager.RTC_WAKEUP, nearest, pi);
+        }
+        Log.d(TAG, "scheduleNextStatic: alarm in " + ((nearest - now) / 1000 / 60) + " min");
+    }
+
     private void cancelAlarm() {
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (am != null) am.cancel(getAlarmIntent());
+        if (am != null) am.cancel(getAlarmIntent(context));
     }
 
     private PendingIntent getAlarmIntent() {
+        return getAlarmIntent(context);
+    }
+
+    private static PendingIntent getAlarmIntent(Context context) {
         Intent intent = new Intent(context, SchedulerReceiver.class);
         intent.setAction(ACTION_SCHEDULER_TICK);
         return PendingIntent.getBroadcast(

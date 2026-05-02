@@ -24,6 +24,7 @@ public class SleepModeManager {
     private final ExecutorService executor;
     private final ShellManager shellManager;
     private final SharedPreferences sharedpreferences;
+    private RestrictionsScheduler scheduler;
 
     public SleepModeManager(Context context, Handler handler, ExecutorService executor,
             ShellManager shellManager) {
@@ -32,6 +33,10 @@ public class SleepModeManager {
         this.executor = executor;
         this.shellManager = shellManager;
         this.sharedpreferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+    }
+
+    public void setScheduler(RestrictionsScheduler scheduler) {
+        this.scheduler = scheduler;
     }
 
     public Set<String> getSleepModeApps() {
@@ -94,6 +99,7 @@ public class SleepModeManager {
         }
         executor.execute(() -> {
             for (String packageName : packages) {
+                if (scheduler != null && scheduler.isProtected(packageName, RestrictionsScheduler.PROTECT_SLEEP_MODE)) continue;
                 shellManager.freezePackage(packageName);
             }
             if (onComplete != null) handler.post(onComplete);
