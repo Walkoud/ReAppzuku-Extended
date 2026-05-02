@@ -2,8 +2,11 @@ package com.gree1d.reappzuku;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
@@ -16,6 +19,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -1147,14 +1151,40 @@ public class SettingsActivity extends BaseActivity {
                     btnTo.setText(formatTime(h, m, use24h));
                 }, endHour[0], endMinute[0], use24h).show());
 
+        // componentName хранит выбранный компонент: "package/ClassName" или null
+        String[] selectedComponent = { src != null ? src.componentName : null };
+        int[]    selectedCompType  = { src != null ? src.onActivateAction : RestrictionsScheduler.ON_ACTIVATE_NOTHING };
+
         android.widget.RadioGroup rgAction = dialogView.findViewById(R.id.scheduler_rg_action);
-        rgAction.check(onActivateAction[0] == RestrictionsScheduler.ON_ACTIVATE_ACTIVITY
-                ? R.id.scheduler_rb_launch
-                : R.id.scheduler_rb_none);
-        rgAction.setOnCheckedChangeListener((rg, id) ->
-                onActivateAction[0] = (id == R.id.scheduler_rb_launch)
-                        ? RestrictionsScheduler.ON_ACTIVATE_ACTIVITY
-                        : RestrictionsScheduler.ON_ACTIVATE_NOTHING);
+        LinearLayout componentContainer   = dialogView.findViewById(R.id.scheduler_component_container);
+        TextView btnComponent             = dialogView.findViewById(R.id.scheduler_btn_component);
+
+        // Восстанавливаем начальное состояние
+        boolean hadLaunch = onActivateAction[0] != RestrictionsScheduler.ON_ACTIVATE_NOTHING
+                && selectedComponent[0] != null;
+        rgAction.check(hadLaunch ? R.id.scheduler_rb_launch : R.id.scheduler_rb_none);
+        componentContainer.setVisibility(hadLaunch ? View.VISIBLE : View.GONE);
+        btnComponent.setText(selectedComponent[0] != null
+                ? shortComponentName(selectedComponent[0])
+                : getString(R.string.scheduler_component_not_selected));
+
+        rgAction.setOnCheckedChangeListener((rg, id) -> {
+            if (id == R.id.scheduler_rb_launch) {
+                componentContainer.setVisibility(View.VISIBLE);
+                // Тип по умолчанию — ACTIVITY, можно сменить в диалоге выбора
+                if (selectedCompType[0] == RestrictionsScheduler.ON_ACTIVATE_NOTHING) {
+                    selectedCompType[0] = RestrictionsScheduler.ON_ACTIVATE_ACTIVITY;
+                }
+                onActivateAction[0] = selectedCompType[0];
+            } else {
+                componentContainer.setVisibility(View.GONE);
+                onActivateAction[0] = RestrictionsScheduler.ON_ACTIVATE_NOTHING;
+            }
+        });
+
+        btnComponent.setOnClickListener(v ->
+                showComponentPickerDialog(item.packageName, selectedComponent, selectedCompType,
+                        onActivateAction, btnComponent));
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(item.appName)
@@ -1195,6 +1225,8 @@ public class SettingsActivity extends BaseActivity {
             e.endMinute        = endMinute[0];
             e.protectFlags     = flags;
             e.onActivateAction = onActivateAction[0];
+            e.componentName    = (onActivateAction[0] != RestrictionsScheduler.ON_ACTIVATE_NOTHING)
+                    ? selectedComponent[0] : null;
             e.enabled          = true;
 
             boolean ok = (src != null) ? scheduler.updateSchedule(e) : scheduler.addSchedule(e);
@@ -1217,6 +1249,96 @@ public class SettingsActivity extends BaseActivity {
                 showRestrictionsSchedulerDialog();
             });
         }
+    }
+
+    /**
+     * Диалог выбора компонента приложения (Activity / Service / Receiver).
+     * Показывает сгруппированный список из манифеста пакета.
+     */
+    private void showComponentPickerDialog(String packageName,
+                                           String[] selectedComponent,
+                                           int[] selectedCompType,
+                                           int[] onActivateAction,
+                                           TextView btnComponent) {
+        executor.execute(() -> {
+            // Собираем компоненты из манифеста
+            List<String[]> items = new ArrayList<>(); // [0]=label, [1]=fullName, [2]=typeInt
+            try {
+                PackageInfo pi = getPackageManager().getPackageInfo(packageName,
+                        PackageManager.GET_ACTIVITIES |
+                        PackageManager.GET_SERVICES   |
+                        PackageManager.GET_RECEIVERS);
+
+                if (pi.activities != null) {
+                    for (ActivityInfo ai : pi.activities) {
+                        if (ai.exported || ai.name.equals(
+                                getPackageManager().getLaunchIntentForPackage(packageName) != null
+                                ? "" : ai.name)) {
+                            items.add(new String[]{
+                                    "[Activity] " + shortComponentName(ai.name),
+                                    packageName + "/" + ai.name,
+                                    String.valueOf(RestrictionsScheduler.ON_ACTIVATE_ACTIVITY)
+                            });
+                        }
+                    }
+                }
+                if (pi.services != null) {
+                    for (ServiceInfo si : pi.services) {
+                        if (si.exported) {
+                            items.add(new String[]{
+                                    "[Service] " + shortComponentName(si.name),
+                                    packageName + "/" + si.name,
+                                    String.valueOf(RestrictionsScheduler.ON_ACTIVATE_SERVICE)
+                            });
+                        }
+                    }
+                }
+                if (pi.receivers != null) {
+                    for (ActivityInfo ri : pi.receivers) {
+                        if (ri.exported) {
+                            items.add(new String[]{
+                                    "[Receiver] " + shortComponentName(ri.name),
+                                    packageName + "/" + ri.name,
+                                    String.valueOf(RestrictionsScheduler.ON_ACTIVATE_RECEIVER)
+                            });
+                        }
+                    }
+                }
+            } catch (PackageManager.NameNotFoundException e) {
+                Log.e(TAG, "showComponentPickerDialog: package not found: " + packageName, e);
+            }
+
+            handler.post(() -> {
+                if (items.isEmpty()) {
+                    Toast.makeText(this, getString(R.string.scheduler_component_none_found),
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String[] labels = items.stream()
+                        .map(i -> i[0])
+                        .toArray(String[]::new);
+
+                new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.scheduler_component_picker_title))
+                        .setItems(labels, (d, which) -> {
+                            String[] chosen = items.get(which);
+                            selectedComponent[0] = chosen[1];
+                            selectedCompType[0]  = Integer.parseInt(chosen[2]);
+                            onActivateAction[0]  = selectedCompType[0];
+                            btnComponent.setText(shortComponentName(chosen[1]));
+                        })
+                        .setNegativeButton(getString(R.string.dialog_close), null)
+                        .show();
+            });
+        });
+    }
+
+    /** Возвращает короткое имя компонента: "ru.vk.store/.push.FCMReceiver" → "FCMReceiver" */
+    private String shortComponentName(String componentName) {
+        if (componentName == null) return "";
+        int dot = componentName.lastIndexOf('.');
+        return dot >= 0 ? componentName.substring(dot + 1) : componentName;
     }
 
     private RestrictionsScheduler.ScheduleEntry findScheduleForPackage(String pkg) {
