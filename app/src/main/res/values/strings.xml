@@ -624,4 +624,27 @@
     <string name="log_scheduler_empty">No scheduler events logged yet.</string>
     <string name="log_sleep_mode_empty">No sleep mode events logget yet.</string>   
     <string name="settings_section_background_service">Background Service</string>
+
+    <!-- Restrictions Scheduler -->
+    <string name="settings_section_background_service">Background Service</string>
+    <string name="settings_restrictions_scheduler_title">Restrictions Scheduler</string>
+    <string name="settings_restrictions_scheduler_subtitle">Schedule time windows to protect apps from restrictions</string>
+
+    <string name="scheduler_no_eligible_apps">No apps with active restrictions or sleep mode</string>
+    <string name="scheduler_btn_remove">Remove</string>
+    <string name="scheduler_error_no_flags">Select at least one restriction type</string>
+    <string name="scheduler_error_same_time">Start and end time must differ</string>
+    <string name="scheduler_error_limit">Schedule limit reached (%d max)</string>
+
+    <string name="scheduler_section_restrictions">Protect from</string>
+    <string name="scheduler_protect_auto_kill">Auto-Kill</string>
+    <string name="scheduler_protect_bg_restrictions">Background Restrictions</string>
+    <string name="scheduler_protect_sleep_mode">Sleep Mode</string>
+
+    <string name="scheduler_section_time_window">Time window</string>
+    <string name="scheduler_time_from">From</string>
+    <string name="scheduler_time_to">To</string>
+    <string name="scheduler_section_on_activate">On activation</string>
+    <string name="scheduler_action_none">Nothing</string>
+    <string name="scheduler_action_launch_main">Launch app</string>
 </resources>
