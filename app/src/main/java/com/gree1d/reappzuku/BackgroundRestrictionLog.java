@@ -33,7 +33,7 @@ public final class BackgroundRestrictionLog {
         entry.outcome     = sanitize(outcome      == null || outcome.trim().isEmpty()     ? "unknown" : outcome);
         entry.detail      = sanitize(detail);
 
-        BgRestrictionLog.Dao dao = AppDatabase.getInstance(context).bgRestrictionLogDao();
+        BgRestrictionLog.LogDao dao = AppDatabase.getInstance(context).bgRestrictionLogDao();
         dao.insert(entry);
 
         // Trim to MAX_ENTRIES

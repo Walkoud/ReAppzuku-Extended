@@ -52,7 +52,7 @@ public final class SleepModeLogManager {
         entry.action      = action;
         entry.outcome     = outcome;
 
-        SleepModeLog.Dao dao = AppDatabase.getInstance(context).sleepModeLogDao();
+        SleepModeLog.LogDao dao = AppDatabase.getInstance(context).sleepModeLogDao();
         dao.insert(entry);
 
         // Trim to MAX_ENTRIES — delete oldest if over limit

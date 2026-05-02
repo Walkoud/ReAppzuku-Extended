@@ -296,7 +296,7 @@ public class RestrictionsScheduler {
             entry.outcome     = sanitize(outcome     != null ? outcome     : "unknown");
             entry.detail      = sanitize(detail);
 
-            com.gree1d.reappzuku.db.SchedulerLog.Dao dao =
+            com.gree1d.reappzuku.db.SchedulerLog.LogDao dao =
                     AppDatabase.getInstance(context).schedulerLogDao();
             dao.insert(entry);
 
