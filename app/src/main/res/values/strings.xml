@@ -625,7 +625,7 @@
     <string name="log_sleep_mode_empty">No sleep mode events logget yet.</string>
 
     <!-- Restrictions Scheduler -->
-    <string name="settings_section_background_service">Background Service</string>
+    <string name="settings_section_background_service">App stability</string>
     <string name="settings_restrictions_scheduler_title">Restrictions Scheduler</string>
     <string name="settings_restrictions_scheduler_subtitle">Schedule time windows to protect apps from restrictions</string>
 
