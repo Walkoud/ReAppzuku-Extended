@@ -641,6 +641,9 @@
     <string name="scheduler_time_to">To</string>
     <string name="scheduler_section_on_activate">On activation</string>
     <string name="scheduler_action_none">Nothing</string>
+    <string name="scheduler_action_launch_component">Launch component</string>
+    <string name="scheduler_component_label">Component</string>
+    <string name="scheduler_component_not_selected">Not selected</string>
     <string name="scheduler_action_launch_main">Launch %s</string>
 
     <!-- Sleep Mode Log -->
