@@ -13,9 +13,10 @@ import androidx.annotation.NonNull;
         AppStats.class,
         ResourceSnapshot.class,
         BgRestrictionLog.class,
-        SchedulerLog.class
+        SchedulerLog.class,
+        SleepModeLog.class
     },
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -84,10 +85,25 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_7_8 = new Migration(7, 8) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("CREATE TABLE IF NOT EXISTS `sleep_mode_log` (" +
+                       "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                       "`timestamp` INTEGER NOT NULL, " +
+                       "`packageName` TEXT, " +
+                       "`action` TEXT, " +
+                       "`outcome` TEXT)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_sleep_mode_log_packageName` ON `sleep_mode_log` (`packageName`)");
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_sleep_mode_log_timestamp` ON `sleep_mode_log` (`timestamp`)");
+        }
+    };
+
     public abstract AppStatsDao appStatsDao();
     public abstract ResourceSnapshotDao resourceSnapshotDao();
     public abstract BgRestrictionLog.Dao bgRestrictionLogDao();
     public abstract SchedulerLog.Dao schedulerLogDao();
+    public abstract SleepModeLog.Dao sleepModeLogDao();
 
     public static synchronized AppDatabase getInstance(Context context) {
         if (instance == null) {
@@ -99,7 +115,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         MIGRATION_3_4,
                         MIGRATION_4_5,
                         MIGRATION_5_6,
-                        MIGRATION_6_7
+                        MIGRATION_6_7,
+                        MIGRATION_7_8
                     )
                     .fallbackToDestructiveMigration()
                     .build();
