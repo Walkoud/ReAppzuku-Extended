@@ -622,5 +622,6 @@
 
     <string name="log_bg_restriction_empty">No background restriction events logged yet.\n\nEntries are stored in the app database and trimmed automatically.</string>
     <string name="log_scheduler_empty">No scheduler events logged yet.</string>
-    <string name="log_sleep_mode_empty">No sleep mode events logget yet.</string>    
+    <string name="log_sleep_mode_empty">No sleep mode events logget yet.</string>   
+    <string name="settings_section_background_service">Background Service</string>
 </resources>
