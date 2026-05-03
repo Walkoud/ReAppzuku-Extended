@@ -126,7 +126,7 @@ public class BatteryStatsManager {
     private final Handler handler;
     private final ExecutorService executor;
     private final ShellManager shellManager;
-    private final ResourceSnapshotDao dao;
+    private volatile ResourceSnapshotDao dao;
 
     /**
      * Battery design capacity in mAh, read once and cached.
@@ -152,7 +152,6 @@ public class BatteryStatsManager {
         this.handler      = handler;
         this.executor     = executor;
         this.shellManager = shellManager;
-        this.dao          = AppDatabase.getInstance(context).resourceSnapshotDao();
     }
 
     /**
@@ -164,7 +163,14 @@ public class BatteryStatsManager {
         this.handler      = new Handler(Looper.getMainLooper());
         this.executor     = java.util.concurrent.Executors.newSingleThreadExecutor();
         this.shellManager = shellManager;
-        this.dao          = AppDatabase.getInstance(context).resourceSnapshotDao();
+    }
+
+    /** Lazy initializer — always called from executor thread, never from main thread. */
+    private ResourceSnapshotDao getDao() {
+        if (dao == null) {
+            dao = AppDatabase.getInstance(context).resourceSnapshotDao();
+        }
+        return dao;
     }
 
     /** Public data container for one app's resource stats over a period. */
@@ -326,7 +332,7 @@ public class BatteryStatsManager {
 
         try {
             // Throttle: skip if last snapshot was too recent
-            ResourceSnapshot last = dao.getLatestSnapshot();
+            ResourceSnapshot last = getDao().getLatestSnapshot();
             if (last != null && (now - last.timestamp) < MIN_SNAPSHOT_INTERVAL_MS) {
                 Log.d(TAG, "Snapshot skipped — too soon after last one");
                 return;
@@ -391,11 +397,11 @@ public class BatteryStatsManager {
                 snap.activeCpuJiffies = jiffies[1];
                 snap.batteryLevelPct  = batteryLevel;
                 snap.totalRawPwiBatch = totalRawPwiBatch;
-                dao.insert(snap);
+                getDao().insert(snap);
             }
 
             // Prune old snapshots (keep 24 hours)
-            dao.deleteOlderThan(now - 24 * 3600_000L);
+            getDao().deleteOlderThan(now - 24 * 3600_000L);
 
             Log.d(TAG, "Snapshot saved: " + allPkgs.size() + " apps"
                     + "  battery=" + batteryMahByPkg.size()
@@ -859,7 +865,7 @@ public class BatteryStatsManager {
         long now    = System.currentTimeMillis();
         long target = now - (long) hours * 3600_000L;
 
-        ResourceSnapshot current = dao.getLatestSnapshot();
+        ResourceSnapshot current = getDao().getLatestSnapshot();
 
         if (current == null) {
             return new PeriodStats(Collections.emptyList(), false, 0,
@@ -867,12 +873,12 @@ public class BatteryStatsManager {
         }
 
         // Find the snapshot closest to the requested period start (target).
-        ResourceSnapshot previous = dao.getClosestSnapshotBefore(target);
+        ResourceSnapshot previous = getDao().getClosestSnapshotBefore(target);
 
         if (previous == null) {
             // No snapshot at or before target — try the oldest one we have.
             // Only use it if it's close enough to target (within 10% of the period).
-            ResourceSnapshot oldest = dao.getOldestSnapshot();
+            ResourceSnapshot oldest = getDao().getOldestSnapshot();
             if (oldest != null && oldest.timestamp < current.timestamp) {
                 double oldestHoursFromTarget =
                         (oldest.timestamp - target) / 3600_000.0; // positive = newer than target
@@ -904,7 +910,7 @@ public class BatteryStatsManager {
 
         // Load all snapshots in the window, ordered by (packageName, timestamp)
         List<ResourceSnapshot> windowSnaps =
-                dao.getSnapshotsBetween(previous.timestamp, current.timestamp);
+                getDao().getSnapshotsBetween(previous.timestamp, current.timestamp);
 
         Map<String, double[]> perPkg     = new HashMap<>();
         Map<String, ResourceSnapshot> prevByPkg = new HashMap<>();
@@ -1022,9 +1028,9 @@ public class BatteryStatsManager {
         long startAligned = endAligned - (long) hours * 3600_000L;
 
         List<ResourceSnapshot> snaps =
-                dao.getSnapshotsForPackageBetween(packageName, startAligned, endAligned);
+                getDao().getSnapshotsForPackageBetween(packageName, startAligned, endAligned);
 
-        ResourceSnapshot oldestForPkg = dao.getOldestSnapshotForPackage(packageName);
+        ResourceSnapshot oldestForPkg = getDao().getOldestSnapshotForPackage(packageName);
         long oldestPkgTime = oldestForPkg != null ? oldestForPkg.timestamp : endAligned;
         double pkgAgeHours = (endAligned - oldestPkgTime) / 3600_000.0;
         boolean isPartialData = (hours == 2) && (pkgAgeHours < hours * 0.9);
