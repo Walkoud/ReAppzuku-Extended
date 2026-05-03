@@ -10,11 +10,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class SleepModeLogManager {
 
     private static final int MAX_ENTRIES    = 200;
     private static final int MAX_DETAIL_LEN = 180;
+
+    /** Single background thread for all DB writes — avoids main thread violations. */
+    private static final ExecutorService DB_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private SleepModeLogManager() {}
 
@@ -52,14 +57,16 @@ public final class SleepModeLogManager {
         entry.action      = action;
         entry.outcome     = outcome;
 
-        SleepModeLog.Dao dao = AppDatabase.getInstance(context).sleepModeLogDao();
-        dao.insert(entry);
+        DB_EXECUTOR.execute(() -> {
+            SleepModeLog.Dao dao = AppDatabase.getInstance(context).sleepModeLogDao();
+            dao.insert(entry);
 
-        // Trim to MAX_ENTRIES — delete oldest if over limit
-        int count = dao.getCount();
-        if (count > MAX_ENTRIES) {
-            dao.deleteOldest(count - MAX_ENTRIES);
-        }
+            // Trim to MAX_ENTRIES — delete oldest if over limit
+            int count = dao.getCount();
+            if (count > MAX_ENTRIES) {
+                dao.deleteOldest(count - MAX_ENTRIES);
+            }
+        });
     }
 
     // =========================================================================
@@ -101,7 +108,8 @@ public final class SleepModeLogManager {
 
     public static void clear(Context context) {
         if (context == null) return;
-        AppDatabase.getInstance(context).sleepModeLogDao().clearAll();
+        DB_EXECUTOR.execute(() ->
+                AppDatabase.getInstance(context).sleepModeLogDao().clearAll());
     }
 
     // =========================================================================

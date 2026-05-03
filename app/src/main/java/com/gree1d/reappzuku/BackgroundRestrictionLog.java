@@ -10,11 +10,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public final class BackgroundRestrictionLog {
 
     private static final int MAX_ENTRIES    = 200;
     private static final int MAX_DETAIL_LEN = 180;
+
+    /** Single background thread for all DB writes — avoids main thread violations. */
+    private static final ExecutorService DB_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private BackgroundRestrictionLog() {}
 
@@ -33,14 +38,16 @@ public final class BackgroundRestrictionLog {
         entry.outcome     = sanitize(outcome      == null || outcome.trim().isEmpty()     ? "unknown" : outcome);
         entry.detail      = sanitize(detail);
 
-        BgRestrictionLog.Dao dao = AppDatabase.getInstance(context).bgRestrictionLogDao();
-        dao.insert(entry);
+        DB_EXECUTOR.execute(() -> {
+            BgRestrictionLog.Dao dao = AppDatabase.getInstance(context).bgRestrictionLogDao();
+            dao.insert(entry);
 
-        // Trim to MAX_ENTRIES
-        int count = dao.getCount();
-        if (count > MAX_ENTRIES) {
-            dao.deleteOldest(count - MAX_ENTRIES);
-        }
+            // Trim to MAX_ENTRIES
+            int count = dao.getCount();
+            if (count > MAX_ENTRIES) {
+                dao.deleteOldest(count - MAX_ENTRIES);
+            }
+        });
     }
 
     // =========================================================================
@@ -83,7 +90,8 @@ public final class BackgroundRestrictionLog {
 
     public static void clear(Context context) {
         if (context == null) return;
-        AppDatabase.getInstance(context).bgRestrictionLogDao().clearAll();
+        DB_EXECUTOR.execute(() ->
+                AppDatabase.getInstance(context).bgRestrictionLogDao().clearAll());
     }
 
     // =========================================================================
