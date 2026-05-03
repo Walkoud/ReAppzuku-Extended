@@ -341,6 +341,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingVertical="12dp"
+                android:paddingStart="16dp"
                 android:background="?attr/selectableItemBackground">
 
                 <TextView
@@ -416,10 +417,9 @@
                         android:textSize="16sp" />
 
                     <TextView
-                        android:id="@+id/text_ram_threshold"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/settings_ram_threshold_default"
+                        android:text="@string/settings_ram_threshold_subtitle"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -428,6 +428,30 @@
                     android:id="@+id/switch_ram_threshold"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layout_ram_threshold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingVertical="12dp"
+                android:paddingStart="16dp"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_ram_threshold_limit_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp" />
+
+                <TextView
+                    android:id="@+id/text_ram_threshold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
             </LinearLayout>
 
             <LinearLayout
@@ -484,6 +508,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingVertical="12dp"
+                android:paddingStart="16dp"
                 android:background="?attr/selectableItemBackground">
 
                 <TextView
@@ -507,6 +532,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:paddingVertical="12dp"
+                android:paddingStart="16dp"
                 android:background="?attr/selectableItemBackground"
                 android:visibility="gone">
 
