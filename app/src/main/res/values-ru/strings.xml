@@ -229,7 +229,7 @@
     <string name="settings_screen_lock_title">Auto-Kill при выключении экрана</string>
     <string name="settings_screen_lock_subtitle">Выполнить Auto-Kill при выключении экрана</string>
     <string name="settings_ram_threshold_title">Лимит ОЗУ</string>
-    <string name="settings_ram_threshold_default">Auto-Kill только при загруженности ОЗУ 80%%</string>
+    <string name="settings_ram_threshold_subtitle">Auto-Kill при выбранной загруженности ОЗУ</string>
     <string name="settings_ram_threshold_summary">Auto-Kill только при загруженности ОЗУ %1$d%%</string>
     <string name="settings_ram_threshold_dialog_title">Выберите лимит загруженности ОЗУ</string>
     <string name="settings_ram_threshold_limit_title">Порог использования RAM</string>
