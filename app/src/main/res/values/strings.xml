@@ -228,7 +228,7 @@
     <string name="settings_interval_fallback">Every %1$d seconds</string>
     <string name="settings_screen_lock_title">Auto-Kill on screen off</string>
     <string name="settings_screen_lock_subtitle">Run Auto-Kill when the screen turns off</string>
-    <string name="settings_ram_threshold_title">RAM limit</string>
+    <string name="settings_ram_threshold_title">RAM threshold</string>
     <string name="settings_ram_threshold_subtitle">Auto-Kill when selected RAM usage exceeds</string>
     <string name="settings_ram_threshold_summary">Selected: %1$d%%</string>
     <string name="settings_ram_threshold_dialog_title">Select RAM usage limit</string>
