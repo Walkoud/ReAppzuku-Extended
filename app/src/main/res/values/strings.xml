@@ -229,9 +229,10 @@
     <string name="settings_screen_lock_title">Auto-Kill on screen off</string>
     <string name="settings_screen_lock_subtitle">Run Auto-Kill when the screen turns off</string>
     <string name="settings_ram_threshold_title">RAM limit</string>
-    <string name="settings_ram_threshold_default">Auto-Kill only when RAM usage exceeds 80%%</string>
+    <string name="settings_ram_threshold_subtitle">Auto-Kill when selected RAM usage exceeds 80%%</string>
     <string name="settings_ram_threshold_summary">Auto-Kill only when RAM usage exceeds %1$d%%</string>
     <string name="settings_ram_threshold_dialog_title">Select RAM usage limit</string>
+    <string name="settings_ram_threshold_limit_title">RAM usage limit</string>
 
     <string-array name="settings_kill_interval_labels">
         <item>Every 10 seconds</item>
