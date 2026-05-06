@@ -12,9 +12,9 @@
 <img src="https://img.shields.io/badge/Shizuku-Supported-brightgreen.svg"/>
 </p>
 
-ReAppzuku is a fork of Appzuku (Shappky) that offers enhanced control over background activity of Android applications.
+ReAppzuku is a fork of Appzuku (Shappky) that offers enhanced control over background activity of your Android apps.
 
-The tool allows users to monitor and control apps that consume RAM, run in the background for extended periods, draining battery and loading the CPU.\
+This tool allows users to monitor and control apps that consume RAM, run in background for extended periods, draining battery and loading the CPU.\
 One-tap manual force-stop, periodic Kill via a timer, and flexible background restrictions for selected apps.\
 \
 Root or Shizuku privileges are required to run the app.
