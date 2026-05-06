@@ -12,58 +12,67 @@
 <img src="https://img.shields.io/badge/Shizuku-Supported-brightgreen.svg"/>
 </p>
 
-ReAppzuku is a fork of Appzuku (Shappky) that offers enhanced control over background activity of your Android apps.
+ReAppzuku is a fork of Appzuku (Shappky) with enhanced control over background activity of Android apps.
 
-This tool allows users to monitor and control apps that consume RAM, run in background for extended periods, draining battery and loading the CPU.\
+Monitor and stop apps that consume RAM, drain battery, and load CPU in background.\
 One-tap manual force-stop, periodic Kill via a timer, and flexible background restrictions for selected apps.\
 \
-Root or Shizuku privileges are required to run the app.
-
+Root or Shizuku privileges are required.
 
 ## ⚙️ Features
- * Smart automation:
-   * Periodic Auto-Kill: intervals from 10 seconds to 5 minutes.
-   * Kill on screen lock: force-stop background processes immediately after the screen turns off.
-   * RAM threshold: Kill triggers only when RAM usage reaches a set limit (75%–100%).
- * Deep restrictions (Android 11+):
-   * Soft mode: blocks auto-start without your knowledge.
-   * Hard mode: immediately terminates a process when minimized, prevents it from being kept in memory.
- * Sleep Mode: Full freeze of selected apps after a set inactivity timer (5–60 min), with automatic unfreeze on screen unlock.
- * Analytics & Logs:
-   * Detailed Auto-Kill log for the last 12 hours.
-   * "Offenders" ranking by RAM consumption and restart frequency.
-   * Tracking of background restriction status (applied, error, not applied).
-   * Detailed analysis of background app activity.
-   * Statistics on use phone's main resources for a period of 2 to 24 hours in form of diagrams and convenient graphs 
- * Flexible lists: Support for a Whitelist (Auto-Kill exclusions) and a Blacklist (Auto-Kill targets).
- * Restriction Scheduler: Schedule the duration of ReAppzuku restrictions on your apps 
+
+* **Smart automation:**
+  * Periodic Auto-Kill: intervals from 10 seconds to 5 minutes.
+  * Kill on screen lock: force-stop background processes immediately after screen turns off.
+  * RAM threshold: Kill triggers only when RAM usage reaches a set limit (75%–100%).
+* **Manual controls** *(no background service required)*:
+  * Main screen: view all active background processes with RAM usage, select and kill in bulk.
+  * Quick Tiles: "Stop app" kills current foreground app; "Stop background apps" runs Auto-Kill with your lists.
+  * Home screen widget: one tap runs Auto-Kill and shows current RAM state.
+  * App shortcut: long-press app icon to kill current foreground app instantly.
+* **Deep restrictions** (Android 11+):
+  * Soft mode: blocks auto-start at OS level — app keeps running if you opened it, but won't wake up on its own.
+  * Hard mode: immediately terminates process when minimized, prevents it from staying in memory even for a second.
+  * Restriction Scheduler: set a time window to temporarily lift restrictions, with optional component launch on activation.
+* **Sleep Mode:** full freeze of selected apps after a set inactivity timer (5–60 min), automatic unfreeze on screen unlock.
+* **App Triggers:** deep diagnostic tool analyzing real causes of background activity — foreground services, sticky services, wakelocks, alarms, job scheduler, network connections, boot receivers, and 8 more factors.
+* **Analytics & Logs:**
+  * Auto-Kill log for last 12 hours: kills, restarts, freed RAM per app.
+  * Top offenders ranking by RAM consumption and restart frequency (12h / 24h / 7d / all time).
+  * Background restriction log: applied, error, not applied — up to 200 entries.
+  * Resource usage charts (RAM, CPU, battery) for periods of 2, 6, 12, and 24 hours.
+* **Flexible lists:** Whitelist (Auto-Kill exclusions), Blacklist (Auto-Kill targets), Hidden apps (excluded from list and Auto-Kill entirely).
+* **Backup & Restore:** export and import all settings to a JSON file — whitelist, blacklist, hidden apps, restrictions, Sleep Mode, and automation parameters.
 
 ## 🛠 Requirements
+
 | Component | Requirement |
 |---|---|
-| Android OS | 6.0+ (Background restrictions require 11+) |
+| Android | 6.0+ (Background restrictions require 11+) |
 | Access | Root or Shizuku |
 
 ## 🚀 Quick Start
- * Set up the environment: Install and activate [Shizuku](https://github.com/thedjchi/Shizuku).
- * Background operation: It is critical to disable battery optimization for ReAppzuku and pin it in the Recents menu so the system does not kill the management service itself.
- * Choose your strategy:
-   * Maximum savings: Whitelist + periodic Kill + Background restrictions.
-   * Targeted control: Blacklist only for heavy messengers or games.
+
+* **Set up access:** install and activate [Shizuku](https://github.com/thedjchi/Shizuku), or grant root.
+* **Background operation:** disable battery optimization for ReAppzuku and pin it in Recents — otherwise system may kill management service itself.
+* **Choose your strategy:** Whitelist + periodic Kill for maximum savings, or Blacklist-only for targeted control of specific apps.
 
 ## 🛡 Safety
-ReAppzuku automatically protects critical system processes (Google Play Services, System UI, the current keyboard, and the launcher), preventing the risk of a bootloop.
+
+ReAppzuku automatically protects critical system processes — Google Play Services, System UI, current keyboard, current launcher, telephony, Bluetooth, NFC, and Shizuku itself. OEM-specific system apps (Xiaomi Security Center, Samsung Device Care, OPPO Phone Manager, etc.) are also protected per manufacturer. No bootloop risk.
 
 ## 🎨 Customization
- * Support for system, light, dark, and AMOLED themes.
- * Configurable color accents (Indigo, Crimson, Amber, and more).
+
+* System, light, dark, and AMOLED themes.
+* Configurable color accents: Indigo, Crimson, Forest Green, Amber, and more.
 
 ## 🌐 Translation
-I welcome your translations!\
-If you want to help localize the app in your language, you can:
- * Submit a **Pull Request** with your changes to /values/strings.xml.
- * Open an **Issue** and attach your /values/strings.xml (please pack it into a .zip archive first) or just paste the XML code into the comment.  
- 
+
+Translations are welcome!\
+To help localize the app:
+* Submit a **Pull Request** with changes to `/values/strings.xml`.
+* Open an **Issue** and attach your `/values/strings.xml` (pack into `.zip` first), or paste XML directly into a comment.
+
 ## 🖼️ Screenshots
 
 <p align="center">
@@ -79,7 +88,9 @@ If you want to help localize the app in your language, you can:
 </p>
 
 ## License
-ReAppzuku is licensed under the [GNU General Public License v3.0](LICENSE).
+
+ReAppzuku is licensed under [GNU General Public License v3.0](LICENSE).
 
 ## Credits
-This project was forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
+
+Forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
