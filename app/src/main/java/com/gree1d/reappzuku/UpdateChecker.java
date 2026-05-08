@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
@@ -18,14 +20,20 @@ import android.util.Log;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ProcessLifecycleOwner;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,7 +41,7 @@ import java.util.concurrent.Executors;
  * Handles GitHub release update checking for ReAppzuku.
  *
  * Auto-check: once per day via {@link #checkForUpdatesAuto(Context)}.
- *   - Silently skipped if no internet.
+ *   - Silently skipped if no internet or app is in background.
  *   - Posts a notification if a new version is found.
  *
  * Manual check: triggered by the "Check for updates" button.
@@ -60,13 +68,31 @@ public class UpdateChecker {
     private static final String KEY_LAST_CHECK_MS  = "last_check_ms";
     private static final long   CHECK_INTERVAL_MS  = 24 * 60 * 60 * 1000L; // 1 day
 
+    // ── Network timeouts ───────────────────────────────────────────────────────
+    private static final int CONNECT_TIMEOUT_MS = 8_000;
+    private static final int READ_TIMEOUT_MS    = 8_000;
+
     // ── Public API ─────────────────────────────────────────────────────────────
 
     /**
-     * Perform a background auto-check (once per 24 h, silently skipped if offline).
-     * Call from e.g. {@code ShappkyService.onCreate()} or a WorkManager task.
+     * Perform a background auto-check (once per 24 h).
+     * Silently skipped if:
+     *   - within throttle window
+     *   - no internet connection
+     *   - app is in background (not on screen)
+     *
+     * Call from e.g. {@code MainActivity.onResume()} or a periodic handler.
+     * Do NOT call from a background service — the foreground guard will skip it,
+     * but it is semantically wrong to do so.
      */
     public static void checkForUpdatesAuto(Context context) {
+        // ① Guard: only run when app is on screen
+        if (!isAppInForeground()) {
+            Log.d(TAG, "Auto-check skipped: app is in background");
+            return;
+        }
+
+        // ② Throttle: once per day
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         long lastCheck = prefs.getLong(KEY_LAST_CHECK_MS, 0);
         if (System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
@@ -74,9 +100,10 @@ public class UpdateChecker {
             return;
         }
 
+        // ③ Guard: no internet
         if (!isConnected(context)) {
             Log.d(TAG, "Auto-check skipped: no internet");
-            return; // silent fallback
+            return;
         }
 
         prefs.edit().putLong(KEY_LAST_CHECK_MS, System.currentTimeMillis()).apply();
@@ -84,7 +111,7 @@ public class UpdateChecker {
         ExecutorService exec = Executors.newSingleThreadExecutor();
         exec.execute(() -> {
             ReleaseInfo info = fetchLatestRelease();
-            if (info == null) return;
+            if (info == null) return; // network error already logged — silent fallback
 
             String currentVersion = getAppVersion(context);
             if (isNewer(info.tagName, currentVersion)) {
@@ -129,14 +156,36 @@ public class UpdateChecker {
 
     // ── Internal helpers ───────────────────────────────────────────────────────
 
-    /** Fetches the latest GitHub release via the REST API. Returns null on error. */
+    /**
+     * Returns true if the app process currently has at least one Activity
+     * in the STARTED state (i.e. visible on screen).
+     * Uses ProcessLifecycleOwner — available from androidx.lifecycle:lifecycle-process.
+     */
+    private static boolean isAppInForeground() {
+        try {
+            return ProcessLifecycleOwner.get()
+                    .getLifecycle()
+                    .getCurrentState()
+                    .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED);
+        } catch (Exception e) {
+            // ProcessLifecycleOwner not initialised yet — treat as background
+            Log.w(TAG, "Could not determine foreground state, assuming background", e);
+            return false;
+        }
+    }
+
+    /**
+     * Fetches the latest GitHub release via the REST API.
+     * Returns null on any network or parse error (all failures are logged).
+     */
     private static ReleaseInfo fetchLatestRelease() {
+        HttpURLConnection conn = null;
         try {
             URL url = new URL(GITHUB_API_URL);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpURLConnection) url.openConnection();
             conn.setRequestProperty("Accept", "application/vnd.github+json");
-            conn.setConnectTimeout(10_000);
-            conn.setReadTimeout(10_000);
+            conn.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            conn.setReadTimeout(READ_TIMEOUT_MS);
 
             int code = conn.getResponseCode();
             if (code != 200) {
@@ -172,9 +221,23 @@ public class UpdateChecker {
 
             return new ReleaseInfo(tagName, body.trim(), downloadUrl, htmlUrl);
 
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to fetch release info", e);
+        } catch (UnknownHostException e) {
+            // DNS failed — no internet despite connectivity check (can happen on captive portals)
+            Log.w(TAG, "No route to GitHub (DNS failed): " + e.getMessage());
             return null;
+        } catch (SocketTimeoutException e) {
+            Log.w(TAG, "GitHub API timed out: " + e.getMessage());
+            return null;
+        } catch (IOException e) {
+            Log.w(TAG, "Network I/O error fetching release: " + e.getMessage());
+            return null;
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error fetching release info", e);
+            return null;
+        } finally {
+            if (conn != null) {
+                try { conn.disconnect(); } catch (Exception ignored) {}
+            }
         }
     }
 
@@ -218,12 +281,28 @@ public class UpdateChecker {
         }
     }
 
+    /**
+     * Checks for an active internet connection.
+     * Uses NetworkCapabilities on API 23+ to avoid the deprecated NetworkInfo API.
+     */
+    @SuppressWarnings("deprecation")
     private static boolean isConnected(Context context) {
         ConnectivityManager cm =
                 (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) return false;
-        NetworkInfo ni = cm.getActiveNetworkInfo();
-        return ni != null && ni.isConnected();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Network network = cm.getActiveNetwork();
+            if (network == null) return false;
+            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+            return caps != null
+                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } else {
+            // Legacy path for API < 23
+            NetworkInfo ni = cm.getActiveNetworkInfo();
+            return ni != null && ni.isConnected();
+        }
     }
 
     private static void showToast(Context context, String message) {
@@ -265,7 +344,6 @@ public class UpdateChecker {
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-        // Fallback: on Android 13+ silently skip if POST_NOTIFICATIONS was not granted
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
                     != PackageManager.PERMISSION_GRANTED) {
