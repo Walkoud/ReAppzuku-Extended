@@ -116,18 +116,21 @@ public class MainActivity extends BaseActivity {
     }
 
     private void setupFabInsets() {
-        // Базовый отступ FAB над bottom nav bar (56dp) — такой же, как paddingBottom в LinearLayout
-        final int baseMarginDp = 72;
-        final float density = getResources().getDisplayMetrics().density;
-        final int baseMarginPx = (int) (baseMarginDp * density);
+        // Базовый отступ FAB над bottom nav bar (72dp из XML).
+        // Читаем высоту системной навигации через getRootWindowInsets в post() —
+        // не трогая fitsSystemWindows, чтобы не сломать отступы bottom nav bar.
+        final int baseMarginPx = (int) (72 * getResources().getDisplayMetrics().density);
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.fab, (v, insets) -> {
-            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+        binding.fab.post(() -> {
+            int navBarHeight = 0;
+            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(binding.fab);
+            if (insets != null) {
+                navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            }
             androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams params =
-                    (androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) v.getLayoutParams();
+                    (androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) binding.fab.getLayoutParams();
             params.bottomMargin = baseMarginPx + navBarHeight;
-            v.setLayoutParams(params);
-            return insets;
+            binding.fab.setLayoutParams(params);
         });
     }
 
