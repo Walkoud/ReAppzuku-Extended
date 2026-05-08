@@ -20,9 +20,6 @@ import android.util.Log;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-import androidx.lifecycle.DefaultLifecycleObserver;
-import androidx.lifecycle.LifecycleOwner;
-import androidx.lifecycle.ProcessLifecycleOwner;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -87,7 +84,7 @@ public class UpdateChecker {
      */
     public static void checkForUpdatesAuto(Context context) {
         // ① Guard: only run when app is on screen
-        if (!isAppInForeground()) {
+        if (!isAppInForeground(context)) {
             Log.d(TAG, "Auto-check skipped: app is in background");
             return;
         }
@@ -157,21 +154,20 @@ public class UpdateChecker {
     // ── Internal helpers ───────────────────────────────────────────────────────
 
     /**
-     * Returns true if the app process currently has at least one Activity
-     * in the STARTED state (i.e. visible on screen).
-     * Uses ProcessLifecycleOwner — available from androidx.lifecycle:lifecycle-process.
+     * Returns true if this app's process is currently in the foreground
+     * (i.e. visible on screen). Uses ActivityManager — no extra dependencies.
      */
-    private static boolean isAppInForeground() {
-        try {
-            return ProcessLifecycleOwner.get()
-                    .getLifecycle()
-                    .getCurrentState()
-                    .isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED);
-        } catch (Exception e) {
-            // ProcessLifecycleOwner not initialised yet — treat as background
-            Log.w(TAG, "Could not determine foreground state, assuming background", e);
-            return false;
+    private static boolean isAppInForeground(Context context) {
+        android.app.ActivityManager am =
+                (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) return false;
+        for (android.app.ActivityManager.RunningAppProcessInfo proc : am.getRunningAppProcesses()) {
+            if (proc.processName.equals(context.getPackageName())) {
+                return proc.importance ==
+                        android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+            }
         }
+        return false;
     }
 
     /**
