@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="?android:attr/colorBackground">
+
+    <EditText
+        android:id="@+id/filter_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/main_search_hint"
+        android:inputType="text"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="8dp"
+        android:padding="12dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/search_background"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_secondary"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/filter_options_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp">
+
+        <CheckBox
+            android:id="@+id/filter_chk_system"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/filter_system"
+            android:textColor="@color/text_primary"
+            android:checked="false" />
+
+        <CheckBox
+            android:id="@+id/filter_chk_user"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/filter_user"
+            android:textColor="@color/text_primary"
+            android:checked="true" />
+
+        <CheckBox
+            android:id="@+id/filter_chk_running"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/filter_running"
+            android:textColor="@color/text_primary"
+            android:checked="false" />
+
+        <TextView
+            android:id="@+id/filter_btn_clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/filter_clear"
+            android:textColor="@color/colorAccent"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:gravity="center"
+            android:foreground="?attr/selectableItemBackground" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/filter_loading_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="visible" />
+
+    <ListView
+        android:id="@+id/filter_list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+</LinearLayout>

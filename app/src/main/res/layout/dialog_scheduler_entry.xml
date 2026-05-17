@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    dialog_scheduler_entry.xml
+    Диалог создания/редактирования расписания для конкретного приложения.
+
+    Секции:
+      1. Ограничения (3 чекбокса)
+      2. Временной диапазон (2 кнопки — TimePickerDialog)
+      3. Действие при снятии ограничений (RadioGroup)
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp">
+
+        <!-- ══════════════════════════════════════════
+             Секция 1: Ограничения
+             ══════════════════════════════════════════ -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="@string/scheduler_section_restrictions"
+            android:textAppearance="?attr/textAppearanceSubtitle2"
+            android:textStyle="bold" />
+
+        <CheckBox
+            android:id="@+id/scheduler_cb_autokill"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/scheduler_protect_auto_kill" />
+
+        <CheckBox
+            android:id="@+id/scheduler_cb_bg"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/scheduler_protect_bg_restrictions" />
+
+        <CheckBox
+            android:id="@+id/scheduler_cb_sleep"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/scheduler_protect_sleep_mode" />
+
+        <!-- Разделитель -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="?attr/dividerHorizontal" />
+
+        <!-- ══════════════════════════════════════════
+             Секция 2: Временной диапазон
+             ══════════════════════════════════════════ -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/scheduler_section_time_window"
+            android:textAppearance="?attr/textAppearanceSubtitle2"
+            android:textStyle="bold" />
+
+        <!-- Строка "С" -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/scheduler_time_from"
+                android:textAppearance="?attr/textAppearanceBody2" />
+
+            <TextView
+                android:id="@+id/scheduler_btn_time_from"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:textColor="@color/dialog_button_text" />
+
+        </LinearLayout>
+
+        <!-- Строка "По" -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/scheduler_time_to"
+                android:textAppearance="?attr/textAppearanceBody2" />
+
+            <TextView
+                android:id="@+id/scheduler_btn_time_to"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:textColor="@color/dialog_button_text" />
+
+        </LinearLayout>
+
+        <!-- Разделитель -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp"
+            android:background="?attr/dividerHorizontal" />
+
+        <!-- ══════════════════════════════════════════
+             Секция 3: Действие при снятии ограничений
+             ══════════════════════════════════════════ -->
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="@string/scheduler_section_on_activate"
+            android:textAppearance="?attr/textAppearanceSubtitle2"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/scheduler_rg_action"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <RadioButton
+                android:id="@+id/scheduler_rb_none"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/scheduler_action_none" />
+
+            <RadioButton
+                android:id="@+id/scheduler_rb_launch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/scheduler_action_launch_component" />
+
+        </RadioGroup>
+
+        <!-- Выбор компонента — видно только когда выбран scheduler_rb_launch -->
+        <LinearLayout
+            android:id="@+id/scheduler_component_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/scheduler_component_label"
+                android:textAppearance="?attr/textAppearanceBody2" />
+
+            <TextView
+                android:id="@+id/scheduler_btn_component"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:textAppearance="?attr/textAppearanceBody1"
+                android:textColor="@color/dialog_button_text"
+                android:text="@string/scheduler_component_not_selected" />
+
+        </LinearLayout>
+
+        <!-- Нижний отступ -->
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="8dp" />
+
+    </LinearLayout>
+</ScrollView>
