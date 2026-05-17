@@ -10,34 +10,12 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Analyzes why a specific app is running in the background.
- * Uses shell commands via ShellManager (Root or Shizuku).
- *
- * All methods are blocking — call only from a background thread.
- * Every individual analysis is wrapped in try/catch so one failure
- * never aborts the whole run.
- */
 public class AppTriggersAnalyzer {
 
     private static final String TAG = "AppTriggersAnalyzer";
 
-    // =========================================================================
-    // TriggerInfo
-    // =========================================================================
-
     public static final class TriggerInfo {
 
-        /**
-         * Broad category used by the UI to group results into three sections:
-         *
-         * ACTIVE_NOW — app is held in memory right now
-         *              (FG service, WakeLock, active TCP, sensor, location…)
-         * CAN_WAKE   — system can wake the app at any moment
-         *              (alarm, job, pending intent, push…)
-         * OTHER      — passive / informational
-         *              (broadcast receivers, standby bucket, boot receiver…)
-         */
         public enum Group { ACTIVE_NOW, CAN_WAKE, OTHER }
 
         public enum Severity { HIGH, MEDIUM, LOW, INFO }
@@ -57,21 +35,15 @@ public class AppTriggersAnalyzer {
             this.severity    = severity;
         }
 
-        /** Backward-compat ctor — defaults group to OTHER. */
         public TriggerInfo(String category, String detail,
                            String explanation, Severity severity) {
             this(Group.OTHER, category, detail, explanation, severity);
         }
     }
 
-    // =========================================================================
-    // Fields
-    // =========================================================================
-
     private final ShellManager   shellManager;
     private final Context        context;
 
-    /** UID cached once per analyze() call. */
     private String cachedUid = null;
 
     public AppTriggersAnalyzer(Context context, ShellManager shellManager) {
@@ -79,16 +51,11 @@ public class AppTriggersAnalyzer {
         this.shellManager   = shellManager;
     }
 
-    // =========================================================================
-    // Public entry point
-    // =========================================================================
-
     public List<TriggerInfo> analyze(String packageName) {
         cachedUid = resolveUid(packageName);
 
         List<TriggerInfo> results = new ArrayList<>();
 
-        // ── ACTIVE_NOW ──────────────────────────────────────────────────────
         safeAdd(results, () -> analyzeProcessState(packageName));
         safeAdd(results, () -> analyzeServicesAndBindings(packageName));
         safeAdd(results, () -> analyzeFgNotification(packageName));
@@ -99,7 +66,6 @@ public class AppTriggersAnalyzer {
         safeAdd(results, () -> analyzeAudioFocus(packageName));
         safeAdd(results, () -> analyzeBluetooth(packageName));
 
-        // ── CAN_WAKE ────────────────────────────────────────────────────────
         safeAdd(results, () -> analyzeAlarms(packageName));
         safeAdd(results, () -> analyzeJobs(packageName));
         safeAdd(results, () -> analyzePendingIntents(packageName));
@@ -108,7 +74,6 @@ public class AppTriggersAnalyzer {
         safeAdd(results, () -> analyzeFcmRegistration(packageName));
         safeAdd(results, () -> analyzeAppOps(packageName));
 
-        // ── OTHER ───────────────────────────────────────────────────────────
         safeAdd(results, () -> analyzeChainLaunch(packageName));
         safeAdd(results, () -> analyzeBroadcastReceivers(packageName));
         safeAdd(results, () -> analyzeBootReceivers(packageName));
@@ -134,26 +99,12 @@ public class AppTriggersAnalyzer {
         return results;
     }
 
-    // =========================================================================
-    // App Status
-    // =========================================================================
-
     public enum AppStatus { ACTIVE, BACKGROUND, CACHED }
 
-    /**
-     * Resolves the actual process status directly from dumpsys activity processes.
-     * Returns null if the process is not found or dumpsys is unavailable —
-     * caller should hide the status label in that case.
-     *
-     * Blocking — call only from a background thread.
-     */
     public AppStatus resolveAppStatus(String packageName) {
         Log.d(TAG, "resolveAppStatus: start pkg=" + packageName);
         try {
-            // Step 1: find PID via ps.
-            // ps -eo pid,name lists all processes; grep narrows to lines containing packageName.
-            // A package may have multiple processes (e.g. pkg:service) — we take the first/main one.
-            // Format: "  1234 com.example.app" or "  1234 com.example.app:remote"
+
             String psOutput = shellManager.runShellCommandAndGetFullOutput(
                     "ps -eo pid,name | grep " + packageName);
             Log.d(TAG, "resolveAppStatus: ps output=" + (psOutput != null ? psOutput.trim() : "null"));
@@ -163,17 +114,16 @@ public class AppTriggersAnalyzer {
                 return null;
             }
 
-            // Pick the main process line: prefer exact package name match over "pkg:something"
             String pid = null;
             for (String line : psOutput.trim().split("\n")) {
                 String[] parts = line.trim().split("\\s+");
                 if (parts.length < 2) continue;
                 if (parts[1].equals(packageName)) {
-                    pid = parts[0]; // exact match — stop immediately
+                    pid = parts[0];
                     break;
                 }
                 if (pid == null && parts[1].startsWith(packageName)) {
-                    pid = parts[0]; // fallback: pkg:service or similar
+                    pid = parts[0];
                 }
             }
 
@@ -182,19 +132,12 @@ public class AppTriggersAnalyzer {
                 return null;
             }
 
-            // Step 2: read /proc/<pid>/oom_score_adj — Linux kernel file, stable across all ROMs.
-            // Values defined in Android's lmkd / ProcessList:
-            //   <= 0           PERSISTENT or foreground (system keeps alive)
-            //   1 .. 224       visible / perceptible                    → ACTIVE
-            //   225 .. 499     background service / receiver            → BACKGROUND
-            //   500 .. 999     cached (activity or empty)               → CACHED
-            //   1000           scheduled for immediate kill             → CACHED
             String adjStr = shellManager.runShellCommandAndGetFullOutput(
                     "cat /proc/" + pid + "/oom_score_adj");
             Log.d(TAG, "resolveAppStatus: pid=" + pid + " oom_score_adj=" + (adjStr != null ? adjStr.trim() : "null"));
 
             if (adjStr == null || adjStr.trim().isEmpty()) {
-                // Process disappeared between ps and cat — treat as not running
+
                 Log.d(TAG, "resolveAppStatus: result=null (oom_score_adj unreadable)");
                 return null;
             }
@@ -221,10 +164,6 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    // =========================================================================
-    // Safety wrapper
-    // =========================================================================
-
     private interface Analyzer { List<TriggerInfo> run() throws Exception; }
 
     private void safeAdd(List<TriggerInfo> out, Analyzer a) {
@@ -235,15 +174,6 @@ public class AppTriggersAnalyzer {
             Log.w(TAG, "analyzer failed: " + e.getMessage());
         }
     }
-
-    // =========================================================================
-    // ACTIVE_NOW
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // Process State
-    // dumpsys activity processes → adj + curProcState for our package
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeProcessState(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -336,11 +266,6 @@ public class AppTriggersAnalyzer {
         return "Cached";
     }
 
-    // -------------------------------------------------------------------------
-    // Services + Bindings
-    // Foreground type (bitmask → readable), killable flag, notification channel
-    // -------------------------------------------------------------------------
-
     private static final Pattern[] BINDER_PATS = {
             Pattern.compile("ProcessRecord\\{[^}]+\\s([\\w.]+)/"),
             Pattern.compile("client=ProcessRecord\\{[^}]+\\s([\\w.]+)/")
@@ -389,7 +314,7 @@ public class AppTriggersAnalyzer {
             Matcher mImp = Pattern.compile("importance=(\\d+)").matcher(t);
             if (mImp.find()) notifImport = mapNotifImportance(Integer.parseInt(mImp.group(1)));
 
-            // Foreground service
+
             if (t.contains("isForeground=true")) {
                 String svcName = currentSvc != null ? currentSvc : packageName;
                 StringBuilder detail = new StringBuilder(svcName);
@@ -407,7 +332,7 @@ public class AppTriggersAnalyzer {
                         TriggerInfo.Severity.HIGH));
             }
 
-            // Sticky (START_STICKY without foreground)
+
             if ((t.contains("START_STICKY") || t.contains("startRequested=true"))
                     && !t.contains("isForeground=true")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
@@ -417,7 +342,7 @@ public class AppTriggersAnalyzer {
                         TriggerInfo.Severity.HIGH));
             }
 
-            // Binders
+
             for (Pattern bp : BINDER_PATS) {
                 Matcher m = bp.matcher(t);
                 if (m.find()) {
@@ -484,23 +409,13 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // WakeLocks (УЛУЧШЕНО)
-    //
-    // Стратегия поиска:
-    //  1. dumpsys power → "Wake Locks:" блок.
-    //     Матчим по uid= ИЛИ по тегу, содержащему packageName
-    //     (system-процессы могут держать wakelock от имени нашего приложения).
-    //  2. Fallback → dumpsys batterystats (история, если активных нет).
-    // -------------------------------------------------------------------------
-
     private List<TriggerInfo> analyzeWakelocks(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
         String powerOutput = shellManager.runShellCommandAndGetFullOutput("dumpsys power");
         if (powerOutput == null || powerOutput.trim().isEmpty()) return list;
 
-        // Extract "Wake Locks:" section
+
         StringBuilder wlBlock = new StringBuilder();
         boolean inSection = false;
         for (String line : powerOutput.split("\n")) {
@@ -522,7 +437,7 @@ public class AppTriggersAnalyzer {
                 boolean byTag = line.contains(packageName);
                 if (!byUid && !byTag) continue;
 
-                // Type
+
                 String typeLabel, typeExplain;
                 if      (line.contains("PARTIAL"))      { typeLabel="Partial";   typeExplain=context.getString(R.string.triggers_wakelock_partial_explain); }
                 else if (line.contains("FULL"))         { typeLabel="Full";      typeExplain=context.getString(R.string.triggers_wakelock_full_explain); }
@@ -530,12 +445,12 @@ public class AppTriggersAnalyzer {
                 else if (line.contains("PROXIMITY"))    { typeLabel="Proximity"; typeExplain=context.getString(R.string.triggers_wakelock_proximity_explain); }
                 else                                    { typeLabel="WakeLock";  typeExplain=context.getString(R.string.triggers_wakelock_generic_explain); }
 
-                // Tag
+
                 String tag = "";
                 Matcher mTag = tagPat.matcher(line);
                 if (mTag.find()) tag = mTag.group(1);
 
-                // Held duration
+
                 String heldStr = "";
                 Matcher mHeldMs = heldMsPat.matcher(line);
                 if (mHeldMs.find()) {
@@ -545,7 +460,7 @@ public class AppTriggersAnalyzer {
                     if (mLeg.find()) heldStr = mLeg.group(1);
                 }
 
-                // Acquire / Release counters
+
                 String acqRel = "";
                 Matcher mAcq = acquirePat.matcher(line);
                 Matcher mRel = releasePat.matcher(line);
@@ -562,7 +477,7 @@ public class AppTriggersAnalyzer {
                 if (!heldStr.isEmpty()) detail.append(" · ")
                         .append(context.getString(R.string.triggers_wakelock_detail_held, heldStr));
                 if (!acqRel.isEmpty())  detail.append(" · ").append(acqRel);
-                // Held by system on behalf of our app
+
                 if (byTag && !byUid)
                     detail.append(" ").append(context.getString(R.string.triggers_wakelock_held_by_system));
 
@@ -574,7 +489,6 @@ public class AppTriggersAnalyzer {
             }
         }
 
-        // Fallback: batterystats history
         if (list.isEmpty()) {
             String bsOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys batterystats " + packageName);
@@ -602,16 +516,12 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Network Activity (УЛУЧШЕНО: явные ESTABLISHED-соединения с адресами)
-    // -------------------------------------------------------------------------
-
     private List<TriggerInfo> analyzeNetworkActivity(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         String uid = cachedUid;
         if (uid == null) return list;
 
-        // Traffic counters
+
         long rxBytes = 0, txBytes = 0;
         String netstats = null;
         try {
@@ -628,9 +538,6 @@ public class AppTriggersAnalyzer {
             while (mTx.find()) txBytes += Long.parseLong(mTx.group(1));
         }
 
-        // Active TCP connections from /proc/net/tcp + tcp6
-        // Column layout: sl local_addr rem_addr state tx_queue:rx_queue ... uid
-        // state=01 → ESTABLISHED
         List<String> established = new ArrayList<>();
         for (String procFile : new String[]{"tcp6", "tcp"}) {
             try {
@@ -640,7 +547,7 @@ public class AppTriggersAnalyzer {
                 for (String line : raw.split("\n")) {
                     String[] cols = line.trim().split("\\s+");
                     if (cols.length < 4) continue;
-                    if (!"01".equals(cols[3])) continue;             // ESTABLISHED only
+                    if (!"01".equals(cols[3])) continue;
                     String remote = hexToAddress(cols.length > 2 ? cols[2] : "", procFile.equals("tcp6"));
                     if (!established.contains(remote) && established.size() < 5)
                         established.add(remote);
@@ -688,10 +595,6 @@ public class AppTriggersAnalyzer {
         } catch (Exception e) { return hex; }
     }
 
-    // -------------------------------------------------------------------------
-    // Sensors (УЛУЧШЕНО: два источника — sensorservice + batterystats fallback)
-    // -------------------------------------------------------------------------
-
     private List<TriggerInfo> analyzeSensors(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
@@ -721,7 +624,7 @@ public class AppTriggersAnalyzer {
 
         for (String line : output.split("\n")) {
             String t = line.trim();
-            // New connection block
+
             if (t.startsWith("Connection Number:") || t.startsWith("Active connections")) {
                 if (relevant && !found.isEmpty())
                     for (String s : found) if (!result.contains(s)) result.add(s);
@@ -730,17 +633,13 @@ public class AppTriggersAnalyzer {
             }
             if (!inConn) continue;
 
-            // Package identification — multiple ROM formats
+
             if (t.startsWith("packageName=") || t.startsWith("package=")
                     || t.startsWith("Identity="))
                 relevant = t.contains(packageName);
 
             if (!relevant) continue;
 
-            // Sensor line formats vary across ROMs and Android versions:
-            //   "Sensor: Accelerometer  samplingPeriod: 10000us"
-            //   "sensor=android.sensor.accelerometer rate=100hz"
-            //   "SensorName=Accelerometer Handle=1"
             if (t.startsWith("Sensor:") || t.startsWith("SensorName=")
                     || t.startsWith("sensor=")) {
                 String raw = t.replaceFirst("(?:Sensor:|SensorName=|sensor=)\\s*", "");
@@ -828,10 +727,6 @@ public class AppTriggersAnalyzer {
         return raw.length() > 20 ? raw.substring(0, 20) : raw;
     }
 
-    // -------------------------------------------------------------------------
-    // Location Requests
-    // -------------------------------------------------------------------------
-
     private List<TriggerInfo> analyzeLocationRequests(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         String output = shellManager.runShellCommandAndGetFullOutput("dumpsys location");
@@ -905,14 +800,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // =========================================================================
-    // CAN_WAKE
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // Alarms (УЛУЧШЕНО: breakdown + fallback + корректный Elapsed-realtime)
-    // -------------------------------------------------------------------------
-
     private List<TriggerInfo> analyzeAlarms(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         String output = shellManager.runShellCommandAndGetFullOutput("dumpsys alarm");
@@ -926,82 +813,172 @@ public class AppTriggersAnalyzer {
         long nowMs  = System.currentTimeMillis();
         long bootMs = nowMs - android.os.SystemClock.elapsedRealtime();
 
-        Pattern ivPat   = Pattern.compile("interval=(\\d+)");
-        Pattern whenPat = Pattern.compile("\\bwhen=(-?\\d+)");
-        Pattern elPat   = Pattern.compile("whenElapsed=(\\d+)");
-        Pattern winPat  = Pattern.compile("window=(-?\\d+)");
-        Pattern flgPat  = Pattern.compile("flgs=0x([0-9a-fA-F]+)");
 
-        for (String line : output.split("\n")) {
-            if (!line.contains(packageName)) continue;
+        List<String> alarmEntries = new ArrayList<>();
 
-            try {
-                boolean isWakeup = line.contains("RTC_WAKEUP") || line.contains("ELAPSED_WAKEUP")
-                        || line.contains("*walarm*");
-                if (isWakeup) wakeupCount++; else normalCount++;
+        Pattern ivPat    = Pattern.compile("interval=(\\d+)");
+        Pattern whenPat  = Pattern.compile("\\bwhen=(-?\\d+)");
 
-                if (line.contains("AlarmClock") || line.contains("ALARM_CLOCK")) clockCount++;
+        Pattern elNumPat = Pattern.compile("whenElapsed=(\\d{6,})");
 
-                Matcher mFlg = flgPat.matcher(line);
-                if (mFlg.find() && ((int) Long.parseLong(mFlg.group(1), 16) & 0xC) != 0) awIdle++;
+        Pattern elHrPat  = Pattern.compile("whenElapsed=\\+((?:(\\d+)h)?(?:(\\d+)m)?(\\d+)s)");
+        Pattern winPat   = Pattern.compile("window=(-?\\d+)");
+        Pattern flgPat   = Pattern.compile("flgs=0x([0-9a-fA-F]+)");
 
-                Matcher mWin = winPat.matcher(line);
-                if (mWin.find()) {
-                    if (Long.parseLong(mWin.group(1)) < 0) exactCount++; else inexactCount++;
-                } else {
-                    inexactCount++;
+        Pattern typePat  = Pattern.compile("^\\s*(RTC_WAKEUP|RTC|ELAPSED_WAKEUP|ELAPSED)\\s+#\\d+");
+        Pattern tagPat   = Pattern.compile("\\btag=([^\\s,]+)");
+
+
+        String  curType     = null;
+        String  curTag      = null;
+        boolean curIsWakeup = false;
+        long    curFireDiff = Long.MAX_VALUE;
+        long    curInterval = 0;
+        boolean curExact    = false;
+        boolean curWhileIdle= false;
+
+        String[] lines = output.split("\n");
+
+        for (String line : lines) {
+            String t = line.trim();
+
+            Matcher mType = typePat.matcher(line);
+            if (mType.find()) {
+                if (curType != null && curTag != null && curTag.contains(packageName)) {
+                    commitAlarmEntry(alarmEntries, curType, curTag, curFireDiff,
+                            curInterval, curExact, curWhileIdle, packageName);
+                    if (curIsWakeup) wakeupCount++; else normalCount++;
+                    if (curTag.contains("AlarmClock") || curTag.contains("ALARM_CLOCK")) clockCount++;
+                    if (curWhileIdle) awIdle++;
+                    if (curExact) exactCount++; else inexactCount++;
+                    if (curInterval > 0) {
+                        if (curInterval < minInterval) minInterval = curInterval;
+                        sumInterval += curInterval; intervalSamples++;
+                    }
+                    if (curFireDiff != Long.MAX_VALUE && curFireDiff < minTriggerDiff)
+                        minTriggerDiff = curFireDiff;
                 }
+                curType      = mType.group(1);
+                curTag       = null;
+                curIsWakeup  = curType.contains("WAKEUP");
+                curFireDiff  = Long.MAX_VALUE;
+                curInterval  = 0;
+                curExact     = false;
+                curWhileIdle = false;
+                continue;
+            }
 
-                Matcher mIv = ivPat.matcher(line);
-                if (mIv.find()) {
-                    long iv = Long.parseLong(mIv.group(1));
-                    if (iv > 0) { if(iv<minInterval) minInterval=iv; sumInterval+=iv; intervalSamples++; }
-                }
+            if (curType == null) continue;
 
-                Matcher mWhen = whenPat.matcher(line);
-                if (mWhen.find()) {
-                    long when = Long.parseLong(mWhen.group(1));
-                    long diff = when > 1_000_000_000_000L ? when - nowMs : bootMs + when - nowMs;
-                    if (diff > 0 && diff < minTriggerDiff) minTriggerDiff = diff;
+            if (curTag == null) {
+                Matcher mTag = tagPat.matcher(t);
+                if (mTag.find()) curTag = mTag.group(1);
+            }
+
+            if (curFireDiff == Long.MAX_VALUE) {
+                Matcher mHr = elHrPat.matcher(t);
+                if (mHr.find()) {
+                    long ms = 0;
+                    if (mHr.group(2) != null) ms += Long.parseLong(mHr.group(2)) * 3600_000L;
+                    if (mHr.group(3) != null) ms += Long.parseLong(mHr.group(3)) * 60_000L;
+                    ms += Long.parseLong(mHr.group(4)) * 1000L;
+                    curFireDiff = ms;
                 } else {
-                    Matcher mEl = elPat.matcher(line);
+                    Matcher mEl = elNumPat.matcher(t);
                     if (mEl.find()) {
                         long diff = bootMs + Long.parseLong(mEl.group(1)) - nowMs;
-                        if (diff > 0 && diff < minTriggerDiff) minTriggerDiff = diff;
+                        if (diff > 0) curFireDiff = diff;
+                    } else {
+                        Matcher mW = whenPat.matcher(t);
+                        if (mW.find()) {
+                            long when = Long.parseLong(mW.group(1));
+                            long diff = when > 1_000_000_000_000L ? when - nowMs : bootMs + when - nowMs;
+                            if (diff > 0) curFireDiff = diff;
+                        }
                     }
                 }
-            } catch (Exception e) { Log.w(TAG, "analyzeAlarms line parse failed: " + e.getMessage()); }
+            }
+
+            Matcher mWin = winPat.matcher(t);
+            if (mWin.find()) curExact = Long.parseLong(mWin.group(1)) < 0;
+
+            Matcher mIv = ivPat.matcher(t);
+            if (mIv.find() && curInterval == 0) curInterval = Long.parseLong(mIv.group(1));
+
+            Matcher mFlg = flgPat.matcher(t);
+            if (mFlg.find() && ((int) Long.parseLong(mFlg.group(1), 16) & 0xC) != 0)
+                curWhileIdle = true;
+            if (t.contains("ALLOW_WHILE_IDLE") || t.contains("allowWhileIdle=true"))
+                curWhileIdle = true;
+        }
+
+        if (curType != null && curTag != null && curTag.contains(packageName)) {
+            commitAlarmEntry(alarmEntries, curType, curTag, curFireDiff,
+                    curInterval, curExact, curWhileIdle, packageName);
+            if (curIsWakeup) wakeupCount++; else normalCount++;
+            if (curTag.contains("AlarmClock") || curTag.contains("ALARM_CLOCK")) clockCount++;
+            if (curWhileIdle) awIdle++;
+            if (curExact) exactCount++; else inexactCount++;
+            if (curInterval > 0) {
+                if (curInterval < minInterval) minInterval = curInterval;
+                sumInterval += curInterval; intervalSamples++;
+            }
+            if (curFireDiff != Long.MAX_VALUE && curFireDiff < minTriggerDiff)
+                minTriggerDiff = curFireDiff;
+        }
+
+        List<String> topAlarmLines = new ArrayList<>();
+        boolean inTopAlarms = false;
+        Pattern topEntryPat = Pattern.compile(
+                "(\\S+)\\s+running,\\s*(\\d+)\\s+wakeups?,\\s*(\\d+)\\s+alarms?:\\s*\\d+:([\\w.]+)\\s+tag=(\\S+)");
+        for (String line : lines) {
+            String t = line.trim();
+            if (t.startsWith("Top Alarms:") || t.startsWith("Top alarm senders:"))
+                { inTopAlarms = true; continue; }
+            if (inTopAlarms && (t.isEmpty() || (t.endsWith(":") && !t.startsWith("+"))))
+                { inTopAlarms = false; continue; }
+            if (!inTopAlarms) continue;
+            Matcher m = topEntryPat.matcher(t);
+            if (!m.find()) continue;
+            if (!m.group(4).equals(packageName)) continue;
+            String shortTag = m.group(5)
+                    .replaceAll("^\\*[^*]+\\*/", "")
+                    .replaceAll(".*\\.([^.]+)$", "$1");
+            topAlarmLines.add(shortTag + ":" + m.group(2) + "×wakeup/" + m.group(1));
+            if (topAlarmLines.size() >= 3) break;
         }
 
         int total = wakeupCount + normalCount;
-        if (total == 0) return list;
+        if (total == 0 && topAlarmLines.isEmpty()) return list;
 
         StringBuilder detail = new StringBuilder();
-        boolean hasBreakdown = (exactCount + inexactCount + awIdle + clockCount) > 0;
-        if (hasBreakdown) {
-            if (exactCount  > 0) detail.append(context.getString(R.string.triggers_alarms_exact,      exactCount));
-            if (inexactCount> 0) { if(detail.length()>0) detail.append(", ");
-                                   detail.append(context.getString(R.string.triggers_alarms_inexact,   inexactCount)); }
-            if (awIdle      > 0) { if(detail.length()>0) detail.append(", ");
-                                   detail.append(context.getString(R.string.triggers_alarms_while_idle, awIdle)); }
-            if (clockCount  > 0) { if(detail.length()>0) detail.append(", ");
-                                   detail.append(context.getString(R.string.triggers_alarms_clock,     clockCount)); }
+        if (!alarmEntries.isEmpty()) {
+            detail.append(String.join("\n", alarmEntries));
         } else {
-            // Fallback: просто тип + счёт
-            if (wakeupCount > 0) detail.append(context.getString(R.string.triggers_alarms_wakeup_count, wakeupCount));
-            if (normalCount > 0) { if(detail.length()>0) detail.append(", ");
-                                   detail.append(context.getString(R.string.triggers_alarms_normal_count, normalCount)); }
+            if (exactCount   > 0) detail.append(context.getString(R.string.triggers_alarms_exact,      exactCount));
+            if (inexactCount > 0) { if(detail.length()>0) detail.append(", ");
+                detail.append(context.getString(R.string.triggers_alarms_inexact, inexactCount)); }
+            if (awIdle       > 0) { if(detail.length()>0) detail.append(", ");
+                detail.append(context.getString(R.string.triggers_alarms_while_idle, awIdle)); }
+            if (clockCount   > 0) { if(detail.length()>0) detail.append(", ");
+                detail.append(context.getString(R.string.triggers_alarms_clock, clockCount)); }
+            if (wakeupCount  > 0 && detail.length() == 0)
+                detail.append(context.getString(R.string.triggers_alarms_wakeup_count, wakeupCount));
+            if (normalCount  > 0 && wakeupCount == 0)
+                detail.append(context.getString(R.string.triggers_alarms_normal_count, normalCount));
         }
         if (minTriggerDiff != Long.MAX_VALUE)
             detail.append(context.getString(R.string.triggers_alarms_next, formatInterval(minTriggerDiff)));
         if (intervalSamples > 0)
             detail.append(context.getString(R.string.triggers_alarms_avg_interval,
                     formatInterval(sumInterval / intervalSamples)));
+        if (!topAlarmLines.isEmpty())
+            detail.append("\nTop: ").append(String.join(", ", topAlarmLines));
 
         StringBuilder expl = new StringBuilder();
         if (wakeupCount > 0) {
             expl.append(context.getString(R.string.triggers_alarms_wakeup_explanation));
-            if (minInterval < 60_000)  expl.append(context.getString(R.string.triggers_alarms_wakeup_aggressive));
+            if (minInterval < 60_000)       expl.append(context.getString(R.string.triggers_alarms_wakeup_aggressive));
             else if (minInterval < 300_000) expl.append(context.getString(R.string.triggers_alarms_wakeup_frequent));
         } else {
             expl.append(context.getString(R.string.triggers_alarms_normal_explanation));
@@ -1019,18 +996,39 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Jobs / WorkManager
-    // -------------------------------------------------------------------------
+    private void commitAlarmEntry(List<String> entries, String type, String tag,
+            long fireDiffMs, long intervalMs, boolean exact, boolean whileIdle,
+            String packageName) {
+        if (entries.size() >= 5) return;
+        StringBuilder sb = new StringBuilder();
+        switch (type) {
+            case "RTC_WAKEUP":     sb.append("RTC_WU"); break;
+            case "ELAPSED_WAKEUP": sb.append("EL_WU");  break;
+            case "RTC":            sb.append("RTC");     break;
+            default:               sb.append("ELAPSED"); break;
+        }
+        String shortTag = tag;
+        if (shortTag.startsWith("*") && shortTag.contains("/"))
+            shortTag = shortTag.substring(shortTag.indexOf('/') + 1);
+        if (shortTag.startsWith(packageName + "/"))
+            shortTag = shortTag.substring(packageName.length() + 1);
+        if (shortTag.startsWith(packageName + "."))
+            shortTag = shortTag.substring(packageName.length() + 1);
+        if (shortTag.startsWith("."))
+            shortTag = shortTag.substring(1);
+        if (shortTag.length() > 40 && shortTag.contains("."))
+            shortTag = shortTag.substring(shortTag.lastIndexOf('.') + 1);
+        sb.append(" · ").append(shortTag);
+        if (fireDiffMs != Long.MAX_VALUE) sb.append(" · in ").append(formatInterval(fireDiffMs));
+        if (intervalMs > 0)              sb.append(" · every ").append(formatInterval(intervalMs));
+        if (exact)                        sb.append(" · exact");
+        if (whileIdle)                    sb.append(" · while-idle");
+        entries.add(sb.toString());
+    }
 
     private List<TriggerInfo> analyzeJobs(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
-        // Primary: dumpsys jobscheduler
-        // Section headers vary across Android versions and ROMs:
-        //   Android 8-11:  "Pending queue:" / "Active jobs:" / "Past jobs:"
-        //   Android 12+:   "Pending:" / "Running:" / "History:"
-        //   Samsung One UI: may use "JobScheduler pending jobs:" etc.
         try {
             String output = shellManager.runShellCommandAndGetFullOutput("dumpsys jobscheduler");
             if (output != null && !output.trim().isEmpty()) {
@@ -1042,7 +1040,6 @@ public class AppTriggersAnalyzer {
 
                 for (String line : output.split("\n")) {
                     String t = line.trim();
-                    // Section detection — cover AOSP + Android 12+ + vendor variants
                     if (t.startsWith("Pending queue:") || t.startsWith("Pending:")
                             || t.startsWith("JobScheduler pending")) {
                         inPending=true; inRunning=false; inPast=false; continue;
@@ -1106,24 +1103,57 @@ public class AppTriggersAnalyzer {
 
     private String parseJobBlock(String block) {
         List<String> parts = new ArrayList<>();
+
+        boolean isWm = block.contains("WorkManager") || block.contains("androidx.work");
+
+
         Matcher mNet = Pattern.compile("required-network-type=([\\w_]+)").matcher(block);
         if (!mNet.find()) mNet = Pattern.compile("networkType=([\\w_]+)").matcher(block);
         if (mNet.find()) parts.add("net:" + mNet.group(1));
-        if (block.contains("charging=true")         || block.contains("requireCharging=true"))    parts.add("charging");
-        if (block.contains("idle=true")             || block.contains("requireDeviceIdle=true"))  parts.add("idle");
-        if (block.contains("battery-not-low=true"))                                               parts.add("!batt-low");
+
+
+        if (block.contains("charging=true")        || block.contains("requireCharging=true"))   parts.add("charging");
+        if (block.contains("idle=true")            || block.contains("requireDeviceIdle=true"))  parts.add("idle");
+        if (block.contains("battery-not-low=true"))                                              parts.add("!batt-low");
+
+        Matcher mPeriodHr = Pattern.compile(
+                "period=\\+((?:(\\d+)h)?(?:(\\d+)m)?(\\d+)s)").matcher(block);
+        Matcher mPeriodMs = Pattern.compile("periodMs=(\\d+)").matcher(block);
+        if (mPeriodHr.find()) {
+            long ms = 0;
+            if (mPeriodHr.group(2) != null) ms += Long.parseLong(mPeriodHr.group(2)) * 3600_000L;
+            if (mPeriodHr.group(3) != null) ms += Long.parseLong(mPeriodHr.group(3)) * 60_000L;
+            ms += Long.parseLong(mPeriodHr.group(4)) * 1000L;
+            if (ms > 0) parts.add("every " + formatInterval(ms));
+        } else if (mPeriodMs.find()) {
+            long ms = Long.parseLong(mPeriodMs.group(1));
+            if (ms > 0) parts.add("every " + formatInterval(ms));
+        }
+
+        Matcher mLastRun = Pattern.compile(
+                "(?:last-run|lastRunTime)=elapsed-((?:(\\d+)h)?(?:(\\d+)m)?(\\d+)s)").matcher(block);
+        if (mLastRun.find()) {
+            long ms = 0;
+            if (mLastRun.group(2) != null) ms += Long.parseLong(mLastRun.group(2)) * 3600_000L;
+            if (mLastRun.group(3) != null) ms += Long.parseLong(mLastRun.group(3)) * 60_000L;
+            ms += Long.parseLong(mLastRun.group(4)) * 1000L;
+            if (ms > 0) parts.add("last " + formatInterval(ms) + " ago");
+        }
+
+
         Matcher mDL = Pattern.compile("latest-runtime=(\\d+)").matcher(block);
-        if (mDL.find()) { long diff=Long.parseLong(mDL.group(1))-System.currentTimeMillis();
-                          if(diff>0) parts.add("deadline:"+formatInterval(diff)); }
+        if (mDL.find()) {
+            long diff = Long.parseLong(mDL.group(1)) - System.currentTimeMillis();
+            if (diff > 0) parts.add("deadline:" + formatInterval(diff));
+        }
+
+
         Matcher mBk = Pattern.compile("backoff-policy=(\\w+)").matcher(block);
-        if (mBk.find()) parts.add("backoff:"+mBk.group(1));
-        if (block.contains("WorkManager") || block.contains("androidx.work")) parts.add(0, "WM");
+        if (mBk.find()) parts.add("backoff:" + mBk.group(1));
+
+        if (isWm) parts.add(0, "WM");
         return parts.isEmpty() ? null : String.join(" · ", parts);
     }
-
-    // -------------------------------------------------------------------------
-    // Pending Intents
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzePendingIntents(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1131,51 +1161,112 @@ public class AppTriggersAnalyzer {
                 "dumpsys activity intents");
         if (output == null || output.trim().isEmpty()) return list;
 
+
+        final int MAX_PI_ENTRIES = 4;
+        List<String> piEntries = new ArrayList<>();
         int actC=0, svcC=0, bcastC=0, alarmC=0, mediaC=0, pushC=0;
-        List<String> actions  = new ArrayList<>();
         List<String> creators = new ArrayList<>();
 
-        Pattern actPat     = Pattern.compile("act=([\\w.]+)");
+        Pattern recPat     = Pattern.compile(
+                "PendingIntentRecord\\{[^}]+\\s+([\\w.]+)\\s+type=(\\w+)", Pattern.CASE_INSENSITIVE);
+        Pattern actPat     = Pattern.compile("act=([\\w./-]+)");
+        Pattern cmpPat     = Pattern.compile("cmp=([\\w./]+)");
         Pattern creatorPat = Pattern.compile("(?:creator=\\[|creatorPackage=)([\\w.]+)");
 
+        boolean inBlock = false;
+        String  blkType = null;
+        String  blkAct  = null;
+        String  blkCmp  = null;
+
         for (String line : output.split("\n")) {
-            if (!line.contains(packageName)) continue;
             String t = line.trim();
 
-            if      (t.contains("type=activity")  || t.contains("Activity"))  actC++;
-            else if (t.contains("type=service")   || t.contains("Service"))   svcC++;
-            else if (t.contains("type=broadcast") || t.contains("Broadcast")) bcastC++;
+            Matcher mRec = recPat.matcher(t);
+            if (mRec.find()) {
+
+                if (inBlock && blkType != null)
+                    recordPiEntry(piEntries, blkType, blkAct, blkCmp, MAX_PI_ENTRIES, packageName);
+
+                String owner = mRec.group(1);
+                blkType = mRec.group(2).toLowerCase();
+                blkAct  = null;
+                blkCmp  = null;
+                inBlock = owner.equals(packageName);
+
+                if (inBlock) {
+                    switch (blkType) {
+                        case "activity":  actC++;  break;
+                        case "service":   svcC++;  break;
+                        case "broadcast": bcastC++; break;
+                    }
+                }
+
+                Matcher mCr = creatorPat.matcher(t);
+                if (mCr.find()) {
+                    String cr = mCr.group(1);
+                    if (!cr.equals(packageName) && !creators.contains(cr)) creators.add(cr);
+                }
+                continue;
+            }
+
+            if (!inBlock) {
+
+                if (!t.contains(packageName)) continue;
+                if      (t.contains("type=activity")  || t.contains("Activity"))  actC++;
+                else if (t.contains("type=service")   || t.contains("Service"))   svcC++;
+                else if (t.contains("type=broadcast") || t.contains("Broadcast")) bcastC++;
+                Matcher mA = actPat.matcher(t);
+                if (mA.find()) {
+                    String a = mA.group(1);
+                    if (a.contains("ALARM") || a.contains("alarmmanager")) alarmC++;
+                    if (a.contains("MEDIA_BUTTON"))                        mediaC++;
+                    if (a.contains("GCM")||a.contains("FCM")
+                            ||a.contains("push")||a.contains("PUSH"))      pushC++;
+                }
+                Matcher mCr = creatorPat.matcher(t);
+                if (mCr.find()) {
+                    String cr = mCr.group(1);
+                    if (!cr.equals(packageName) && !creators.contains(cr)) creators.add(cr);
+                }
+                continue;
+            }
+
 
             Matcher mA = actPat.matcher(t);
-            if (mA.find()) {
-                String a = mA.group(1);
-                String sh = shortenAction(a);
-                if (a.contains("ALARM") || a.contains("alarmmanager")) alarmC++;
-                if (a.contains("MEDIA_BUTTON"))                        mediaC++;
-                if (a.contains("GCM")||a.contains("FCM")||a.contains("push")||a.contains("PUSH")) pushC++;
-                if (!actions.contains(sh) && actions.size() < 5) actions.add(sh);
+            if (mA.find() && blkAct == null) {
+                blkAct = mA.group(1);
+                if (blkAct.contains("ALARM") || blkAct.contains("alarmmanager")) alarmC++;
+                if (blkAct.contains("MEDIA_BUTTON"))                              mediaC++;
+                if (blkAct.contains("GCM")||blkAct.contains("FCM")
+                        ||blkAct.contains("push")||blkAct.contains("PUSH"))       pushC++;
             }
-            Matcher mC = creatorPat.matcher(t);
-            if (mC.find()) {
-                String cr = mC.group(1);
-                if (!cr.equals(packageName) && !creators.contains(cr)) creators.add(cr);
-            }
+            Matcher mCmp = cmpPat.matcher(t);
+            if (mCmp.find() && blkCmp == null) blkCmp = mCmp.group(1);
         }
+
+        if (inBlock && blkType != null)
+            recordPiEntry(piEntries, blkType, blkAct, blkCmp, MAX_PI_ENTRIES, packageName);
 
         int total = actC + svcC + bcastC;
         if (total == 0) return list;
 
+
         StringBuilder detail = new StringBuilder();
-        if (actC   > 0) detail.append(context.getString(R.string.triggers_pending_activity,  actC));
-        if (svcC   > 0) { if(detail.length()>0) detail.append(", ");
-                          detail.append(context.getString(R.string.triggers_pending_service,  svcC)); }
-        if (bcastC > 0) { if(detail.length()>0) detail.append(", ");
-                          detail.append(context.getString(R.string.triggers_pending_broadcast, bcastC)); }
+        if (!piEntries.isEmpty()) {
+            detail.append(String.join("\n", piEntries));
+            if (total > piEntries.size())
+                detail.append("\n+").append(total - piEntries.size()).append(" more");
+        } else {
+
+            if (actC   > 0) detail.append(context.getString(R.string.triggers_pending_activity,  actC));
+            if (svcC   > 0) { if(detail.length()>0) detail.append(", ");
+                detail.append(context.getString(R.string.triggers_pending_service,  svcC)); }
+            if (bcastC > 0) { if(detail.length()>0) detail.append(", ");
+                detail.append(context.getString(R.string.triggers_pending_broadcast, bcastC)); }
+        }
         if (alarmC > 0) detail.append(context.getString(R.string.triggers_pending_alarm,        alarmC));
         if (mediaC > 0) detail.append(context.getString(R.string.triggers_pending_media_button, mediaC));
         if (pushC  > 0) detail.append(context.getString(R.string.triggers_pending_push,         pushC));
-        if (!actions.isEmpty())
-            detail.append(" (").append(String.join(", ", actions.subList(0, Math.min(actions.size(), 3)))).append(")");
         if (!creators.isEmpty())
             detail.append(context.getString(R.string.triggers_pending_creators,
                     String.join(", ", creators.subList(0, Math.min(creators.size(), 2)))));
@@ -1188,9 +1279,30 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Excessive Wakeups
-    // -------------------------------------------------------------------------
+
+    private void recordPiEntry(List<String> entries, String type, String act,
+            String cmp, int maxEntries, String packageName) {
+        if (entries.size() >= maxEntries) return;
+        StringBuilder sb = new StringBuilder();
+        switch (type) {
+            case "broadcast": sb.append("BC"); break;
+            case "service":   sb.append("SV"); break;
+            case "activity":  sb.append("AC"); break;
+            default: sb.append(type.substring(0, Math.min(2, type.length())).toUpperCase());
+        }
+        if (cmp != null) {
+            String cls = cmp.contains("/") ? cmp.substring(cmp.indexOf('/') + 1) : cmp;
+            if (cls.startsWith(packageName + ".")) cls = cls.substring(packageName.length() + 1);
+            if (cls.startsWith(".")) cls = cls.substring(1);
+            if (cls.length() > 40 && cls.contains("."))
+                cls = cls.substring(cls.lastIndexOf('.') + 1);
+            sb.append(" → ").append(cls);
+        } else if (act != null) {
+            sb.append(" → ").append(shortenAction(act));
+        }
+        entries.add(sb.toString());
+    }
+
 
     private List<TriggerInfo> analyzeExcessiveWakeups(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1199,15 +1311,34 @@ public class AppTriggersAnalyzer {
         if (output == null || output.trim().isEmpty()) return list;
 
         int alarmW=0, jobW=0, gcmW=0, bcastW=0;
-        Pattern ap = Pattern.compile("Wakeup alarm.*?:\\s*(\\d+)\\s+times",       Pattern.CASE_INSENSITIVE);
-        Pattern jp = Pattern.compile("Job\\s+\\S+:\\s+\\d+ms.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
-        Pattern gp = Pattern.compile("(?:GCM|FCM|push).*?wakeup.*?:\\s*(\\d+)",   Pattern.CASE_INSENSITIVE);
-        Pattern bp = Pattern.compile("Broadcast\\s+\\S+.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
+        List<String> alarmTags = new ArrayList<>();
+
+
+        Pattern ap = Pattern.compile(
+                "Wakeup alarm\\s+([\\w./]+):\\s*(\\d+)\\s+times", Pattern.CASE_INSENSITIVE);
+        Pattern jp = Pattern.compile(
+                "Job\\s+\\S+:\\s+\\d+ms.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
+        Pattern gp = Pattern.compile(
+                "(?:GCM|FCM|push).*?wakeup.*?:\\s*(\\d+)",        Pattern.CASE_INSENSITIVE);
+        Pattern bp = Pattern.compile(
+                "Broadcast\\s+\\S+.*?\\((\\d+)\\s+times\\)",      Pattern.CASE_INSENSITIVE);
 
         for (String line : output.split("\n")) {
             try {
                 Matcher m;
-                if ((m=ap.matcher(line)).find()) { alarmW+=Integer.parseInt(m.group(1)); continue; }
+                if ((m=ap.matcher(line)).find()) {
+                    int cnt = Integer.parseInt(m.group(2));
+                    alarmW += cnt;
+                    if (alarmTags.size() < 3) {
+                        String tag = m.group(1);
+
+                        if (tag.contains("/")) tag = tag.substring(tag.indexOf('/') + 1);
+                        if (tag.startsWith(".")) tag = tag.substring(1);
+                        if (tag.startsWith(packageName + ".")) tag = tag.substring(packageName.length() + 1);
+                        alarmTags.add(tag + "×" + cnt);
+                    }
+                    continue;
+                }
                 if ((m=jp.matcher(line)).find()) { jobW  +=Integer.parseInt(m.group(1)); continue; }
                 if ((m=gp.matcher(line)).find()) { gcmW  +=Integer.parseInt(m.group(1)); continue; }
                 if ((m=bp.matcher(line)).find())   bcastW+=Integer.parseInt(m.group(1));
@@ -1219,7 +1350,11 @@ public class AppTriggersAnalyzer {
 
         StringBuilder detail = new StringBuilder(
                 context.getString(R.string.triggers_wakeups_total, total));
-        if (alarmW > 0) detail.append(context.getString(R.string.triggers_wakeups_alarms,    alarmW));
+        if (alarmW > 0) {
+            detail.append(context.getString(R.string.triggers_wakeups_alarms, alarmW));
+            if (!alarmTags.isEmpty())
+                detail.append(" (").append(String.join(", ", alarmTags)).append(")");
+        }
         if (jobW   > 0) detail.append(context.getString(R.string.triggers_wakeups_jobs,      jobW));
         if (gcmW   > 0) detail.append(context.getString(R.string.triggers_wakeups_gcm,       gcmW));
         if (bcastW > 0) detail.append(context.getString(R.string.triggers_wakeups_broadcast, bcastW));
@@ -1233,14 +1368,11 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // =========================================================================
-    // OTHER
-    // =========================================================================
 
     private List<TriggerInfo> analyzeChainLaunch(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
-        // Direct caller from processes dump
+
         try {
             String procOut = shellManager.runShellCommandAndGetFullOutput("dumpsys activity processes");
             if (procOut != null) {
@@ -1267,7 +1399,7 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "chain/processes failed: " + e.getMessage()); }
 
-        // Broadcast chain — last 30 relevant lines only (simpler, avoids stale data)
+
         try {
             String bcastOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys activity broadcasts history");
@@ -1307,39 +1439,91 @@ public class AppTriggersAnalyzer {
 
     private List<TriggerInfo> analyzeBroadcastReceivers(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
-        String output = shellManager.runShellCommandAndGetFullOutput(
+
+
+        String pkgOut = shellManager.runShellCommandAndGetFullOutput(
                 "dumpsys package " + packageName);
-        if (output == null || output.trim().isEmpty()) return list;
-
-        boolean inSection = false;
-        List<String> actions = new ArrayList<>();
-        for (String line : output.split("\n")) {
-            String t = line.trim();
-            if (t.startsWith("Receiver #") || t.startsWith("ReceiverInfo{")) inSection = true;
-            if (inSection && t.startsWith("Action:")) {
-                String a = shortenAction(t.replaceFirst("Action:\\s*\"?", "").replace("\"", "").trim());
-                if (!actions.contains(a)) actions.add(a);
+        List<String> staticActions = new ArrayList<>();
+        if (pkgOut != null) {
+            boolean inSection = false;
+            for (String line : pkgOut.split("\n")) {
+                String t = line.trim();
+                if (t.startsWith("Receiver #") || t.startsWith("ReceiverInfo{")) inSection = true;
+                if (inSection && t.startsWith("Action:")) {
+                    String a = shortenAction(
+                            t.replaceFirst("Action:\\s*\"?", "").replace("\"", "").trim());
+                    if (!staticActions.contains(a)) staticActions.add(a);
+                }
+                if (inSection && t.startsWith("Service #")) break;
             }
-            if (inSection && t.startsWith("Service #")) break;
         }
-        if (actions.isEmpty()) return list;
 
-        int shown = Math.min(actions.size(), 5);
-        StringBuilder detail = new StringBuilder(String.join(", ", actions.subList(0, shown)));
-        if (actions.size() > shown)
-            detail.append(context.getString(
-                    R.string.triggers_receivers_detail_overflow, actions.size() - shown));
 
-        StringBuilder expl = new StringBuilder(
-                context.getString(R.string.triggers_receivers_explanation_base));
-        if (actions.stream().anyMatch(a -> a.contains("BOOT") || a.contains("LOCKED_BOOT")))
-            expl.append(context.getString(R.string.triggers_receivers_explanation_boot));
-        if (actions.stream().anyMatch(a -> a.contains("CONNECTIVITY") || a.contains("NETWORK")))
-            expl.append(context.getString(R.string.triggers_receivers_explanation_network));
+        List<String> dynamicActions = new ArrayList<>();
+        try {
+            String regOut = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys activity broadcasts registered");
+            if (regOut != null) {
+                boolean inBlock = false;
+                for (String line : regOut.split("\n")) {
+                    String t = line.trim();
+                    if (t.startsWith("ReceiverList{") || t.startsWith("* ReceiverList")) {
+                        inBlock = t.contains(packageName);
+                        continue;
+                    }
+                    if (inBlock && t.startsWith("ReceiverList{") && !t.contains(packageName)) {
+                        inBlock = false;
+                        continue;
+                    }
+                    if (!inBlock) continue;
+                    if (t.startsWith("Action:") || t.startsWith("+ Action:")) {
+                        String a = shortenAction(
+                                t.replaceFirst("\\+?\\s*Action:\\s*\"?", "").replace("\"", "").trim());
+                        if (!a.isEmpty() && !dynamicActions.contains(a)) dynamicActions.add(a);
+                    }
+                }
+            }
+        } catch (Exception e) { Log.w(TAG, "dynamic receivers failed: " + e.getMessage()); }
 
-        list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
-                context.getString(R.string.triggers_cat_receivers, actions.size()),
-                detail.toString(), expl.toString(), TriggerInfo.Severity.MEDIUM));
+        if (staticActions.isEmpty() && dynamicActions.isEmpty()) return list;
+
+
+        if (!staticActions.isEmpty()) {
+            int shown = Math.min(staticActions.size(), 5);
+            StringBuilder detail = new StringBuilder(
+                    String.join(", ", staticActions.subList(0, shown)));
+            if (staticActions.size() > shown)
+                detail.append(context.getString(
+                        R.string.triggers_receivers_detail_overflow, staticActions.size() - shown));
+
+            StringBuilder expl = new StringBuilder(
+                    context.getString(R.string.triggers_receivers_explanation_base));
+            if (staticActions.stream().anyMatch(a -> a.contains("BOOT") || a.contains("LOCKED_BOOT")))
+                expl.append(context.getString(R.string.triggers_receivers_explanation_boot));
+            if (staticActions.stream().anyMatch(a -> a.contains("CONNECTIVITY") || a.contains("NETWORK")))
+                expl.append(context.getString(R.string.triggers_receivers_explanation_network));
+
+            list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    context.getString(R.string.triggers_cat_receivers, staticActions.size()),
+                    detail.toString(), expl.toString(), TriggerInfo.Severity.MEDIUM));
+        }
+
+
+        if (!dynamicActions.isEmpty()) {
+            int shown = Math.min(dynamicActions.size(), 5);
+            StringBuilder detail = new StringBuilder(
+                    String.join(", ", dynamicActions.subList(0, shown)));
+            if (dynamicActions.size() > shown)
+                detail.append(context.getString(
+                        R.string.triggers_receivers_detail_overflow, dynamicActions.size() - shown));
+
+            list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                    "Dynamic Receivers (" + dynamicActions.size() + ")",
+                    detail.toString(),
+                    context.getString(R.string.triggers_receivers_explanation_base),
+                    dynamicActions.size() > 3 ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
+        }
+
         return list;
     }
 
@@ -1347,7 +1531,7 @@ public class AppTriggersAnalyzer {
         List<TriggerInfo> list = new ArrayList<>();
         boolean hasBoot = false, hasLocked = false;
 
-        // Primary: cmd package query-receivers (Android 8+, may be absent on some ROMs)
+
         try {
             String o1 = shellManager.runShellCommandAndGetFullOutput(
                     "cmd package query-receivers --action android.intent.action.BOOT_COMPLETED");
@@ -1359,7 +1543,7 @@ public class AppTriggersAnalyzer {
             if (o2 != null && o2.contains(packageName)) hasLocked = true;
         } catch (Exception e) { Log.w(TAG, "locked-boot query failed: " + e.getMessage()); }
 
-        // Fallback: scan declared receiver actions in dumpsys package
+
         if (!hasBoot && !hasLocked) {
             try {
                 String pkgOut = shellManager.runShellCommandAndGetFullOutput(
@@ -1423,29 +1607,148 @@ public class AppTriggersAnalyzer {
 
     private List<TriggerInfo> analyzeSyncAdapters(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
-        int count = 0;
-        try {
-            String output = shellManager.runShellCommandAndGetFullOutput(
-                    "dumpsys content | grep -A3 " + packageName);
-            if (output != null)
-                for (String line : output.split("\n"))
-                    if (line.contains(packageName) && line.contains("accountType")) count++;
-        } catch (Exception e) { Log.w(TAG, "sync/content failed: " + e.getMessage()); }
-        if (count == 0) {
+
+
+        String output = shellManager.runShellCommandAndGetFullOutput("dumpsys content");
+        if (output == null || output.trim().isEmpty()) {
+
             try {
                 String pkgOut = shellManager.runShellCommandAndGetFullOutput(
-                        "dumpsys package " + packageName + " | grep -i sync");
-                if (pkgOut != null && pkgOut.toLowerCase().contains("syncadapter")) count = 1;
-            } catch (Exception e) { Log.w(TAG, "sync/package failed: " + e.getMessage()); }
+                        "dumpsys package " + packageName);
+                if (pkgOut != null && pkgOut.toLowerCase().contains("syncadapter")) {
+                    list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                            context.getString(R.string.triggers_cat_sync),
+                            context.getString(R.string.triggers_sync_detail, 1),
+                            context.getString(R.string.triggers_sync_explanation),
+                            TriggerInfo.Severity.MEDIUM));
+                }
+            } catch (Exception e) { Log.w(TAG, "sync/package fallback failed: " + e.getMessage()); }
+            return list;
         }
+
+
+        int count = 0;
+        List<String> entries = new ArrayList<>();
+
+        Pattern authPat      = Pattern.compile("authority=([\\w.]+)");
+        Pattern acctPat      = Pattern.compile("accountType=([\\w.]+)");
+        Pattern periodPat    = Pattern.compile("period=(\\d+)s");
+        Pattern periodMsPat  = Pattern.compile("(?:mPeriod|periodMs)=(\\d+)");
+        Pattern lastSuccPat  = Pattern.compile("lastSuccessTime=([\\d\\- :]+)");
+        Pattern nextRunPat   = Pattern.compile("nextRunTime=([\\d\\- :]+)");
+        Pattern syncablePat  = Pattern.compile("(?:syncable|mSyncable)=(true|false)");
+
+        boolean inBlock   = false;
+        String  authority = null;
+        String  acctType  = null;
+        boolean syncable  = false;
+        long    periodSec = 0;
+        String  lastSucc  = null;
+        String  nextRun   = null;
+
+        for (String line : output.split("\n")) {
+            String t = line.trim();
+
+
+            boolean isHeader = t.startsWith("SyncAdapterType") || t.startsWith("SyncAdapter:");
+            if (isHeader) {
+
+                if (inBlock && authority != null) {
+                    count++;
+                    if (entries.size() < 3) entries.add(
+                            buildSyncEntry(authority, acctType, syncable, periodSec, lastSucc, nextRun));
+                }
+
+                inBlock   = t.contains(packageName);
+                authority = null; acctType = null; syncable = false;
+                periodSec = 0; lastSucc = null; nextRun = null;
+
+                if (inBlock) {
+                    Matcher mA = authPat.matcher(t);
+                    if (mA.find()) authority = mA.group(1);
+                    Matcher mAc = acctPat.matcher(t);
+                    if (mAc.find()) acctType = mAc.group(1);
+                }
+                continue;
+            }
+
+            if (!inBlock) {
+
+                if (t.contains(packageName) && t.contains("authority=")) {
+                    inBlock = true;
+                    Matcher mA = authPat.matcher(t);
+                    if (mA.find()) authority = mA.group(1);
+                    Matcher mAc = acctPat.matcher(t);
+                    if (mAc.find()) acctType = mAc.group(1);
+                }
+                continue;
+            }
+
+
+            Matcher mSy = syncablePat.matcher(t);
+            if (mSy.find()) syncable = "true".equals(mSy.group(1));
+
+            Matcher mP = periodPat.matcher(t);
+            if (mP.find() && periodSec == 0) periodSec = Long.parseLong(mP.group(1));
+            else {
+                Matcher mPms = periodMsPat.matcher(t);
+                if (mPms.find() && periodSec == 0) periodSec = Long.parseLong(mPms.group(1)) / 1000;
+            }
+
+            Matcher mLs = lastSuccPat.matcher(t);
+            if (mLs.find() && lastSucc == null) lastSucc = mLs.group(1).trim();
+
+            Matcher mNr = nextRunPat.matcher(t);
+            if (mNr.find() && nextRun == null) nextRun = mNr.group(1).trim();
+
+
+            if (t.isEmpty() && authority != null) {
+                count++;
+                if (entries.size() < 3) entries.add(
+                        buildSyncEntry(authority, acctType, syncable, periodSec, lastSucc, nextRun));
+                inBlock = false; authority = null; acctType = null;
+                syncable = false; periodSec = 0; lastSucc = null; nextRun = null;
+            }
+        }
+
+        if (inBlock && authority != null) {
+            count++;
+            if (entries.size() < 3) entries.add(
+                    buildSyncEntry(authority, acctType, syncable, periodSec, lastSucc, nextRun));
+        }
+
         if (count == 0) return list;
+
+        StringBuilder detail = new StringBuilder(
+                context.getString(R.string.triggers_sync_detail, count));
+        if (!entries.isEmpty())
+            detail.append(": ").append(String.join(" | ", entries));
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                 context.getString(R.string.triggers_cat_sync),
-                context.getString(R.string.triggers_sync_detail, count),
+                detail.toString(),
                 context.getString(R.string.triggers_sync_explanation),
                 TriggerInfo.Severity.MEDIUM));
         return list;
+    }
+
+
+    private String buildSyncEntry(String authority, String acctType,
+            boolean syncable, long periodSec, String lastSucc, String nextRun) {
+        StringBuilder sb = new StringBuilder();
+
+        String auth = authority.contains(".")
+                ? authority.substring(authority.lastIndexOf('.') + 1) : authority;
+        sb.append(auth);
+        if (!syncable) sb.append("(off)");
+        if (periodSec > 0) sb.append(" every ").append(formatInterval(periodSec * 1000L));
+        if (lastSucc != null) {
+
+            String t = lastSucc.contains(" ") ? lastSucc.substring(lastSucc.indexOf(' ') + 1) : lastSucc;
+            if (t.length() > 5) t = t.substring(0, 5);
+            sb.append(" last:").append(t);
+        }
+        return sb.toString();
     }
 
     private List<TriggerInfo> analyzeDozeExemption(String packageName) {
@@ -1469,9 +1772,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // App Standby Bucket (ИСПРАВЛЕНО: правильный порядок истории old→new)
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeStandbyBucket(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1489,7 +1789,7 @@ public class AppTriggersAnalyzer {
 
         String currentName = bucketValueToName(bv);
 
-        // usagestats history — records arrive old→new, we keep last 4 distinct entries
+
         List<String> history = new ArrayList<>();
         try {
             String usOut = shellManager.runShellCommandAndGetFullOutput("dumpsys usagestats");
@@ -1514,9 +1814,11 @@ public class AppTriggersAnalyzer {
                         if (mR.find()) {
                             int main = ((int) Long.parseLong(mR.group(1), 16) >> 8) & 0xF;
                             switch (main) {
-                                case 0x1: reason="usage";      break;
-                                case 0x2: reason="timeout";    break;
-                                case 0x4: reason="sys-forced"; break;
+                                case 0x0: reason="default";     break;
+                                case 0x1: reason="usage";       break;
+                                case 0x2: reason="timeout";     break;
+                                case 0x3: reason="predicted";   break;
+                                case 0x4: reason="sys-forced";  break;
                                 case 0x6: reason="user-forced"; break;
                             }
                         }
@@ -1529,9 +1831,9 @@ public class AppTriggersAnalyzer {
                 }
             }
         } catch (Exception e) { Log.w(TAG, "usagestats failed: " + e.getMessage()); }
-        // Keep last 4
+
         if (history.size() > 4) history = history.subList(history.size()-4, history.size());
-        // Ensure current bucket is the last (usagestats can lag slightly)
+
         if (history.isEmpty() || !history.get(history.size()-1).startsWith(currentName))
             history.add(currentName);
 
@@ -1559,13 +1861,44 @@ public class AppTriggersAnalyzer {
         if (output == null || output.trim().isEmpty()) return list;
 
         long wlMs=0; int wlCnt=0, alarms=0, jobs=0, syncs=0;
-        Pattern wp = Pattern.compile("Wakelock\\s+\\S+:\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
-        Pattern ap = Pattern.compile("Wakeup alarm.*?:\\s*(\\d+)\\s+times",                            Pattern.CASE_INSENSITIVE);
-        Pattern jp = Pattern.compile("Job\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",        Pattern.CASE_INSENSITIVE);
-        Pattern sp = Pattern.compile("Sync\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",       Pattern.CASE_INSENSITIVE);
+        double powerMah = -1;
+
+        Pattern wp   = Pattern.compile("Wakelock\\s+\\S+:\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
+        Pattern ap   = Pattern.compile("Wakeup alarm.*?:\\s*(\\d+)\\s+times",                            Pattern.CASE_INSENSITIVE);
+        Pattern jp   = Pattern.compile("Job\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",        Pattern.CASE_INSENSITIVE);
+        Pattern sp   = Pattern.compile("Sync\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",       Pattern.CASE_INSENSITIVE);
+
+        Pattern pwrP = Pattern.compile("Uid\\s+u0a\\d+:\\s*([\\d.]+)(?:\\s*mAh)?", Pattern.CASE_INSENSITIVE);
+
+        boolean inPowerSection = false;
+        String  uid = cachedUid;
 
         for (String line : output.split("\n")) {
             try {
+
+                if (line.contains("Estimated power use")) { inPowerSection = true; continue; }
+                if (inPowerSection && !line.startsWith("  ")) inPowerSection = false;
+
+                if (inPowerSection && powerMah < 0) {
+
+
+                    if (uid != null) {
+                        try {
+                            int uidInt = Integer.parseInt(uid);
+                            int appId  = uidInt - 10000;
+                            if (appId >= 0 && line.contains("u0a" + appId)) {
+                                Matcher mPwr = pwrP.matcher(line);
+                                if (mPwr.find()) powerMah = Double.parseDouble(mPwr.group(1));
+                            }
+                        } catch (NumberFormatException ignored) {}
+                    }
+
+                    if (powerMah < 0 && line.contains(packageName)) {
+                        Matcher mPwr = pwrP.matcher(line);
+                        if (mPwr.find()) powerMah = Double.parseDouble(mPwr.group(1));
+                    }
+                }
+
                 Matcher m;
                 if ((m=wp.matcher(line)).find()) { wlMs+=Long.parseLong(m.group(1)); wlCnt+=Integer.parseInt(m.group(2)); continue; }
                 if ((m=ap.matcher(line)).find()) { alarms+=Integer.parseInt(m.group(1)); continue; }
@@ -1573,16 +1906,22 @@ public class AppTriggersAnalyzer {
                 if ((m=sp.matcher(line)).find())   syncs +=Integer.parseInt(m.group(1));
             } catch (Exception e) { Log.w(TAG, "analyzeBatteryStats line parse failed: " + e.getMessage()); }
         }
-        if (wlCnt==0&&alarms==0&&jobs==0&&syncs==0) return list;
+        if (wlCnt==0&&alarms==0&&jobs==0&&syncs==0&&powerMah<0) return list;
 
         StringBuilder detail = new StringBuilder();
-        if (wlCnt  > 0) detail.append(context.getString(R.string.triggers_batterystats_wakelock, wlCnt, formatDuration(wlMs)));
-        if (alarms > 0) { if(detail.length()>0) detail.append(", "); detail.append(context.getString(R.string.triggers_batterystats_alarms, alarms)); }
-        if (jobs   > 0) { if(detail.length()>0) detail.append(", "); detail.append(context.getString(R.string.triggers_batterystats_jobs,   jobs));   }
-        if (syncs  > 0) { if(detail.length()>0) detail.append(", "); detail.append(context.getString(R.string.triggers_batterystats_syncs,  syncs));  }
+        if (powerMah >= 0)
+            detail.append(String.format("%.2f mAh", powerMah));
+        if (wlCnt  > 0) { if(detail.length()>0) detail.append(", ");
+            detail.append(context.getString(R.string.triggers_batterystats_wakelock, wlCnt, formatDuration(wlMs))); }
+        if (alarms > 0) { if(detail.length()>0) detail.append(", ");
+            detail.append(context.getString(R.string.triggers_batterystats_alarms, alarms)); }
+        if (jobs   > 0) { if(detail.length()>0) detail.append(", ");
+            detail.append(context.getString(R.string.triggers_batterystats_jobs,   jobs)); }
+        if (syncs  > 0) { if(detail.length()>0) detail.append(", ");
+            detail.append(context.getString(R.string.triggers_batterystats_syncs,  syncs)); }
 
-        TriggerInfo.Severity sev = alarms>50||wlMs>600_000 ? TriggerInfo.Severity.HIGH
-                : alarms>10||wlMs>60_000||jobs>20 ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
+        TriggerInfo.Severity sev = alarms>50||wlMs>600_000||(powerMah>50) ? TriggerInfo.Severity.HIGH
+                : alarms>10||wlMs>60_000||jobs>20||(powerMah>10) ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                 context.getString(R.string.triggers_cat_batterystats),
@@ -1591,9 +1930,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Broadcast Efficiency (ИСПРАВЛЕНО: последние N записей, расширенный timePat)
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeBroadcastEfficiency(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1601,7 +1937,7 @@ public class AppTriggersAnalyzer {
                 "dumpsys activity broadcasts history");
         if (output == null || output.trim().isEmpty()) return list;
 
-        // Collect lines that mention our package, take last 200
+
         List<String> relevant = new ArrayList<>();
         for (String line : output.split("\n"))
             if (line.contains(packageName)) relevant.add(line);
@@ -1668,11 +2004,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // Foreground Service Notification (канал, importance, sound/vibration)
-    // Дополняет analyzeServicesAndBindings — там каналId из activity services,
-    // здесь — полное имя канала и флаги из dumpsys notification.
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeFgNotification(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1737,20 +2068,11 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // =========================================================================
-    // NEW ANALYZERS
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // 1. AudioFocus + MediaSession
-    //    ACTIVE_NOW: приложение удерживает аудио-фокус или активную MediaSession
-    //    Sources: dumpsys audio, dumpsys media_session
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeAudioFocus(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
-        // --- AudioFocus ---
+
         try {
             String audioOut = shellManager.runShellCommandAndGetFullOutput("dumpsys audio");
             if (audioOut != null) {
@@ -1795,7 +2117,7 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "analyzeAudioFocus/audio failed: " + e.getMessage()); }
 
-        // --- MediaSession ---
+
         try {
             String msOut = shellManager.runShellCommandAndGetFullOutput("dumpsys media_session");
             if (msOut != null) {
@@ -1828,7 +2150,7 @@ public class AppTriggersAnalyzer {
                 if (state != null) {
                     String detail = (sessionTag != null ? sessionTag + " · " : "") + state;
                     boolean isPlaying = "PLAYING".equals(state);
-                    // Avoid duplicate if AudioFocus already reported playing
+
                     boolean alreadyReported = list.stream()
                             .anyMatch(i -> i.category.equals(
                                     context.getString(R.string.triggers_cat_audio_focus)));
@@ -1893,16 +2215,11 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // 2. Bluetooth / BLE
-    //    ACTIVE_NOW: активное BLE-сканирование или GATT-соединение
-    //    Sources: dumpsys bluetooth_manager, dumpsys gatt
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeBluetooth(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
-        // BLE Scan via bluetooth_manager
+
         try {
             String btOut = shellManager.runShellCommandAndGetFullOutput("dumpsys bluetooth_manager");
             if (btOut != null) {
@@ -1942,7 +2259,7 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "analyzeBluetooth/manager failed: " + e.getMessage()); }
 
-        // GATT connections
+
         try {
             String gattOut = shellManager.runShellCommandAndGetFullOutput("dumpsys gatt");
             if (gattOut != null) {
@@ -1983,12 +2300,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // 3. ContentObserver registrations
-    //    CAN_WAKE: приложение подписалось на изменения URI — при любом изменении
-    //              системе придётся его поднять для доставки callback
-    //    Source: dumpsys content
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeContentObservers(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -2010,7 +2321,7 @@ public class AppTriggersAnalyzer {
                 if (inObservers && t.startsWith("---")) { inObservers = false; continue; }
                 if (!inObservers) continue;
 
-                // Some ROMs print package on the same line, some on the next
+
                 boolean hasPkg = t.contains(packageName);
                 if (!hasPkg) {
                     Matcher mPkg = pkgPat.matcher(t);
@@ -2022,7 +2333,7 @@ public class AppTriggersAnalyzer {
                 Matcher mUri = uriPat.matcher(t);
                 if (mUri.find()) {
                     String uri = mUri.group(1);
-                    // Shorten common content:// prefixes
+
                     uri = uri.replace("content://", "");
                     if (uri.length() > 40) uri = uri.substring(0, 40) + "…";
                     if (!uris.contains(uri) && uris.size() < 4) uris.add(uri);
@@ -2049,11 +2360,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // 4. FCM / Firebase push registration
-    //    CAN_WAKE: GMS может поднять приложение в любой момент при входящем push
-    //    Source: dumpsys package (наличие firebase receiver в манифесте)
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeFcmRegistration(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -2095,20 +2401,15 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // 5. Multiple processes
-    //    OTHER: приложение запустило несколько процессов (например :sync, :remote)
-    //    Source: ps -A (через su 2000 на MIUI, прямо через Shizuku на non-root)
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeMultipleProcesses(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         try {
-            // Use shell UID (2000) to avoid SELinux blocks on MIUI/HyperOS
+
             String psOut = shellManager.runShellCommandAndGetFullOutput(
                     "ps -A -o pid,name 2>/dev/null | grep " + packageName);
             if (psOut == null || psOut.trim().isEmpty()) {
-                // Fallback: some ROMs don't support -o, try raw ps -A
+
                 psOut = shellManager.runShellCommandAndGetFullOutput(
                         "ps -A 2>/dev/null | grep " + packageName);
             }
@@ -2137,14 +2438,14 @@ public class AppTriggersAnalyzer {
             }
 
             int count = processNames.size();
-            if (count <= 1) return list; // Single process is normal
+            if (count <= 1) return list;
 
-            // Build detail: show sub-process suffixes only (:sync, :remote, etc.)
+
             List<String> subNames = new ArrayList<>();
             for (String n : processNames) {
                 if (n.equals(packageName)) subNames.add(0, "main");
                 else if (n.startsWith(packageName + ":"))
-                    subNames.add(n.substring(packageName.length())); // e.g. ":sync"
+                    subNames.add(n.substring(packageName.length()));
                 else
                     subNames.add(n);
             }
@@ -2163,17 +2464,11 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // 6. AccessibilityService / InputMethodService
-    //    OTHER: приложение является активным сервисом специальных возможностей
-    //           или методом ввода — такие сервисы живут постоянно
-    //    Sources: dumpsys accessibility, dumpsys input_method
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeAccessibilityAndIme(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
 
-        // Accessibility
+
         try {
             String a11yOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys accessibility");
@@ -2197,7 +2492,7 @@ public class AppTriggersAnalyzer {
                     Matcher m = svcPat.matcher(t);
                     if (m.find()) svcName = m.group(1);
                     if (svcName != null && svcName.contains("/")) {
-                        // Shorten to just class name
+
                         String cls = svcName.substring(svcName.indexOf('/') + 1);
                         if (cls.startsWith(packageName + "."))
                             cls = cls.substring(packageName.length() + 1);
@@ -2217,7 +2512,7 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "analyzeAccessibility failed: " + e.getMessage()); }
 
-        // IME
+
         try {
             String imeOut = shellManager.runShellCommandAndGetFullOutput("dumpsys input_method");
             if (imeOut != null) {
@@ -2226,7 +2521,7 @@ public class AppTriggersAnalyzer {
 
                 for (String line : imeOut.split("\n")) {
                     String t = line.trim();
-                    // Current IME is listed under "mCurMethodId" or "InputMethod #"
+
                     if ((t.startsWith("mCurMethodId=") || t.startsWith("mCurId="))
                             && t.contains(packageName)) {
                         isCurrentIme = true;
@@ -2250,12 +2545,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // -------------------------------------------------------------------------
-    // 7. DeviceAdmin
-    //    OTHER: приложение имеет права администратора устройства —
-    //           системно защищено от принудительной остановки
-    //    Source: dumpsys device_policy
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeDeviceAdmin(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -2265,21 +2554,21 @@ public class AppTriggersAnalyzer {
 
             boolean isOwner  = false;
             boolean isAdmin  = false;
-            String  ownerType = null; // "device" or "profile"
+            String  ownerType = null;
 
             for (String line : dpOut.split("\n")) {
                 String t = line.trim();
-                // Device Owner
+
                 if ((t.startsWith("Device Owner:") || t.startsWith("mDeviceOwner="))
                         && t.contains(packageName)) {
                     isOwner = true; ownerType = "device";
                 }
-                // Profile Owner
+
                 if ((t.startsWith("Profile Owner") || t.startsWith("mProfileOwner="))
                         && t.contains(packageName)) {
                     isOwner = true; ownerType = "profile";
                 }
-                // Active admin list
+
                 if (t.contains("Active admin") || t.contains("AdminList:"))
                     isAdmin = t.contains(packageName);
                 if (!isAdmin && t.contains(packageName)
@@ -2311,22 +2600,12 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // =========================================================================
-    // AppOps
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // AppOps
-    //   CAN_WAKE / ACTIVE_NOW: операции разрешены системой и отражают реальную
-    //   фоновую активность (с таймстампом последнего использования)
-    //   Source: appops get <package>
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeAppOps(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         try {
-            // Primary: appops get <package>
-            // Fallback: cmd appops get <package>  (Android 11+, more stable on some ROMs)
+
+
             String out = shellManager.runShellCommandAndGetFullOutput(
                     "appops get " + packageName);
             if (out == null || out.trim().isEmpty()) {
@@ -2338,10 +2617,8 @@ public class AppTriggersAnalyzer {
             Pattern opPat   = Pattern.compile(
                     "^([A-Z_]+):\\s*(allow|foreground|ignore|deny|default)",
                     Pattern.CASE_INSENSITIVE);
-            // Time format varies:
-            //   Android 9-12:  time=+2m3s ago
-            //   Android 13+:   time=+1d 2h 3m 4s ago  (spaces between units)
-            //   Some ROMs:     time=+10m45s575ms ago   (ms suffix)
+
+
             Pattern timePat = Pattern.compile(
                     "time=\\+([\\d][\\d\\w\\s]*)ago", Pattern.CASE_INSENSITIVE);
 
@@ -2385,7 +2662,7 @@ public class AppTriggersAnalyzer {
                 }
             }
 
-            // If both RUN_IN_BACKGROUND and RUN_ANY_IN_BACKGROUND fired, keep only the stronger.
+
             boolean hasRunAny = false;
             boolean hasRun    = false;
             for (TriggerInfo i : list) {
@@ -2413,7 +2690,7 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    /** Returns descriptor only for ops that indicate background trigger activity. */
+
     private OpDescriptor appOpDescriptor(String op) {
         switch (op) {
             case "WAKE_LOCK":
@@ -2453,15 +2730,6 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    // =========================================================================
-    // UsageStats
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // UsageStats
-    //   OTHER: факт фонового старта — lastTimeUsed свежее lastTimeForeground
-    //   Source: dumpsys usagestats
-    // -------------------------------------------------------------------------
 
     private List<TriggerInfo> analyzeUsageStats(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -2470,10 +2738,7 @@ public class AppTriggersAnalyzer {
                     "dumpsys usagestats | grep -A 15 \"" + packageName + "\"");
             if (out == null || out.trim().isEmpty()) return list;
 
-            // Field names vary across ROMs:
-            //   AOSP:        lastTimeUsed=  lastTimeForeground=  totalTimeInForeground=
-            //   Samsung:     mLastTimeUsed= mLastTimeForeground= mTotalTimeInForeground=
-            //   Some ROMs:   last_time_used= last_time_fg=
+
             Pattern usedPat  = Pattern.compile(
                     "(?:lastTimeUsed|mLastTimeUsed|last_time_used)[=:](\\d+)");
             Pattern fgPat    = Pattern.compile(
@@ -2513,13 +2778,13 @@ public class AppTriggersAnalyzer {
             long sinceUsed = nowMs - lastUsed;
             long sinceFg   = lastFg > 0 ? nowMs - lastFg : -1;
 
-            // Sanity check: timestamps must be reasonable (within last 30 days)
+
             if (sinceUsed < 0 || sinceUsed > 30L * 24 * 3600 * 1000) return list;
 
-            // Not interesting if app was recently in foreground (user just used it)
+
             if (sinceFg >= 0 && sinceFg < 5 * 60 * 1000) return list;
 
-            // Background wake: lastTimeUsed is recent but lastTimeForeground is old/absent
+
             boolean isBgWake = sinceUsed < 10 * 60 * 1000
                     && (sinceFg < 0 || sinceFg > sinceUsed + 60_000);
 
@@ -2547,9 +2812,6 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-    // =========================================================================
-    // Shared helpers
-    // =========================================================================
 
     private String resolveUid(String packageName) {
         String out = shellManager.runShellCommandAndGetFullOutput(
