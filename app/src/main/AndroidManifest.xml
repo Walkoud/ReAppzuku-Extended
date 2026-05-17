@@ -101,13 +101,15 @@
             android:name=".RestrictionsScheduler$SchedulerReceiver"
             android:exported="false" />
         
-        <receiver android:name=".AppzukuWidget" android:exported="true">
+        <receiver
+            android:name=".AppzukuWidgetReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info" />
+                android:resource="@xml/appwidget_info" />
         </receiver>
 
         <provider
