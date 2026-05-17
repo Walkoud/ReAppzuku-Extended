@@ -10,7 +10,9 @@
     <string name="tile_background_kill_subtitle">Triggers the configured Auto-Kill</string>
     <string name="shortcut_kill_short_label">Stop app</string>
     <string name="shortcut_kill_long_label">Force-stop an app running in the background</string>
-
+    <string name="widget_kills">%d kills</string>
+    <string name="widget_freed">%s freed</string>
+    <string name="widget_no_kills">—</string>
     <!-- ══════════════════════════════════════════════
          COMMON / SHARED
          ══════════════════════════════════════════════ -->
