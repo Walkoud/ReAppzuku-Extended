@@ -5,98 +5,12 @@
     android:background="@drawable/widget_background"
     android:padding="12dp">
 
-    <ProgressBar
-        android:id="@+id/widget_ram_progress"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="6dp"
-        android:layout_alignParentTop="true"
-        android:max="100"
-        android:progress="0" />
-
     <TextView
         android:id="@+id/widget_ram_label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@id/widget_ram_progress"
-        android:layout_alignParentRight="true"
-        android:layout_marginTop="2dp"
         android:text="RAM: —"
-        android:textColor="#CCFFFFFF"
-        android:textSize="10sp" />
-
-    <View
-        android:id="@+id/widget_divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_below="@id/widget_ram_label"
-        android:layout_marginTop="6dp"
-        android:background="#22FFFFFF" />
-
-    <TextView
-        android:id="@+id/widget_kills_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_divider"
-        android:layout_alignParentLeft="true"
-        android:layout_marginTop="4dp"
-        android:text="0"
         android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_kills_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_kills_value"
-        android:layout_alignParentLeft="true"
-        android:text="kills 12h"
-        android:textColor="#88FFFFFF"
-        android:textSize="9sp" />
-
-    <TextView
-        android:id="@+id/widget_freed_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_divider"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="4dp"
-        android:text="0 MB"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_freed_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_freed_value"
-        android:layout_centerHorizontal="true"
-        android:text="freed"
-        android:textColor="#88FFFFFF"
-        android:textSize="9sp" />
-
-    <TextView
-        android:id="@+id/widget_last_kill_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_divider"
-        android:layout_alignParentRight="true"
-        android:layout_marginTop="4dp"
-        android:text="—"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/widget_last_kill_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/widget_last_kill_value"
-        android:layout_alignParentRight="true"
-        android:text="last kill"
-        android:textColor="#88FFFFFF"
-        android:textSize="9sp" />
+        android:textSize="12sp" />
 
 </RelativeLayout>
