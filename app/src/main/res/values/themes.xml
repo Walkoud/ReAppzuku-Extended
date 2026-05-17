@@ -396,6 +396,16 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
+    <style name="Widget.App.KillButton" parent="Widget.Material3.Button.UnelevatedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.App.ZeroCorner</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <style name="ShapeAppearance.App.ZeroCorner" parent="ShapeAppearance.Material3.Corner.None">
+        <item name="cornerSize">0dp</item>
+    </style>
+
     <style name="ToolbarDarkText" parent="Widget.Material3.Toolbar">
         <item name="titleTextColor">#FF000000</item>
         <item name="android:theme">@style/ThemeOverlay.DarkToolbarIcons</item>
