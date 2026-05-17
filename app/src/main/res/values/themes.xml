@@ -11,7 +11,6 @@
         <item name="android:activityCloseExitAnimation">@anim/no_anim</item>
     </style>
     
-    <!-- Базовая тема -->
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="android:windowAnimationStyle">@style/NoAnimationWindow</item>
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -22,7 +21,6 @@
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
     </style>
 
-    <!-- AMOLED — применяется через setTheme() ДО super.onCreate() -->
     <style name="AppTheme.Amoled" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowAnimationStyle">@style/NoAnimationWindow</item>
         <item name="colorPrimary">@color/colorPrimary</item>
@@ -38,7 +36,7 @@
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
     </style>
 
-    <!-- Акцент: Индиго -->
+    <!-- dark accents (white text needed)-->
     <style name="AppTheme.AccentIndigo" parent="AppTheme">
         <item name="colorPrimary">@color/accent_indigo_primary</item>
         <item name="colorSecondary">@color/accent_indigo_secondary</item>
@@ -56,7 +54,6 @@
         <item name="colorControlActivated">@color/accent_indigo_secondary</item>
     </style>
 
-    <!-- Акцент: Алый -->
     <style name="AppTheme.AccentCrimson" parent="AppTheme">
         <item name="colorPrimary">@color/accent_crimson_primary</item>
         <item name="colorSecondary">@color/accent_crimson_secondary</item>
@@ -74,7 +71,6 @@
         <item name="colorControlActivated">@color/accent_crimson_secondary</item>
     </style>
 
-    <!-- Акцент: Лесной зелёный -->
     <style name="AppTheme.AccentForest" parent="AppTheme">
         <item name="colorPrimary">@color/accent_forest_primary</item>
         <item name="colorSecondary">@color/accent_forest_secondary</item>
@@ -92,7 +88,6 @@
         <item name="colorControlActivated">@color/accent_forest_secondary</item>
     </style>
 
-    <!-- Акцент: Сланцево-синий -->
     <style name="AppTheme.AccentSlate" parent="AppTheme">
         <item name="colorPrimary">@color/accent_slate_primary</item>
         <item name="colorSecondary">@color/accent_slate_secondary</item>
@@ -110,7 +105,6 @@
         <item name="colorControlActivated">@color/accent_slate_secondary</item>
     </style>
 
-    <!-- Акцент: Пыльная роза -->
     <style name="AppTheme.AccentRose" parent="AppTheme">
         <item name="colorPrimary">@color/accent_rose_primary</item>
         <item name="colorSecondary">@color/accent_rose_secondary</item>
@@ -128,7 +122,6 @@
         <item name="colorControlActivated">@color/accent_rose_secondary</item>
     </style>
 
-    <!-- Акцент: Янтарный -->
     <style name="AppTheme.AccentAmber" parent="AppTheme">
         <item name="colorPrimary">@color/accent_amber_primary</item>
         <item name="colorSecondary">@color/accent_amber_secondary</item>
@@ -146,7 +139,6 @@
         <item name="colorControlActivated">@color/accent_amber_secondary</item>
     </style>
 
-    <!-- Акцент: Морская волна -->
     <style name="AppTheme.AccentTeal" parent="AppTheme">
         <item name="colorPrimary">@color/accent_teal_primary</item>
         <item name="colorSecondary">@color/accent_teal_secondary</item>
@@ -163,8 +155,7 @@
         <item name="android:colorControlActivated">@color/accent_teal_secondary</item>
         <item name="colorControlActivated">@color/accent_teal_secondary</item>
     </style>
-
-    <!-- Акцент: Терракота -->
+    
     <style name="AppTheme.AccentTerracota" parent="AppTheme">
         <item name="colorPrimary">@color/accent_terracota_primary</item>
         <item name="colorSecondary">@color/accent_terracota_secondary</item>
@@ -182,7 +173,6 @@
         <item name="colorControlActivated">@color/accent_terracota_secondary</item>
     </style>
 
-    <!-- Акцент: Мокко -->
     <style name="AppTheme.AccentMocha" parent="AppTheme">
         <item name="colorPrimary">@color/accent_mocha_primary</item>
         <item name="colorSecondary">@color/accent_mocha_secondary</item>
@@ -200,7 +190,6 @@
         <item name="colorControlActivated">@color/accent_mocha_secondary</item>
     </style>
 
-    <!-- Акцент: Оливковый -->
     <style name="AppTheme.AccentOlive" parent="AppTheme">
         <item name="colorPrimary">@color/accent_olive_primary</item>
         <item name="colorSecondary">@color/accent_olive_secondary</item>
@@ -218,7 +207,6 @@
         <item name="colorControlActivated">@color/accent_olive_secondary</item>
     </style>
 
-    <!-- Акцент: Стальной -->
     <style name="AppTheme.AccentSteel" parent="AppTheme">
         <item name="colorPrimary">@color/accent_steel_primary</item>
         <item name="colorSecondary">@color/accent_steel_secondary</item>
@@ -243,7 +231,6 @@
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.Material3.Dark.ActionBar" />
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.Material3.Light" />
 
-    <!-- CheckBox: галочка и рамка = colorControlActivated из темы -->
     <style name="Widget.App.CheckBox" parent="Widget.Material3.CompoundButton.CheckBox">
         <item name="buttonTint">?attr/colorControlActivated</item>
     </style>
@@ -256,7 +243,7 @@
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 
-    <!-- Акцент: Абрикосовый -->
+    <!-- light accents (black text needed) -->
     <style name="AppTheme.AccentApricot" parent="AppTheme">
         <item name="colorPrimary">@color/accent_apricot_primary</item>
         <item name="colorSecondary">@color/accent_apricot_secondary</item>
@@ -276,7 +263,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Небесный -->
     <style name="AppTheme.AccentSky" parent="AppTheme">
         <item name="colorPrimary">@color/accent_sky_primary</item>
         <item name="colorSecondary">@color/accent_sky_secondary</item>
@@ -296,7 +282,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Папайя -->
     <style name="AppTheme.AccentPapaya" parent="AppTheme">
         <item name="colorPrimary">@color/accent_papaya_primary</item>
         <item name="colorSecondary">@color/accent_papaya_secondary</item>
@@ -316,7 +301,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Лаванда -->
     <style name="AppTheme.AccentLavender" parent="AppTheme">
         <item name="colorPrimary">@color/accent_lavender_primary</item>
         <item name="colorSecondary">@color/accent_lavender_secondary</item>
@@ -336,7 +320,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Мятный -->
     <style name="AppTheme.AccentMint" parent="AppTheme">
         <item name="colorPrimary">@color/accent_mint_primary</item>
         <item name="colorSecondary">@color/accent_mint_secondary</item>
@@ -356,7 +339,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Персиковый -->
     <style name="AppTheme.AccentPeach" parent="AppTheme">
         <item name="colorPrimary">@color/accent_peach_primary</item>
         <item name="colorSecondary">@color/accent_peach_secondary</item>
@@ -376,7 +358,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Пудровый -->
     <style name="AppTheme.AccentPowder" parent="AppTheme">
         <item name="colorPrimary">@color/accent_powder_primary</item>
         <item name="colorSecondary">@color/accent_powder_secondary</item>
@@ -396,7 +377,6 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
-    <!-- Акцент: Туманный -->
     <style name="AppTheme.AccentFog" parent="AppTheme">
         <item name="colorPrimary">@color/accent_fog_primary</item>
         <item name="colorSecondary">@color/accent_fog_secondary</item>
