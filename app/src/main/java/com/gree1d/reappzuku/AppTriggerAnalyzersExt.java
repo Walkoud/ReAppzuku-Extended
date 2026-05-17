@@ -3,6 +3,8 @@ package com.gree1d.reappzuku;
 import android.content.Context;
 import android.util.Log;
 
+import com.gree1d.reappzuku.AppTriggersAnalyzer.TriggerInfo;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
