@@ -77,17 +77,17 @@ public class AppzukuWidget extends AppWidgetProvider {
                 }
             } catch (Exception ignored) {}
 
-            views.setTextViewText(R.id.widget_kills_value,
+            views.setTextViewText(R.id.widget_kills_text,
                     context.getString(R.string.widget_kills, totalKills));
 
-            views.setTextViewText(R.id.widget_freed_value,
+            views.setTextViewText(R.id.widget_freed_text,
                     formatRecoveredSize(context, totalRecoveredKb));
 
             if (lastKillTime > 0) {
                 DateFormat fmt = android.text.format.DateFormat.getTimeFormat(context);
-                views.setTextViewText(R.id.widget_last_kill_value, fmt.format(new Date(lastKillTime)));
+                views.setTextViewText(R.id.widget_last_kill_text, fmt.format(new Date(lastKillTime)));
             } else {
-                views.setTextViewText(R.id.widget_last_kill_value,
+                views.setTextViewText(R.id.widget_last_kill_text,
                         context.getString(R.string.widget_no_kills));
             }
 
