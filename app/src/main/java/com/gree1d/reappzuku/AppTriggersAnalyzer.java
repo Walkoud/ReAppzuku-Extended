@@ -1258,14 +1258,14 @@ public class AppTriggersAnalyzer {
         return null;
     }
 
-    private String resolveAppName(String pkg) {
+    String resolveAppName(String pkg) {
         try {
             ApplicationInfo info = context.getPackageManager().getApplicationInfo(pkg, 0);
             return context.getPackageManager().getApplicationLabel(info).toString();
         } catch (PackageManager.NameNotFoundException e) { return pkg; }
     }
 
-    private String bucketValueToName(int v) {
+    String bucketValueToName(int v) {
         if (v <= 10) return "ACTIVE";
         if (v <= 20) return "WORKING_SET";
         if (v <= 30) return "FREQUENT";
@@ -1274,7 +1274,7 @@ public class AppTriggersAnalyzer {
         return "NEVER";
     }
 
-    private String shortenAction(String action) {
+    String shortenAction(String action) {
         if (action.startsWith("android.intent.action.")) return action.substring(22);
         if (action.startsWith("android.net.conn."))      return action.substring(17);
         if (action.startsWith("android.net."))           return action.substring(12);
@@ -1309,14 +1309,14 @@ public class AppTriggersAnalyzer {
         return ci <= ca ? cur : cand;
     }
 
-    private String formatInterval(long ms) {
+    String formatInterval(long ms) {
         long sec = ms / 1000;
         if (sec < 60)   return context.getString(R.string.triggers_alarms_interval_sec,  (int) sec);
         if (sec < 3600) return context.getString(R.string.triggers_alarms_interval_min,  (int)(sec/60));
         return             context.getString(R.string.triggers_alarms_interval_hour, (int)(sec/3600));
     }
 
-    private String formatDuration(long ms) {
+    String formatDuration(long ms) {
         long sec = ms / 1000;
         if (sec < 60)   return sec + context.getString(R.string.time_unit_sec);
         if (sec < 3600) return (sec/60) + context.getString(R.string.time_unit_min);
