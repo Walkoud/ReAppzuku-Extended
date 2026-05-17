@@ -13,9 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="6dp"
         android:max="100"
-        android:progress="0"
-        android:progressTint="@color/colorAccent"
-        android:progressBackgroundTint="#44FFFFFF" />
+        android:progress="0" />
 
     <TextView
         android:id="@+id/widget_ram_label"
