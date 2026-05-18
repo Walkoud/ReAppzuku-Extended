@@ -252,6 +252,8 @@ public class MainActivity extends BaseActivity {
             Menu menu = popup.getMenu();
             menu.findItem(R.id.action_add_to_list).setVisible(false);
             menu.findItem(R.id.action_uninstall).setVisible(false);
+            menu.findItem(R.id.action_whitelist).setVisible(false);
+            menu.findItem(R.id.action_blacklist).setVisible(false);
             popup.setOnMenuItemClickListener(item -> {
                 int id = item.getItemId();
                 if (id == R.id.action_app_info) {
@@ -260,6 +262,9 @@ public class MainActivity extends BaseActivity {
                 } else if (id == R.id.action_app_triggers) {
                     showAppTriggersDialog(app);
                     return true;
+                } else if (id == R.id.action_hidden) {
+                    toggleListMembership(app, "hidden");
+                    return true;                  
                 }
                 return false;
             });
