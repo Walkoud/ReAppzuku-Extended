@@ -30,6 +30,7 @@ public final class PreferenceKeys {
     // Service & Automation
     public static final String KEY_AUTO_KILL_ENABLED = "autoKillEnabled";
     public static final String KEY_PERIODIC_KILL_ENABLED = "periodicKillEnabled";
+    public static final String KEY_AUTO_KILL_PENDING_RSS = "auto_kill_pending_rss";
     public static final String KEY_KILL_INTERVAL = "killInterval";
     public static final String KEY_KILL_ON_SCREEN_OFF = "killOnScreenOff";
 

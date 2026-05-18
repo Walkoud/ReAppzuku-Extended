@@ -8,6 +8,9 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
@@ -154,25 +157,36 @@ public class AutoKillManager {
 
             Log.d(TAG, "toKill list (" + toKill.size() + "): " + toKill);
 
+            // Проверяем пакеты из предыдущего цикла: если их нет в ps — RAM действительно освобождена
+            Map<String, Long> pendingRss = loadPendingRss();
+            Map<String, Long> confirmedFreedKb = new HashMap<>();
+            for (Map.Entry<String, Long> entry : pendingRss.entrySet()) {
+                String pkg = entry.getKey();
+                if (!psRssMap.containsKey(pkg)) {
+                    confirmedFreedKb.put(pkg, entry.getValue());
+                    Log.d(TAG, "Confirmed freed RAM for " + pkg + ": " + entry.getValue() + " KB");
+                } else {
+                    Log.d(TAG, "Skipped RAM (relaunched): " + pkg);
+                }
+            }
+            if (!confirmedFreedKb.isEmpty()) {
+                recordConfirmedRam(confirmedFreedKb);
+            }
+
             if (!toKill.isEmpty()) {
-                Map<String, Long> recoveredKbByPackage = new HashMap<>();
+                // Kill выполнен — записываем сразу, без RAM
+                recordSuccessfulKills(toKill, null);
+
+                // Сохраняем RSS убиваемых пакетов — проверим в следующем цикле
+                Map<String, Long> newPendingRss = new HashMap<>();
                 for (String pkg : toKill) {
                     long rssKb = psRssMap.getOrDefault(pkg, 0L);
-                    if (rssKb == 0) {
-
-                        for (AppModel app : currentAppsList) {
-                            if (app.getPackageName().equals(pkg)) {
-                                rssKb = app.getAppRamBytes();
-                                break;
-                            }
-                        }
-                    }
                     if (rssKb > 0) {
-                        recoveredKbByPackage.put(pkg, rssKb);
-                        Log.d(TAG, "RAM for " + pkg + ": " + rssKb + " KB");
+                        newPendingRss.put(pkg, rssKb);
+                        Log.d(TAG, "Pending RSS for " + pkg + ": " + rssKb + " KB");
                     }
                 }
-                recordSuccessfulKills(toKill, recoveredKbByPackage);
+                savePendingRss(newPendingRss);
 
                 String killCommand = toKill.stream()
                         .map(this::buildKillCommand)
@@ -188,6 +202,8 @@ public class AutoKillManager {
                 }
                 com.gree1d.reappzuku.db.AppDatabase db = com.gree1d.reappzuku.db.AppDatabase.getInstance(context);
                 checkRelaunches(toKill, db);
+            } else {
+                savePendingRss(new HashMap<>());
             }
 
             if (onComplete != null)
@@ -402,6 +418,15 @@ public class AutoKillManager {
         }
     }
 
+    private void recordConfirmedRam(Map<String, Long> confirmedFreedKb) {
+        if (confirmedFreedKb == null || confirmedFreedKb.isEmpty()) return;
+        com.gree1d.reappzuku.db.AppStatsDao appStatsDao =
+                com.gree1d.reappzuku.db.AppDatabase.getInstance(context).appStatsDao();
+        for (Map.Entry<String, Long> entry : confirmedFreedKb.entrySet()) {
+            appStatsDao.addRecoveredKb(entry.getKey(), entry.getValue());
+        }
+    }
+
     private String resolveInstalledAppName(PackageManager packageManager, String packageName) {
         try {
             ApplicationInfo appInfo = packageManager.getApplicationInfo(packageName, 0);
@@ -452,6 +477,37 @@ public class AutoKillManager {
             return String.format(java.util.Locale.US, "%.2f GB", kb / (1024f * 1024f));
     }
 
+
+    private Map<String, Long> loadPendingRss() {
+        Map<String, Long> result = new HashMap<>();
+        String json = sharedpreferences.getString(KEY_AUTO_KILL_PENDING_RSS, null);
+        if (json == null) return result;
+        try {
+            JSONObject obj = new JSONObject(json);
+            java.util.Iterator<String> keys = obj.keys();
+            while (keys.hasNext()) {
+                String pkg = keys.next();
+                result.put(pkg, obj.getLong(pkg));
+            }
+        } catch (JSONException ignored) {
+        }
+        return result;
+    }
+
+    private void savePendingRss(Map<String, Long> pendingRss) {
+        JSONObject obj = new JSONObject();
+        try {
+            for (Map.Entry<String, Long> entry : pendingRss.entrySet()) {
+                obj.put(entry.getKey(), entry.getValue());
+            }
+        } catch (JSONException ignored) {
+        }
+        sharedpreferences.edit().putString(KEY_AUTO_KILL_PENDING_RSS, obj.toString()).apply();
+    }
+
+    public void clearPendingRss() {
+        sharedpreferences.edit().remove(KEY_AUTO_KILL_PENDING_RSS).apply();
+    }
 
     public Set<String> getHiddenApps() {
         return new HashSet<>(sharedpreferences.getStringSet(KEY_HIDDEN_APPS, new HashSet<>()));
