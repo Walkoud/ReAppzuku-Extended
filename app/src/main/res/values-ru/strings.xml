@@ -842,6 +842,7 @@
     <string name="triggers_appops_activity_recognition_explanation">Приложение использует Activity Recognition API — периодически получает обновления о движении в фоне.</string>
 
     <!-- UsageStats -->
+    <string name="triggers_cat_receivers_dynamic">Динамические ресиверы (%d)</string>
     <string name="triggers_cat_usagestats">Фоновый запуск</string>
     <string name="triggers_usagestats_last_used">использовалось %1$s назад</string>
     <string name="triggers_usagestats_last_fg">на переднем плане %1$s назад</string>
