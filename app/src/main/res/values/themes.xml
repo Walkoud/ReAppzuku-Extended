@@ -414,4 +414,21 @@
     <style name="ThemeOverlay.DarkToolbarIcons" parent="ThemeOverlay.AppCompat.Light">
         <item name="colorControlNormal">#FF000000</item>
     </style>
+    <style name="AppTheme.AccentCustom" parent="AppTheme.AccentIndigo">
+    </style>
+
+    <style name="AppTheme.AccentCustom.Amoled" parent="AppTheme.Amoled">
+    </style>
+
+    <style name="AppTheme_AccentCustomOverride" parent="">
+    </style>
+
+    <style name="ToolbarWhiteText" parent="Widget.Material3.Toolbar">
+        <item name="titleTextColor">#FFFFFFFF</item>
+        <item name="android:theme">@style/ThemeOverlay.LightToolbarIcons</item>
+    </style>
+
+    <style name="ThemeOverlay.LightToolbarIcons" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="colorControlNormal">#FFFFFFFF</item>
+    </style>
 </resources>
