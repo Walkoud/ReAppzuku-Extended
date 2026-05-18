@@ -4,7 +4,7 @@
     android:layout_height="48dp"
     android:gravity="center_vertical"
     android:paddingStart="16dp"
-    android:paddingEnd="16dp"
+    android:paddingEnd="12dp"
     android:background="?attr/selectableItemBackground"
     android:orientation="horizontal">
 
@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:textSize="14sp"
-        android:textColor="@color/text_primary" />
+        android:textColor="?attr/colorOnSurface" />
 
     <CheckBox
         android:id="@+id/item_checkbox"
