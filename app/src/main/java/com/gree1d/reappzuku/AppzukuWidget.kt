@@ -1,6 +1,7 @@
 package com.gree1d.reappzuku
 
 import android.content.Context
+import androidx.annotation.Keep
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
