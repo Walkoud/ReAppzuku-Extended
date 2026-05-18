@@ -75,7 +75,7 @@ android {
     }
 
     composeOptions {
-        kotlinCompilerExtensionVersion '1.5.14'
+        kotlinCompilerExtensionVersion '1.5.3'
     }
 
     lint {
@@ -108,6 +108,6 @@ dependencies {
     implementation "androidx.core:core-ktx:1.16.0"
 
     // Glance
-    implementation "androidx.glance:glance-appwidget:1.1.1"
-    implementation "androidx.glance:glance:1.1.1"
+    implementation "androidx.glance:glance-appwidget:1.0.0"
+    implementation "androidx.glance:glance:1.0.0"
 }
