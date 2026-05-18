@@ -41,6 +41,10 @@ import android.widget.Toast;
 import android.net.Uri;
 import androidx.appcompat.app.AlertDialog;
 
+import android.widget.PopupWindow;
+import android.widget.ImageView;
+import android.view.LayoutInflater;
+
 import rikka.shizuku.Shizuku;
 
 import static com.gree1d.reappzuku.PreferenceKeys.*;
@@ -245,85 +249,129 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showAppOptionsMenu(AppModel app, View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenuInflater().inflate(R.menu.menu_app_options, popup.getMenu());
-
-        if (app.isProtected()) {
-            Menu menu = popup.getMenu();
-            menu.findItem(R.id.action_uninstall).setVisible(false);
-        
-            MenuItem addToListItem = menu.findItem(R.id.action_add_to_list);
-            Menu subMenu = addToListItem.getSubMenu();
-            subMenu.findItem(R.id.action_whitelist).setVisible(false);
-            subMenu.findItem(R.id.action_blacklist).setVisible(false);
-            subMenu.findItem(R.id.action_background_restriction).setVisible(false);
-        
-            String packageName = app.getPackageName();
-            subMenu.findItem(R.id.action_hidden).setChecked(
-                    appManager.getHiddenApps().contains(packageName));
-        
-            popup.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.action_app_info) {
-                    openAppInfo(app.getPackageName());
-                    return true;
-                } else if (id == R.id.action_app_triggers) {
-                    showAppTriggersDialog(app);
-                    return true;
-                } else if (id == R.id.action_hidden) {
-                    toggleListMembership(app, "hidden");
-                    return true;
-                }
-                return false;
-            });
-            popup.show();
-            return;
-        }
-
-        if (app.isSystemApp()) {
-            popup.getMenu().findItem(R.id.action_uninstall).setVisible(false);
-        }
-
+        LayoutInflater inflater = LayoutInflater.from(this);
+        LinearLayout popupRoot = (LinearLayout) inflater.inflate(R.layout.popup_app_options, null);
+    
+        boolean isDark = sharedPreferences.getBoolean(KEY_AMOLED, false)
+                || sharedPreferences.getInt(KEY_THEME,
+                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                        == androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
+    
         String packageName = app.getPackageName();
-        popup.getMenu().findItem(R.id.action_whitelist).setChecked(
-                appManager.getWhitelistedApps().contains(packageName));
-        popup.getMenu().findItem(R.id.action_blacklist).setChecked(
-                autoKillManager.getBlacklistedApps().contains(packageName));
-        popup.getMenu().findItem(R.id.action_hidden).setChecked(
-                appManager.getHiddenApps().contains(packageName));
-        MenuItem restrictionItem = popup.getMenu().findItem(R.id.action_background_restriction);
-        restrictionItem.setVisible(appManager.supportsBackgroundRestriction());
-        restrictionItem.setChecked(app.isBackgroundRestrictionDesired());
-        restrictionItem.setTitle(getBackgroundRestrictionMenuTitle(app));
-
-        popup.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.action_app_info) {
-                openAppInfo(packageName);
-                return true;
-            } else if (id == R.id.action_app_triggers) {
-                showAppTriggersDialog(app);
-                return true;
-            } else if (id == R.id.action_uninstall) {
-                showUninstallConfirmation(app);
-                return true;
-            } else if (id == R.id.action_whitelist) {
-                toggleListMembership(app, "whitelist");
-                return true;
-            } else if (id == R.id.action_blacklist) {
-                toggleListMembership(app, "blacklist");
-                return true;
-            } else if (id == R.id.action_hidden) {
-                toggleListMembership(app, "hidden");
-                return true;
-            } else if (id == R.id.action_background_restriction) {
-                toggleBackgroundRestriction(app);
-                return true;
-            }
-            return false;
+    
+        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_info), false, false, () -> {
+            openAppInfo(packageName);
         });
-
-        popup.show();
+    
+        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_triggers), false, false, () -> {
+            showAppTriggersDialog(app);
+        });
+    
+        if (app.isProtected()) {
+            addPopupItem(inflater, popupRoot, getString(R.string.menu_hidden), true,
+                    appManager.getHiddenApps().contains(packageName), () -> {
+                        toggleListMembership(app, "hidden");
+                    });
+        } else {
+            if (!app.isSystemApp()) {
+                addPopupItem(inflater, popupRoot, getString(R.string.menu_uninstall), false, false, () -> {
+                    showUninstallConfirmation(app);
+                });
+            }
+    
+            View groupHeader = inflater.inflate(R.layout.popup_menu_group_header, popupRoot, false);
+            TextView groupTitle = groupHeader.findViewById(R.id.group_title);
+            ImageView groupArrow = groupHeader.findViewById(R.id.group_arrow);
+            groupTitle.setText(getString(R.string.menu_add_to));
+    
+            LinearLayout subContainer = new LinearLayout(this);
+            subContainer.setOrientation(LinearLayout.VERTICAL);
+            subContainer.setVisibility(View.GONE);
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_whitelist), true,
+                    appManager.getWhitelistedApps().contains(packageName), () -> {
+                        toggleListMembership(app, "whitelist");
+                    });
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_blacklist), true,
+                    autoKillManager.getBlacklistedApps().contains(packageName), () -> {
+                        toggleListMembership(app, "blacklist");
+                    });
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.menu_hidden), true,
+                    appManager.getHiddenApps().contains(packageName), () -> {
+                        toggleListMembership(app, "hidden");
+                    });
+    
+            if (appManager.supportsBackgroundRestriction()) {
+                addPopupItemToContainer(inflater, subContainer, getBackgroundRestrictionMenuTitle(app), true,
+                        app.isBackgroundRestrictionDesired(), () -> {
+                            toggleBackgroundRestriction(app);
+                        });
+            }
+    
+            groupHeader.setOnClickListener(v -> {
+                if (subContainer.getVisibility() == View.GONE) {
+                    subContainer.setVisibility(View.VISIBLE);
+                    groupArrow.setRotation(180f);
+                } else {
+                    subContainer.setVisibility(View.GONE);
+                    groupArrow.setRotation(0f);
+                }
+            });
+    
+            popupRoot.addView(groupHeader);
+            popupRoot.addView(subContainer);
+        }
+    
+        PopupWindow popupWindow = new PopupWindow(popupRoot,
+                (int) (220 * getResources().getDisplayMetrics().density),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                true);
+        popupWindow.setElevation(12f);
+        popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        popupWindow.setOutsideTouchable(true);
+    
+        popupRoot.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+    
+        int[] location = new int[2];
+        anchor.getLocationOnScreen(location);
+        int anchorX = location[0];
+        int anchorY = location[1];
+        int anchorHeight = anchor.getHeight();
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int popupHeight = popupRoot.getMeasuredHeight();
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int popupWidth = (int) (220 * getResources().getDisplayMetrics().density);
+    
+        int x = Math.min(anchorX, screenWidth - popupWidth - 8);
+        int y;
+        if (anchorY + anchorHeight + popupHeight <= screenHeight) {
+            y = anchorY + anchorHeight;
+        } else {
+            y = anchorY - popupHeight;
+        }
+    
+        popupWindow.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y);
+    }
+    
+    private void addPopupItem(LayoutInflater inflater, LinearLayout container,
+                               String title, boolean checkable, boolean checked, Runnable action) {
+        addPopupItemToContainer(inflater, container, title, checkable, checked, action);
+    }
+    
+    private void addPopupItemToContainer(LayoutInflater inflater, LinearLayout container,
+                                          String title, boolean checkable, boolean checked, Runnable action) {
+        View item = inflater.inflate(R.layout.popup_menu_item, container, false);
+        TextView tv = item.findViewById(R.id.item_title);
+        CheckBox cb = item.findViewById(R.id.item_checkbox);
+        tv.setText(title);
+        if (checkable) {
+            cb.setVisibility(View.VISIBLE);
+            cb.setChecked(checked);
+        }
+        item.setOnClickListener(v -> action.run());
+        container.addView(item);
     }
 
     private void openAppInfo(String packageName) {
