@@ -10,6 +10,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.LinearProgressIndicator
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -38,32 +40,41 @@ import java.util.Date
 import java.util.Locale
 import androidx.annotation.Keep
 
+// ── Palette ──────────────────────────────────────────────────────────────────
+private val BgSurface      = Color(0xFF1A1C24)   // чуть теплее, меньше синевы
+private val BgCard         = Color(0xFF22242E)   // чуть светлее фона
+private val TextPrimary    = Color(0xFFE8EAF0)
+private val TextSecondary  = Color(0x80E8EAF0)   // 50% primary
+private val AccentBlue     = Color(0xFF82CAFF)   // пастельнее (M3 tertiary)
+private val AccentGreen    = Color(0xFF81C784)
+private val AccentAmber    = Color(0xFFFFCA28)
+private val AccentRed      = Color(0xFFEF9A9A)   // мягче чем 0xFFEF5350
+
 @Keep
 class AppzukuWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = withContext(Dispatchers.IO) { loadData(context) }
-        provideContent {
-            WidgetContent(data)
-        }
+        provideContent { WidgetContent(data) }
     }
 
     @Composable
     private fun WidgetContent(data: WidgetData) {
         val ramColor = when {
-            data.ramProgress < 0.40f -> Color(0xFF66BB6A)
-            data.ramProgress < 0.75f -> Color(0xFF4FC3F7)
-            data.ramProgress < 0.90f -> Color(0xFFFFB300)
-            else -> Color(0xFFEF5350)
+            data.ramProgress < 0.40f -> AccentGreen
+            data.ramProgress < 0.75f -> AccentBlue
+            data.ramProgress < 0.90f -> AccentAmber
+            else                     -> AccentRed
         }
 
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(Color(0xFF13151C))
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .background(BgSurface)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // ── RAM row ──────────────────────────────────────────────────────
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -71,23 +82,26 @@ class AppzukuWidget : GlanceAppWidget() {
                 Text(
                     text = "RAM",
                     style = TextStyle(
-                        color = ColorProvider(Color(0x4DFFFFFF)),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold
+                        color = ColorProvider(TextSecondary),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 )
-                Spacer(modifier = GlanceModifier.width(6.dp))
+                Spacer(modifier = GlanceModifier.width(8.dp))
                 Box(
-                    modifier = GlanceModifier.defaultWeight().height(4.dp)
+                    modifier = GlanceModifier
+                        .defaultWeight()
+                        .height(5.dp)
+                        .cornerRadius(3.dp)
                 ) {
-                    androidx.glance.appwidget.LinearProgressIndicator(
+                    LinearProgressIndicator(
                         progress = data.ramProgress,
-                        modifier = GlanceModifier.fillMaxWidth().height(4.dp),
+                        modifier = GlanceModifier.fillMaxWidth().height(5.dp),
                         color = ColorProvider(ramColor),
-                        backgroundColor = ColorProvider(Color(0x14FFFFFF))
+                        backgroundColor = ColorProvider(Color(0x1AFFFFFF))
                     )
                 }
-                Spacer(modifier = GlanceModifier.width(6.dp))
+                Spacer(modifier = GlanceModifier.width(8.dp))
                 Text(
                     text = data.ramLabel,
                     style = TextStyle(
@@ -98,8 +112,9 @@ class AppzukuWidget : GlanceAppWidget() {
                 )
             }
 
-            Spacer(modifier = GlanceModifier.height(7.dp))
+            Spacer(modifier = GlanceModifier.height(8.dp))
 
+            // ── Stat cards ───────────────────────────────────────────────────
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -108,21 +123,21 @@ class AppzukuWidget : GlanceAppWidget() {
                 StatCard(
                     value = data.kills,
                     label = "kills 12h",
-                    accentColor = Color(0xFF4FC3F7),
+                    accentColor = AccentBlue,
                     modifier = GlanceModifier.defaultWeight()
                 )
-                Spacer(modifier = GlanceModifier.width(5.dp))
+                Spacer(modifier = GlanceModifier.width(6.dp))
                 StatCard(
                     value = data.freed,
                     label = "freed",
-                    accentColor = Color(0xFF66BB6A),
+                    accentColor = AccentGreen,
                     modifier = GlanceModifier.defaultWeight()
                 )
-                Spacer(modifier = GlanceModifier.width(5.dp))
+                Spacer(modifier = GlanceModifier.width(6.dp))
                 StatCard(
                     value = data.lastKill,
                     label = "last kill",
-                    accentColor = Color(0xFFFFA726),
+                    accentColor = AccentAmber,
                     modifier = GlanceModifier.defaultWeight()
                 )
             }
@@ -137,39 +152,30 @@ class AppzukuWidget : GlanceAppWidget() {
         modifier: GlanceModifier
     ) {
         Column(
-            modifier = modifier,
+            modifier = modifier
+                .background(BgCard)
+                .cornerRadius(12.dp)
+                .padding(horizontal = 10.dp, vertical = 7.dp),
             horizontalAlignment = Alignment.Start
         ) {
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .height(2.dp)
-                    .background(accentColor)
-            ) {}
-            Column(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .background(Color(0x0AFFFFFF))
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = value,
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+            Text(
+                text = value,
+                style = TextStyle(
+                    color = ColorProvider(TextPrimary),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = label,
-                    style = TextStyle(
-                        color = ColorProvider(Color(0x4DFFFFFF)),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+            )
+            Spacer(modifier = GlanceModifier.height(2.dp))
+            // цветная метка вместо цветной черты — меньше визуального шума
+            Text(
+                text = label,
+                style = TextStyle(
+                    color = ColorProvider(accentColor.copy(alpha = 0.85f)),
+                    fontSize = 8.sp,
+                    fontWeight = FontWeight.Medium
                 )
-            }
+            )
         }
     }
 
@@ -182,9 +188,7 @@ class AppzukuWidget : GlanceAppWidget() {
 
         @JvmStatic
         fun updateAllWidgetsFromJava(context: Context) {
-            GlobalScope.launch {
-                updateAllWidgets(context)
-            }
+            GlobalScope.launch { updateAllWidgets(context) }
         }
 
         private fun loadData(context: Context): WidgetData {
@@ -201,7 +205,7 @@ class AppzukuWidget : GlanceAppWidget() {
             } catch (_: Exception) {}
 
             val ramProgress = if (totalRamMb > 0) (usedRamMb.toFloat() / totalRamMb) else 0f
-            val ramLabel = if (totalRamMb > 0) "$usedRamMb / $totalRamMb MB" else "RAM: —"
+            val ramLabel = if (totalRamMb > 0) "$usedRamMb / $totalRamMb MB" else "—"
 
             var totalKills = 0
             var totalRecoveredKb = 0L
@@ -217,9 +221,9 @@ class AppzukuWidget : GlanceAppWidget() {
                 }
             } catch (_: Exception) {}
 
-            val lastKillStr = if (lastKillTime > 0) {
+            val lastKillStr = if (lastKillTime > 0)
                 DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(lastKillTime))
-            } else "—"
+            else "—"
 
             return WidgetData(
                 ramProgress = ramProgress,
