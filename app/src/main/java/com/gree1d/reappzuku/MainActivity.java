@@ -44,7 +44,6 @@ import androidx.appcompat.app.AlertDialog;
 import android.widget.PopupWindow;
 import android.widget.ImageView;
 import android.view.LayoutInflater;
-import android.widget.CheckBox;
 
 import rikka.shizuku.Shizuku;
 
@@ -371,7 +370,12 @@ public class MainActivity extends BaseActivity {
             cb.setVisibility(View.VISIBLE);
             cb.setChecked(checked);
         }
-        item.setOnClickListener(v -> action.run());
+        item.setOnClickListener(v -> {
+            if (checkable) {
+                cb.setChecked(!cb.isChecked());
+            }
+            action.run();
+        });
         container.addView(item);
     }
 
