@@ -18,7 +18,7 @@ public final class AppConstants {
         public static final int RELAUNCH_GREEDY_THRESHOLD = 3;
 
         // Delays
-        public static final int RELAUNCH_CHECK_DELAY_MS = 2000;
+        public static final int RELAUNCH_CHECK_DELAY_MS = 8000;
         public static final int ROOT_CHECK_TIMEOUT_MS = 1000;
 
         // RAM Monitor
