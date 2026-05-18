@@ -167,7 +167,7 @@ class AppzukuWidget : GlanceAppWidget() {
                     fontWeight = FontWeight.Bold
                 )
             )
-            Spacer(modifier = GlanceModifier.height(2.dp))
+            Spacer(modifier = GlanceModifier.height(0.dp))
             // цветная метка вместо цветной черты — меньше визуального шума
             Text(
                 text = label,
