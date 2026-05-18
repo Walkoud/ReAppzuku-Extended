@@ -299,7 +299,7 @@ Identifies which other apps hold an active binder connection to this one. For ex
 Detects active wake locks — `PARTIAL_WAKE_LOCK` (CPU running, screen off) and `FULL_WAKE_LOCK` (screen stays on too). Shows the lock tag, type, and hold duration.
 
 - **Network activity**
-Directly reads `/proc/net/tcp` and `/proc/net/tcp6` to find active TCP connections with `ESTABLISHED` status. Also shows total traffic (incoming and outgoing) via `dumpsys netstats` — only traffic over 10 KB is counted. An active connection means the app is communicating with a server right now.
+Analyses app's network activity via `dumpsys netstats` and `dumpsys connectivity`. Shows total traffic (inbound and outbound) — only traffic exceeding 10 KB is counted — as well as active TCP connections with `ESTABLISHED` status. An active connection means the app is communicating with a server right now
 
 - **Sensors**
 Detects active subscriptions to hardware sensors: accelerometer, gyroscope, barometer, GPS, heart rate monitor, and others. Shows sensor names and polling rate where available.
