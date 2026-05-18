@@ -163,7 +163,7 @@ class AppzukuWidget : GlanceAppWidget() {
                 text = value,
                 style = TextStyle(
                     color = ColorProvider(TextPrimary),
-                    fontSize = 17.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold
                 )
             )
@@ -173,7 +173,7 @@ class AppzukuWidget : GlanceAppWidget() {
                 text = label,
                 style = TextStyle(
                     color = ColorProvider(accentColor.copy(alpha = 0.85f)),
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
                 )
             )
