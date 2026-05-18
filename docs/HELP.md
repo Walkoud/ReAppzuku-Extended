@@ -638,7 +638,9 @@ How it works:
 
 > ⚠️ Only works with user-installed apps — system apps cannot be frozen (limitation of modern Android)
 
-> ⚠️ Enabling Sleep Mode restarts the app — this is required for proper initialization
+> ℹ️ Enabling Sleep Mode restarts the app — this is required for proper initialization
+
+> 💡 If target app was on home screen, his icon may disappear or move after using Sleep Mode. This is a specific Android behavior when using pm disable/enable commands.
 
 #### Sleep Mode App List
 
