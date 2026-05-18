@@ -1,0 +1,4 @@
+-keep class androidx.glance.** { *; }
+-keep class androidx.datastore.** { *; }
+-keep class kotlin.coroutines.** { *; }
+-keep class kotlinx.coroutines.** { *; }
