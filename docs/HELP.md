@@ -702,7 +702,9 @@ App ranking by combined score (Kills + restarts + RAM volume). Filterable by: 12
 >
 > • Kill (+1) — the app was force-stopped.\
 > • Relaunch (+2) — the app restarted after being killed; counts double because it actively fights back.\
-> • RAM — every 100 MB of freed memory adds +1 point; usually a minor factor.
+> • RAM — every 100 MB of freed memory adds +1 point; usually a minor factor.\
+
+> ℹ️ Freed RAM statistics are only counted if app is not running again during next Auto-Kill cycle. This calculation is truly accurate because if the app relaunch, it occupies same RAM again (resulting in 0% RAM profit).
 
 #### Background Restrictions log
 
