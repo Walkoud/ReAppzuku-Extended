@@ -211,7 +211,7 @@ Added to the notification shade:
 
 ### Widget
 
-A home screen widget — one tap runs Auto-Kill and shows current RAM usage.
+Home screen widget - shows Auto-Kill statistics for the last 12 hours and current RAM load.
 
 ### Shortcut
 
@@ -278,27 +278,27 @@ Determined by the process priority in the Linux kernel (oom_score_adj) — the s
 
 These triggers indicate that the app is consuming resources **right now**.
 
-- **Chain Start**
+- **Chain Launch**
 Identifies who launched this process and how. Two mechanisms are detected:\
-**Direct call** — another app explicitly started this process via a service or activity (`callingPackage` / `clientPackage`).\
-**Broadcast** — the app was launched by a broadcast from a third-party app. Shows the sender name and action, e.g. `CONNECTIVITY_CHANGE`.
+  - **Direct call** — another app explicitly started this process via a service or activity (`callingPackage` / `clientPackage`).\
+  - **Broadcast** — the app was launched by a broadcast from a third-party app. Shows the sender name and action, e.g. `CONNECTIVITY_CHANGE`.
 
 - **Foreground Service**
 Detects active foreground services — those that hold a persistent notification and cannot be killed by the system. Shows the service class name, its type (media playback, location, connected device, etc.), and whether it can be stopped along with the task.
 
-- **Foreground Notification Channel**
+- **FG Notification Channel**
 Supplements foreground service info: shows the notification channel importance. A notification with URGENT or HIGH importance displays as a pop-up banner — extremely difficult for the system to suppress, making force-stopping the app nearly impossible.
 
 - **Sticky Service**
 Services declared with `START_STICKY`, which Android automatically restarts after killing. This is why some apps come back instantly — Android itself brings them back.
 
-- **Held by Bindings**
+- **Held by bindings**
 Identifies which other apps hold an active binder connection to this one. For example, Google Play Services or push notification services may keep an app in memory via binding. Shows a list of "holders" with app names.
 
 - **WakeLock**
 Detects active wake locks — `PARTIAL_WAKE_LOCK` (CPU running, screen off) and `FULL_WAKE_LOCK` (screen stays on too). Shows the lock tag, type, and hold duration.
 
-- **Network Activity**
+- **Network activity**
 Directly reads `/proc/net/tcp` and `/proc/net/tcp6` to find active TCP connections with `ESTABLISHED` status. Also shows total traffic (incoming and outgoing) via `dumpsys netstats` — only traffic over 10 KB is counted. An active connection means the app is communicating with a server right now.
 
 - **Sensors**
@@ -319,18 +319,14 @@ Detects active Bluetooth Low Energy scanning. BLE scanning internally holds a wa
 - **GATT Connection**
 Detects open connections to Bluetooth peripheral devices via the GATT protocol. An active connection keeps the process alive for its entire duration.
 
-- **WAKE_LOCK**
-The app has acquired a CPU wake lock via AppOps — the processor was kept active on its behalf. Shows how long ago the last acquisition occurred.
-
-- **START_FOREGROUND**
-The app recently started a foreground service. Shows how long ago that happened.
-
-- **ACTIVITY_RECOGNITION**
-The app is subscribed to motion updates via the Activity Recognition API — periodically receives data about physical activity (walking, running, in a vehicle, etc.) in the background. Shows how long ago the last update occurred.
+- **AppOps**
+  - **WAKE_LOCK** — The app has acquired a CPU wake lock via AppOps — the processor was kept active on its behalf. Shows how long ago the last acquisition occurred.
+  - **START_FOREGROUND** — The app recently started a foreground service. Shows how long ago that happened.
+  - **ACTIVITY_RECOGNITION** — The app is subscribed to motion updates via the Activity Recognition API — periodically receives data about physical activity (walking, running, in a vehicle, etc.) in the background. Shows how long ago the last update occurred.
 
 ---
 
-#### Can Wake the App at Any Time
+#### Can wake up app at any time
 
 These triggers indicate that the system **may start or resume** the app without any user action.
 
@@ -346,34 +342,28 @@ Shows registered pending intents by type: Activity, Service, and Broadcast. A Pe
 - **Excessive Wakeups**
 A historical summary from `dumpsys batterystats` of how many times the app actually woke the device: broken down by alarms, jobs, GCM/FCM messages, and broadcasts. High counts confirm that scheduled triggers fire frequently in practice.
 
-- **ContentObservers**
+- **Content Observers**
 Detects registered `ContentObserver` subscriptions. When a tracked URI changes (contacts, media library, settings, calendar, etc.), the system delivers a callback — waking the app if it isn't running.
 
 - **Push Notifications (FCM)**
 Detects Firebase Cloud Messaging registration in the app's manifest: `FirebaseMessagingService` or an FCM broadcast receiver. Google Play Services can wake this app at any moment upon receiving a push message, regardless of battery optimization settings.
 
-- **RUN_IN_BACKGROUND**
-The system battery policy explicitly allows this app to run in the background. It will not be suspended when the screen is off.
-
-- **RUN_ANY_IN_BACKGROUND**
-The app is fully excluded from battery optimization — it has unrestricted background access with no system limitations.
-
-- **SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM**
-The app has permission for exact alarms that fire at a specified time regardless of Doze mode and battery saving.
-
-- **USER_INTERACTION**
-The app recently received a signal indicating an explicit user interaction, which may have triggered a background launch. Shows how long ago this occurred.
+- **AppOps**
+  - **RUN_IN_BACKGROUND** — The system battery policy explicitly allows this app to run in the background. It will not be suspended when the screen is off.
+  - **RUN_ANY_IN_BACKGROUND** — The app is fully excluded from battery optimization — it has unrestricted background access with no system limitations.
+  - **SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM** — The app has permission for exact alarms that fire at a specified time regardless of Doze mode and battery saving.
+  - **USER_INTERACTION** — The app recently received a signal indicating an explicit user interaction, which may have triggered a background launch. Shows how long ago this occurred.
 
 ---
 
-#### Other Triggers
+#### Others triggers
 
 Passive factors that affect background behavior but don't indicate current activity.
 
 - **Broadcast Receivers**
 Lists all system events the app is subscribed to in its manifest: network changes, charger connection, timezone changes, screen on/off, and others. `BOOT` and `CONNECTIVITY` subscriptions are flagged as potentially aggressive.
 
-- **Boot Autostart**
+- **Boot autostart**
 Checks whether the app is registered for system boot events: `BOOT_COMPLETED` (after full boot) and `LOCKED_BOOT_COMPLETED` (before the screen is unlocked). The latter is a sign of especially aggressive autostart — the app launches before the PIN/password is entered.
 
 - **App Standby Bucket**
@@ -403,7 +393,7 @@ Identifies sync adapters — a mechanism for periodic server synchronization. Ac
 - **Broadcast Efficiency**
 Shows how many broadcasts were delivered to the app and how many required a cold process start. A high percentage of cold starts means the system regularly kills and restarts the app.
 
-- **Battery Load History**
+- **Battery usage history**
 Stats since the last battery reset: number and total duration of wakelock holds, alarm wakeups, job and sync launches. Supplements the current snapshot with data over a longer period.
 
 - **Background Start**
