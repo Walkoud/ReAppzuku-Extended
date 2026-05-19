@@ -207,37 +207,37 @@ public class AppTriggersAnalyzer {
 
         List<TriggerInfo> results = new ArrayList<>();
 
-        safeAdd(results, () -> analyzeProcessState(packageName));
-        safeAdd(results, () -> analyzeServicesAndBindings(packageName));
-        safeAdd(results, () -> analyzeFgNotification(packageName));
-        safeAdd(results, () -> analyzeWakelocks(packageName));
-        safeAdd(results, () -> analyzeNetworkActivity(packageName));
-        safeAdd(results, () -> analyzeSensors(packageName));
-        safeAdd(results, () -> analyzeLocationRequests(packageName));
-        safeAdd(results, () -> analyzeAudioFocus(packageName));
-        safeAdd(results, () -> analyzeBluetooth(packageName));
+        safeAdd(results, "ProcessState",          () -> analyzeProcessState(packageName));
+        safeAdd(results, "ServicesAndBindings",    () -> analyzeServicesAndBindings(packageName));
+        safeAdd(results, "FgNotification",         () -> analyzeFgNotification(packageName));
+        safeAdd(results, "Wakelocks",              () -> analyzeWakelocks(packageName));
+        safeAdd(results, "NetworkActivity",        () -> analyzeNetworkActivity(packageName));
+        safeAdd(results, "Sensors",                () -> analyzeSensors(packageName));
+        safeAdd(results, "LocationRequests",       () -> analyzeLocationRequests(packageName));
+        safeAdd(results, "AudioFocus",             () -> analyzeAudioFocus(packageName));
+        safeAdd(results, "Bluetooth",              () -> analyzeBluetooth(packageName));
 
-        safeAdd(results, () -> ext.analyzeAlarms(packageName));
-        safeAdd(results, () -> ext.analyzeJobs(packageName));
-        safeAdd(results, () -> ext.analyzePendingIntents(packageName));
-        safeAdd(results, () -> ext.analyzeExcessiveWakeups(packageName));
-        safeAdd(results, () -> ext.analyzeContentObservers(packageName));
-        safeAdd(results, () -> ext.analyzeFcmRegistration(packageName));
-        safeAdd(results, () -> ext.analyzeAppOps(packageName));
+        safeAdd(results, "Alarms",                 () -> ext.analyzeAlarms(packageName));
+        safeAdd(results, "Jobs",                   () -> ext.analyzeJobs(packageName));
+        safeAdd(results, "PendingIntents",         () -> ext.analyzePendingIntents(packageName));
+        safeAdd(results, "ExcessiveWakeups",       () -> ext.analyzeExcessiveWakeups(packageName));
+        safeAdd(results, "ContentObservers",       () -> ext.analyzeContentObservers(packageName));
+        safeAdd(results, "FcmRegistration",        () -> ext.analyzeFcmRegistration(packageName));
+        safeAdd(results, "AppOps",                 () -> ext.analyzeAppOps(packageName));
 
-        safeAdd(results, () -> ext.analyzeChainLaunch(packageName));
-        safeAdd(results, () -> ext.analyzeBroadcastReceivers(packageName));
-        safeAdd(results, () -> ext.analyzeBootReceivers(packageName));
-        safeAdd(results, () -> ext.analyzeContentProviders(packageName));
-        safeAdd(results, () -> ext.analyzeSyncAdapters(packageName));
-        safeAdd(results, () -> ext.analyzeDozeExemption(packageName));
-        safeAdd(results, () -> ext.analyzeStandbyBucket(packageName));
-        safeAdd(results, () -> ext.analyzeBatteryStats(packageName));
-        safeAdd(results, () -> ext.analyzeBroadcastEfficiency(packageName));
-        safeAdd(results, () -> ext.analyzeMultipleProcesses(packageName));
-        safeAdd(results, () -> ext.analyzeAccessibilityAndIme(packageName));
-        safeAdd(results, () -> ext.analyzeDeviceAdmin(packageName));
-        safeAdd(results, () -> ext.analyzeUsageStats(packageName));
+        safeAdd(results, "ChainLaunch",            () -> ext.analyzeChainLaunch(packageName));
+        safeAdd(results, "BroadcastReceivers",     () -> ext.analyzeBroadcastReceivers(packageName));
+        safeAdd(results, "BootReceivers",          () -> ext.analyzeBootReceivers(packageName));
+        safeAdd(results, "ContentProviders",       () -> ext.analyzeContentProviders(packageName));
+        safeAdd(results, "SyncAdapters",           () -> ext.analyzeSyncAdapters(packageName));
+        safeAdd(results, "DozeExemption",          () -> ext.analyzeDozeExemption(packageName));
+        safeAdd(results, "StandbyBucket",          () -> ext.analyzeStandbyBucket(packageName));
+        safeAdd(results, "BatteryStats",           () -> ext.analyzeBatteryStats(packageName));
+        safeAdd(results, "BroadcastEfficiency",    () -> ext.analyzeBroadcastEfficiency(packageName));
+        safeAdd(results, "MultipleProcesses",      () -> ext.analyzeMultipleProcesses(packageName));
+        safeAdd(results, "AccessibilityAndIme",    () -> ext.analyzeAccessibilityAndIme(packageName));
+        safeAdd(results, "DeviceAdmin",            () -> ext.analyzeDeviceAdmin(packageName));
+        safeAdd(results, "UsageStats",             () -> ext.analyzeUsageStats(packageName));
 
         if (results.isEmpty()) {
             results.add(new TriggerInfo(
@@ -317,13 +317,28 @@ public class AppTriggersAnalyzer {
 
     private interface Analyzer { List<TriggerInfo> run() throws Exception; }
 
-    private void safeAdd(List<TriggerInfo> out, Analyzer a) {
+    private void safeAdd(List<TriggerInfo> out, String name, Analyzer a) {
         try {
             List<TriggerInfo> partial = a.run();
-            if (partial != null) out.addAll(partial);
+            if (partial != null && !partial.isEmpty()) {
+                out.addAll(partial);
+                Log.d(TAG, name + " - OK (" + partial.size() + " trigger(s): "
+                        + summarizeTriggers(partial) + ")");
+            } else {
+                Log.d(TAG, name + " - OK (no triggers)");
+            }
         } catch (Exception e) {
-            Log.w(TAG, "analyzer failed: " + e.getMessage());
+            Log.w(TAG, name + " - ERROR: " + e.getMessage());
         }
+    }
+
+    private String summarizeTriggers(List<TriggerInfo> list) {
+        StringBuilder sb = new StringBuilder();
+        for (TriggerInfo t : list) {
+            if (sb.length() > 0) sb.append(", ");
+            sb.append(t.category);
+        }
+        return sb.toString();
     }
 
     private List<TriggerInfo> analyzeProcessState(String packageName) {
@@ -604,6 +619,7 @@ public class AppTriggersAnalyzer {
                 boolean byTag = line.contains(packageName);
                 if (!byUid && !byTag) continue;
 
+                Log.d(TAG, "Wakelocks/dumpsys power - matched line: " + line.trim());
 
                 String typeLabel, typeExplain;
                 if      (line.contains("PARTIAL"))      { typeLabel="Partial";   typeExplain=context.getString(R.string.triggers_wakelock_partial_explain); }
@@ -657,6 +673,7 @@ public class AppTriggersAnalyzer {
         }
 
         if (list.isEmpty()) {
+            Log.d(TAG, "Wakelocks/dumpsys power - no matches, trying batterystats fallback");
             String bsOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys batterystats " + packageName);
             if (bsOut != null) {
@@ -694,10 +711,14 @@ public class AppTriggersAnalyzer {
         try {
             netstats = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys netstats detail | grep -A5 uid=" + uid);
-            if (netstats == null || netstats.trim().isEmpty())
+            if (netstats == null || netstats.trim().isEmpty()) {
+                Log.d(TAG, "NetworkActivity/netstats detail - empty, trying fallback");
                 netstats = shellManager.runShellCommandAndGetFullOutput(
                         "dumpsys netstats | grep " + packageName);
-        } catch (Exception e) { Log.w(TAG, "netstats failed: " + e.getMessage()); }
+            } else {
+                Log.d(TAG, "NetworkActivity/netstats detail - OK");
+            }
+        } catch (Exception e) { Log.w(TAG, "NetworkActivity/netstats - ERROR: " + e.getMessage()); }
         if (netstats != null) {
             Matcher mRx = Pattern.compile("rxBytes=(\\d+)").matcher(netstats);
             Matcher mTx = Pattern.compile("txBytes=(\\d+)").matcher(netstats);
@@ -722,7 +743,7 @@ public class AppTriggersAnalyzer {
                     }
                 }
             }
-        } catch (Exception e) { Log.w(TAG, "connectivity failed: " + e.getMessage()); }
+        } catch (Exception e) { Log.w(TAG, "NetworkActivity/connectivity - ERROR: " + e.getMessage()); }
 
         long total = rxBytes + txBytes;
         if (total < 10 * 1024 && established.isEmpty()) return list;
@@ -754,7 +775,14 @@ public class AppTriggersAnalyzer {
         List<TriggerInfo> list = new ArrayList<>();
 
         List<String> sensors = parseSensorService(packageName);
-        if (sensors.isEmpty()) sensors = parseSensorsBatteryStats(packageName);
+        if (sensors.isEmpty()) {
+            Log.d(TAG, "Sensors/sensorservice - no results, trying batterystats fallback");
+            sensors = parseSensorsBatteryStats(packageName);
+            if (!sensors.isEmpty()) Log.d(TAG, "Sensors/batterystats - OK: " + sensors);
+            else Log.d(TAG, "Sensors/batterystats - no results");
+        } else {
+            Log.d(TAG, "Sensors/sensorservice - OK: " + sensors);
+        }
         if (sensors.isEmpty()) return list;
 
         boolean heavy = sensors.stream()
@@ -1198,6 +1226,7 @@ public class AppTriggersAnalyzer {
                             + (scanMode != null ? " · mode:" + scanMode : "");
                     boolean isLowLatency = scanMode != null
                             && scanMode.toUpperCase().contains("LOW_LATENCY");
+                    Log.d(TAG, "Bluetooth/manager - BLE scan found: count=" + scanCnt + " mode=" + scanMode);
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
                             context.getString(R.string.triggers_cat_ble_scan),
                             detail,
@@ -1207,7 +1236,7 @@ public class AppTriggersAnalyzer {
                             isLowLatency ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
                 }
             }
-        } catch (Exception e) { Log.w(TAG, "analyzeBluetooth/manager failed: " + e.getMessage()); }
+        } catch (Exception e) { Log.w(TAG, "Bluetooth/manager - ERROR: " + e.getMessage()); }
 
 
         try {
@@ -1234,6 +1263,7 @@ public class AppTriggersAnalyzer {
                 }
 
                 if (connCnt > 0) {
+                    Log.d(TAG, "Bluetooth/gatt - connections found: count=" + connCnt + " addrs=" + addrs);
                     StringBuilder detail = new StringBuilder(
                             context.getString(R.string.triggers_gatt_conn_count, connCnt));
                     if (!addrs.isEmpty())
@@ -1245,7 +1275,7 @@ public class AppTriggersAnalyzer {
                             TriggerInfo.Severity.HIGH));
                 }
             }
-        } catch (Exception e) { Log.w(TAG, "analyzeBluetooth/gatt failed: " + e.getMessage()); }
+        } catch (Exception e) { Log.w(TAG, "Bluetooth/gatt - ERROR: " + e.getMessage()); }
 
         return list;
     }
