@@ -14,6 +14,7 @@
     <string name="widget_freed">RAM Freed</string>
     <string name="widget_last_kill">Last Kill</string>
     <string name="widget_ram">RAM</string>
+    
     <!-- ══════════════════════════════════════════════
          COMMON / SHARED
          ══════════════════════════════════════════════ -->
@@ -203,9 +204,9 @@
     <string name="settings_notification_mode_title">Notifications</string>
     <string name="settings_notification_mode_all">All</string>
     <string name="settings_notification_mode_important_only">Important only</string>
-    <string name="settings_accent_custom_label">Custom color</string>
+    <string name="settings_accent_custom_label">Custom</string>
     <string name="settings_accent_custom_picker_title">Pick accent color</string>
-    <string name="settings_accent_on_color_title">Text and icon color</string>
+    <string name="settings_accent_on_color_title">Text color</string>
     <string name="settings_accent_on_color_white">White</string>
     <string name="settings_accent_on_color_black">Black</string>
 
