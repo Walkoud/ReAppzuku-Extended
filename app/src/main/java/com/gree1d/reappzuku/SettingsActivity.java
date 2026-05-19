@@ -123,6 +123,7 @@ public class SettingsActivity extends BaseActivity {
                 androidx.core.graphics.drawable.DrawableCompat.setTint(
                         binding.toolbar.getNavigationIcon(), textColor);
             applyCustomAccentToSectionHeaders(customColor);
+            applyCustomAccentToSwitches(customColor);
             return;
         }
 
@@ -146,6 +147,49 @@ public class SettingsActivity extends BaseActivity {
             TextView tv = findViewById(id);
             if (tv != null) tv.setTextColor(color);
         }
+    }
+
+    private void applyCustomAccentToSwitches(int color) {
+        int trackColor = darkenColor(color, 0.6f);
+
+        int[] switchIds = {
+            R.id.switch_auto_kill,
+            R.id.switch_periodic_kill,
+            R.id.switch_kill_screen_off,
+            R.id.switch_ram_threshold,
+            R.id.switch_sleep_mode
+        };
+
+        for (int id : switchIds) {
+            com.google.android.material.switchmaterial.SwitchMaterial sw = findViewById(id);
+            if (sw == null) continue;
+
+            android.content.res.ColorStateList thumbTint = new android.content.res.ColorStateList(
+                new int[][] {
+                    new int[] { android.R.attr.state_checked },
+                    new int[] {}
+                },
+                new int[] { color, 0xFFAAAAAA }
+            );
+            android.content.res.ColorStateList trackTint = new android.content.res.ColorStateList(
+                new int[][] {
+                    new int[] { android.R.attr.state_checked },
+                    new int[] {}
+                },
+                new int[] { trackColor, 0xFF555555 }
+            );
+            sw.setThumbTintList(thumbTint);
+            sw.setTrackTintList(trackTint);
+        }
+    }
+
+    private static int darkenColor(int color, float factor) {
+        int a = android.graphics.Color.alpha(color);
+        int r = Math.round(android.graphics.Color.red(color)   * factor);
+        int g = Math.round(android.graphics.Color.green(color) * factor);
+        int b = Math.round(android.graphics.Color.blue(color)  * factor);
+        return android.graphics.Color.argb(a,
+                Math.min(r, 255), Math.min(g, 255), Math.min(b, 255));
     }
 
     private void setupBottomNavigation() {

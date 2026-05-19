@@ -542,6 +542,12 @@ public class MainActivity extends BaseActivity {
         detailView.setText(trigger.detail);
         explanationView.setText(trigger.explanation);
 
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            categoryView.setTextColor(color);
+        }
+
         if (trigger.explanation == null || trigger.explanation.isEmpty()) {
             arrowView.setVisibility(View.INVISIBLE);
         } else {
