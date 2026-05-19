@@ -53,7 +53,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                 case ACCENT_POWDER:    setTheme(R.style.AppTheme_AccentPowder_Amoled);    break;
                 case ACCENT_FOG:       setTheme(R.style.AppTheme_AccentFog_Amoled);       break;
 
-                case ACCENT_CUSTOM:    setTheme(R.style.AppTheme_Amoled);                 break;
                 default:               setTheme(R.style.AppTheme_Amoled);                 break;
             }
         } else if (isSystemTheme || accent == ACCENT_SYSTEM) {
@@ -79,7 +78,6 @@ public abstract class BaseActivity extends AppCompatActivity {
                 case ACCENT_PEACH:     setTheme(R.style.AppTheme_AccentPeach);     break;
                 case ACCENT_POWDER:    setTheme(R.style.AppTheme_AccentPowder);    break;
                 case ACCENT_FOG:       setTheme(R.style.AppTheme_AccentFog);       break;
-                case ACCENT_CUSTOM:    setTheme(R.style.AppTheme_AccentIndigo);    break;
                 default:               setTheme(R.style.AppTheme_AccentIndigo);    break;
             }
         }
@@ -114,7 +112,7 @@ public abstract class BaseActivity extends AppCompatActivity {
         if (accent == ACCENT_CUSTOM) {
             return sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
         }
-        return MaterialColors.getColor(this, com.google.android.material.R.attr.colorPrimary, Color.BLUE);
+        return MaterialColors.getColor(this, androidx.appcompat.R.attr.colorPrimary, Color.BLUE);
     }
 
     public int getOnAccentColor() {

@@ -1,6 +1,7 @@
 package com.gree1d.reappzuku;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -133,7 +134,7 @@ public class StatisticsActivity extends BaseActivity {
                     ? Color.BLACK : Color.WHITE;
             binding.toolbar.setBackgroundColor(customColor);
             binding.toolbar.setTitleTextColor(onColor);
-            binding.toolbar.setNavigationIconTint(onColor);
+            binding.toolbar.setNavigationIconTint(ColorStateList.valueOf(onColor));
         } else if (accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
             binding.toolbar.setTitleTextColor(Color.WHITE);

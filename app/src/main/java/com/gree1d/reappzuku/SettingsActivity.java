@@ -7,6 +7,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -118,7 +119,7 @@ public class SettingsActivity extends BaseActivity {
             binding.toolbar.setBackgroundColor(customColor);
             int textColor = (onColor == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE;
             binding.toolbar.setTitleTextColor(textColor);
-            binding.toolbar.setNavigationIconTint(textColor);
+            binding.toolbar.setNavigationIconTint(ColorStateList.valueOf(textColor));
             return;
         }
 
@@ -944,15 +945,7 @@ public class SettingsActivity extends BaseActivity {
         if (accentValue == ACCENT_CUSTOM) {
             int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
             binding.textAccent.setText(String.format("#%06X", 0xFFFFFF & color));
-            if (binding.accentColorSwatch != null) {
-                binding.accentColorSwatch.setVisibility(View.VISIBLE);
-                GradientDrawable swatch = new GradientDrawable();
-                swatch.setShape(GradientDrawable.OVAL);
-                swatch.setColor(color);
-                binding.accentColorSwatch.setBackground(swatch);
-            }
         } else {
-            if (binding.accentColorSwatch != null) binding.accentColorSwatch.setVisibility(View.GONE);
             String[] accentLabels = getResources().getStringArray(R.array.settings_accent_labels);
             if (accentValue >= 0 && accentValue < accentLabels.length)
                 binding.textAccent.setText(accentLabels[accentValue]);

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.Manifest;
 import android.os.Build;
@@ -105,7 +106,7 @@ public class MainActivity extends BaseActivity {
                     ? Color.BLACK : Color.WHITE;
             binding.toolbar.setBackgroundColor(customColor);
             binding.toolbar.setTitleTextColor(onColor);
-            binding.toolbar.setNavigationIconTint(onColor);
+            binding.toolbar.setNavigationIconTint(ColorStateList.valueOf(onColor));
         } else if (!isAmoled && accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
             binding.toolbar.setTitleTextColor(Color.WHITE);
@@ -213,16 +214,16 @@ public class MainActivity extends BaseActivity {
             int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
                     ? Color.BLACK : Color.WHITE;
             binding.killButton.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(customColor));
+                    ColorStateList.valueOf(customColor));
             binding.killButton.setTextColor(onColor);
         } else if (accent != ACCENT_SYSTEM) {
             int accentColor = resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
             binding.killButton.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(accentColor));
+                    ColorStateList.valueOf(accentColor));
             binding.killButton.setTextColor(isLightAccent() ? Color.BLACK : Color.WHITE);
         } else {
             binding.killButton.setBackgroundTintList(
-                    android.content.res.ColorStateList.valueOf(Color.parseColor("#0136FF")));
+                    ColorStateList.valueOf(Color.parseColor("#0136FF")));
             binding.killButton.setTextColor(Color.WHITE);
         }
     }
