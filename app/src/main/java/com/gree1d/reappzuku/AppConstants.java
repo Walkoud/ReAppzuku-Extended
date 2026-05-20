@@ -5,7 +5,7 @@ public final class AppConstants {
         }
 
         // Custom accents
-        public static final int ACCENT_CUSTOM = 19;
+        public static final int ACCENT_CUSTOM = 20;
         public static final int ACCENT_ON_WHITE = 0;
         public static final int ACCENT_ON_BLACK = 1;
         public static final int ACCENT_CUSTOM_DEFAULT_COLOR = 0xFF4B0082;
