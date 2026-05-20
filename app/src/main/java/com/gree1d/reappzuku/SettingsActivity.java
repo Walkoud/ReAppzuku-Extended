@@ -498,9 +498,9 @@ public class SettingsActivity extends BaseActivity {
                 ? android.content.res.ColorStateList.valueOf(getDialogAccentColor()) : null;
         for (int i = 0; i < types.length; i++) {
             android.widget.RadioButton rb = new android.widget.RadioButton(this);
-            rb.setText(types[i]); rb.setId(i);
-            int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
-            rb.setPadding(dp8, dp8, dp8, dp8);
+            rb.setText(types[i]); rb.setId(1000 + i);
+            int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+            rb.setPadding(dp12, dp12, dp12, dp12);
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -508,7 +508,7 @@ public class SettingsActivity extends BaseActivity {
             if (tint != null) rb.setButtonTintList(tint);
             group.addView(rb);
         }
-        group.check(autoKillManager.getAutoKillType());
+        group.check(1000 + autoKillManager.getAutoKillType());
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setCustomTitle(titleView)
@@ -519,8 +519,8 @@ public class SettingsActivity extends BaseActivity {
             showAutoKillTypeHelpDialog(() -> showAutoKillTypeDialog());
         });
         group.setOnCheckedChangeListener((g, id) -> {
-            autoKillManager.setAutoKillType(id);
-            updateAutoKillTypeText(id);
+            autoKillManager.setAutoKillType(id - 1000);
+            updateAutoKillTypeText(id - 1000);
             dialog.dismiss();
         });
         dialog.show();
@@ -1659,12 +1659,12 @@ public class SettingsActivity extends BaseActivity {
                 ? android.content.res.ColorStateList.valueOf(getDialogAccentColor())
                 : null;
 
-        int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
         for (int i = 0; i < options.length; i++) {
             android.widget.RadioButton rb = new android.widget.RadioButton(this);
             rb.setText(options[i]);
-            rb.setId(i);
-            rb.setPadding(dp8, dp8, dp8, dp8);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
             android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                     android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -1672,7 +1672,7 @@ public class SettingsActivity extends BaseActivity {
             if (tint != null) rb.setButtonTintList(tint);
             group.addView(rb);
         }
-        group.check(selected);
+        group.check(1000 + selected);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(view)
@@ -1680,7 +1680,7 @@ public class SettingsActivity extends BaseActivity {
                 .create();
 
         group.setOnCheckedChangeListener((g, checkedId) -> {
-            onPick.accept(checkedId);
+            onPick.accept(checkedId - 1000);
             dialog.dismiss();
         });
 
