@@ -873,7 +873,7 @@
     <string name="triggers_bt_permissions_explanation">Android 12+: приложение имеет разрешения на BT-сканирование и/или подключение. Может инициировать сканирование при broadcast.</string>
     <string name="triggers_kernel_wakelock_explanation">Приложение удерживает kernel-уровень wakelock (/sys/power/wake_lock). Крайне редкий случай, указывает на нестандартный драйвер или системный компонент.</string>
 
-    <string name="triggers_alarm_throttled_explanation">Система отменяет аларм из-за app_standby или battery_saver. Приложение пытается запустить себя по таймеру, но HyperOS блокирует.</string>
+    <string name="triggers_alarm_throttled_explanation">Система отменяет аларм из-за app_standby или battery_saver. Приложение пытается запустить себя по таймеру, но система блокирует.</string>
     <string name="triggers_bal_privilege_explanation">Android 14+: приложение получило токен на запуск из фона. Обычно выдаётся системой при FCM high-priority, точном аларме, или PendingIntent от видимого приложения.</string>
     <string name="triggers_bal_blocked_detail_prefix">BAL blocked by system · caller=</string>
     <string name="triggers_bal_blocked_explanation">Android 14+: система заблокировала попытку запуска из фона. Приложение пытается стартовать Activity или FGS без разрешения.</string>
