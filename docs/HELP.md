@@ -29,7 +29,9 @@
 
 ## What is ReAppzuku?
 
-**ReAppzuku** is a background process manager for Android. It force-stops unnecessary background apps to free up RAM and extend battery life.
+**ReAppzuku** is Android utility for background process diagnostics and management. It offers wide selection of restriction scenarios for every app.\
+
+`Why even need ReAppzuku if modern Android handles app control well on its own?` — It doesn't. OS developers actively improve and modernize system mechanisms for process management. Meanwhile, numerous loopholes allow apps to remain active in background. These range from harmless receivers to aggressive Alarms, Wakelocks, and other retention mechanisms. Ultimately, they prevent devices from entering deep standby mode, overload CPU/RAM, and gladly drain battery power.
 
 ---
 
