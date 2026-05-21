@@ -1,9 +1,9 @@
 package com.gree1d.reappzuku;
 
-import android.os.Build;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -151,12 +151,14 @@ public class AppTriggersAnalyzer {
             }
             if (tag == null || !tag.contains(packageName)) return null;
             AlarmEntry entry = new AlarmEntry(type, tag, fireDiff, interval, exact, whileIdle, isWakeup);
-            for (String line : lines) {
-                String t = line.trim();
-                if (t.contains("pendingBroadcast=true") || t.contains("deferredBroadcast=true"))
-                    entry.pendingBroadcast = true;
-                if (t.contains("QUOTA_EXCEEDED") || t.contains("quotaExceeded=true"))
-                    entry.quotaExceeded = true;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                for (String line : lines) {
+                    String t = line.trim();
+                    if (t.contains("pendingBroadcast=true") || t.contains("deferredBroadcast=true"))
+                        entry.pendingBroadcast = true;
+                    if (t.contains("QUOTA_EXCEEDED") || t.contains("quotaExceeded=true"))
+                        entry.quotaExceeded = true;
+                }
             }
             return entry;
         }
@@ -210,8 +212,31 @@ public class AppTriggersAnalyzer {
     private final ShellManager           shellManager;
     private final Context                context;
     private final AppTriggerAnalyzersExt ext;
-    final int                            apiLevel;
 
+    final int apiLevel;
+
+    static final int API_CMD_APPOPS        = Build.VERSION_CODES.O;
+    static final int API_STANDBY_BUCKET    = Build.VERSION_CODES.P;
+    static final int API_PROCESS_FREEZER   = Build.VERSION_CODES.R;
+    static final int API_FGS_BG_BLOCKED    = Build.VERSION_CODES.S;
+    static final int API_RECEIVER_EXPORTED = Build.VERSION_CODES.TIRAMISU;
+    static final int API_BAL_PRIVILEGES    = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    static final int API_MEDIA_PROCESSING  = Build.VERSION_CODES.VANILLA_ICE_CREAM;
+
+    // ── Android 11–13 fallback patterns ──────────────────────────────────────
+    private static final Pattern FROZEN_SECTION_PAT  = Pattern.compile(
+            "Apps frozen:\\s*([\\d, ]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FGS_BG_START_PAT    = Pattern.compile("startedFromBg=(true|false)");
+    private static final Pattern FGS_OPT_IN_PAT      = Pattern.compile("fgsStartedWhileOptIn=(true|false)");
+    private static final Pattern LOCATION_PROVIDER_PAT = Pattern.compile(
+            "provider=(gps|network|fused|passive|gnss)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern BLE_CALLBACK_PAT    = Pattern.compile("scanCallbackType=([\\w_]+)");
+    private static final Pattern BLE_REPORT_DELAY_PAT = Pattern.compile("reportDelay=(\\d+)");
+    private static final Pattern WORK_SOURCE_PAT     = Pattern.compile("WorkSource\\{(\\d+)\\s+([\\w.]+)\\}");
+    private static final Pattern ACQUIRE_TIME_PAT    = Pattern.compile("acquireTime=(\\d+)");
+    static final Pattern DOZE_STATE_PAT      = Pattern.compile("mState=([A-Z_]+)");
+    static final Pattern LIGHT_DOZE_PAT      = Pattern.compile("mLightState=([A-Z_]+)");
+    
     String cachedUid = null;
 
     public AppTriggersAnalyzer(Context context, ShellManager shellManager) {
@@ -421,6 +446,32 @@ public class AppTriggersAnalyzer {
                 detail,
                 context.getString(R.string.triggers_proc_state_explanation, label),
                 severity));
+
+        // Android 11–13: Process Freezer (cgroup v2)
+        if (apiLevel >= API_PROCESS_FREEZER && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            String pid = null;
+            try {
+                String psOut = shellManager.runShellCommandAndGetFullOutput(
+                        "ps -eo pid,name | grep " + packageName);
+                if (psOut != null) {
+                    for (String line : psOut.trim().split("\n")) {
+                        String[] parts = line.trim().split("\\s+");
+                        if (parts.length >= 2 && parts[1].startsWith(packageName)) {
+                            pid = parts[0]; break;
+                        }
+                    }
+                }
+            } catch (Exception e) { Log.w(TAG, "frozen pid lookup failed: " + e.getMessage()); }
+            if (isProcessFrozen(packageName, pid)) {
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_proc_state),
+                        "Process Frozen (cgroup freezer)",
+                        "Процесс заморожен системой (Android 11+): выполнение остановлено, " +
+                        "но процесс не убит. Размораживается автоматически при обращении.",
+                        TriggerInfo.Severity.INFO));
+            }
+        }
+
         return list;
     }
 
@@ -503,7 +554,8 @@ public class AppTriggersAnalyzer {
             if (t.contains("ServiceRecord") && t.contains(packageName)) {
                 if (inBlock) {
                     emitServiceTriggers(list, currentSvc, packageName, fgType, notifChannel,
-                            notifImport, killable, isForeground, isSticky, isBfslPush, fgsAllowStartReason);
+                            notifImport, killable, isForeground, isSticky, isBfslPush,
+                            fgsAllowStartReason);
                 }
                 inBlock      = true;
                 currentSvc   = extractServiceShortName(t, packageName);
@@ -519,7 +571,8 @@ public class AppTriggersAnalyzer {
             }
             if (inBlock && t.contains("ServiceRecord") && !t.contains(packageName)) {
                 emitServiceTriggers(list, currentSvc, packageName, fgType, notifChannel,
-                        notifImport, killable, isForeground, isSticky, isBfslPush, fgsAllowStartReason);
+                        notifImport, killable, isForeground, isSticky, isBfslPush,
+                        fgsAllowStartReason);
                 inBlock = false;
             }
             if (!inBlock) continue;
@@ -545,15 +598,29 @@ public class AppTriggersAnalyzer {
                 isBfslPush = true;
             }
 
-            Matcher mAllow = FGS_ALLOW_START_PAT.matcher(t);
-            if (mAllow.find()) {
-                String reason = mAllow.group(1);
-                if (!reason.equals("NONE") && !reason.equals("PUSH_MESSAGING")) {
-                    fgsAllowStartReason = reason;
+            if (apiLevel >= API_BAL_PRIVILEGES) {
+                Matcher mAllow = FGS_ALLOW_START_PAT.matcher(t);
+                if (mAllow.find()) {
+                    String reason = mAllow.group(1);
+                    if (!reason.equals("NONE") && !reason.equals("PUSH_MESSAGING")) {
+                        fgsAllowStartReason = reason;
+                    }
                 }
             }
 
-            if (apiLevel >= android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            // Android 12–13: FGS started from background / via exemption
+            if (apiLevel >= API_FGS_BG_BLOCKED && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+                Matcher mBg = FGS_BG_START_PAT.matcher(t);
+                if (mBg.find() && "true".equals(mBg.group(1)) && fgsAllowStartReason == null) {
+                    fgsAllowStartReason = "started-from-bg";
+                }
+                Matcher mOpt = FGS_OPT_IN_PAT.matcher(t);
+                if (mOpt.find() && "true".equals(mOpt.group(1)) && fgsAllowStartReason == null) {
+                    fgsAllowStartReason = "via-exemption";
+                }
+            }
+
+            if (apiLevel >= API_MEDIA_PROCESSING) {
                 Matcher mExceeded = FGS_EXCEEDED_PAT.matcher(t);
                 if (mExceeded.find() && "true".equals(mExceeded.group(1))) {
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
@@ -563,7 +630,6 @@ public class AppTriggersAnalyzer {
                             "Система должна была вызвать onTimeout() и остановить сервис.",
                             TriggerInfo.Severity.HIGH));
                 }
-
                 Matcher mRemain = FGS_TIMEOUT_PAT.matcher(t);
                 if (mRemain.find()) {
                     long remainMs = Long.parseLong(mRemain.group(1));
@@ -589,7 +655,8 @@ public class AppTriggersAnalyzer {
 
         if (inBlock) {
             emitServiceTriggers(list, currentSvc, packageName, fgType, notifChannel,
-                    notifImport, killable, isForeground, isSticky, isBfslPush, fgsAllowStartReason);
+                    notifImport, killable, isForeground, isSticky, isBfslPush,
+                    fgsAllowStartReason);
         }
 
         if (!binders.isEmpty()) {
@@ -613,6 +680,11 @@ public class AppTriggersAnalyzer {
                     context.getString(R.string.triggers_cat_bindings, binders.size()),
                     detail.toString(), expl.toString(),
                     TriggerInfo.Severity.HIGH));
+        }
+
+        // Android 12–13: FGS start blocked from background (logcat fallback)
+        if (apiLevel >= API_FGS_BG_BLOCKED && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeFgsStartBlocked(packageName));
         }
 
         return list;
@@ -749,6 +821,18 @@ public class AppTriggersAnalyzer {
                         .append(context.getString(R.string.triggers_wakelock_detail_held, heldStr));
                 if (!acqRel.isEmpty())  detail.append(" · ").append(acqRel);
 
+                // Android 12–13: WorkSource attribution
+                if (apiLevel >= Build.VERSION_CODES.S && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+                    Matcher mWs = WORK_SOURCE_PAT.matcher(line);
+                    while (mWs.find()) {
+                        String wsPkg = mWs.group(2);
+                        if (wsPkg.equals(packageName)) {
+                            detail.append(" · via WorkSource");
+                            break;
+                        }
+                    }
+                }
+
                 if (byTag && !byUid)
                     detail.append(" ").append(context.getString(R.string.triggers_wakelock_held_by_system));
 
@@ -785,8 +869,92 @@ public class AppTriggersAnalyzer {
             }
         }
 
-        if (list.isEmpty()) list.addAll(analyzeWakelocksSysFsFallback(packageName, cachedUid));
+        if (list.isEmpty() && apiLevel >= API_BAL_PRIVILEGES) {
+            list.addAll(analyzeWakelocksSysFsFallback(packageName, cachedUid));
+        }
 
+        // Android 11–13: kernel wakelock fallback (/sys/power/wake_lock)
+        if (list.isEmpty()
+                && apiLevel >= Build.VERSION_CODES.R
+                && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeKernelWakelocksFallback(packageName));
+        }
+
+        return list;
+    }
+
+    private long[] readNetworkBytesProcFallback(String uid) {
+        long rx = 0, tx = 0;
+        if (uid == null) return new long[]{0, 0};
+        try {
+            String stats = shellManager.runShellCommandAndGetFullOutput(
+                    "cat /proc/net/xt_qtaguid/stats | grep \" " + uid + " \"");
+            if (stats == null || stats.trim().isEmpty()) {
+                stats = shellManager.runShellCommandAndGetFullOutput(
+                        "cat /proc/uid_stat/" + uid + "/tcp_rcv");
+                if (stats != null && !stats.trim().isEmpty()) {
+                    try { rx = Long.parseLong(stats.trim()); } catch (NumberFormatException ignored) {}
+                }
+                String txStr = shellManager.runShellCommandAndGetFullOutput(
+                        "cat /proc/uid_stat/" + uid + "/tcp_snd");
+                if (txStr != null && !txStr.trim().isEmpty()) {
+                    try { tx = Long.parseLong(txStr.trim()); } catch (NumberFormatException ignored) {}
+                }
+                return new long[]{rx, tx};
+            }
+            for (String line : stats.split("\n")) {
+                String[] p = line.trim().split("\\s+");
+                if (p.length < 8) continue;
+                try {
+                    rx += Long.parseLong(p[5]);
+                    tx += Long.parseLong(p[7]);
+                } catch (NumberFormatException ignored) {}
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "network /proc fallback failed: " + e.getMessage());
+        }
+        return new long[]{rx, tx};
+    }
+
+    private List<TriggerInfo> analyzeWakelocksSysFsFallback(String packageName, String uid) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String wakeupSrc = shellManager.runShellCommandAndGetFullOutput(
+                    "cat /sys/kernel/wakeup_sources | grep -i " + packageName);
+            if (wakeupSrc == null || wakeupSrc.trim().isEmpty()) {
+                wakeupSrc = shellManager.runShellCommandAndGetFullOutput(
+                        "cat /d/wakeup_sources 2>/dev/null | grep -i " + packageName);
+            }
+            if (wakeupSrc == null || wakeupSrc.trim().isEmpty()) return list;
+
+            Pattern namePat  = Pattern.compile("^(\\S+)");
+            Pattern totalPat = Pattern.compile("\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
+
+            for (String line : wakeupSrc.split("\n")) {
+                Matcher mN = namePat.matcher(line.trim());
+                Matcher mT = totalPat.matcher(line);
+                if (!mN.find() || !mT.find()) continue;
+
+                String name       = mN.group(1);
+                long   activeCount = Long.parseLong(mT.group(1));
+                long   totalTimeMs = Long.parseLong(mT.group(6));
+
+                if (activeCount == 0 && totalTimeMs == 0) continue;
+
+                list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        context.getString(R.string.triggers_cat_wakelock),
+                        "WakeSrc · " + name
+                        + " · " + context.getString(R.string.triggers_wakelock_detail_held,
+                                formatDuration(totalTimeMs))
+                        + " · " + activeCount + "×",
+                        "Источник пробуждения из /sys/kernel/wakeup_sources " +
+                        "(fallback для Android 14+ когда dumpsys power не показывает wakelock).",
+                        activeCount > 20 || totalTimeMs > 60_000
+                                ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "wakelock wakeup_sources fallback failed: " + e.getMessage());
+        }
         return list;
     }
 
@@ -794,7 +962,6 @@ public class AppTriggersAnalyzer {
         List<TriggerInfo> list = new ArrayList<>();
         String uid = cachedUid;
         if (uid == null) return list;
-
 
         long rxBytes = 0, txBytes = 0;
         String netstats = null;
@@ -836,7 +1003,7 @@ public class AppTriggersAnalyzer {
         } catch (Exception e) { Log.w(TAG, "NetworkActivity/connectivity - ERROR: " + e.getMessage()); }
 
         long total = rxBytes + txBytes;
-        if (total == 0 && established.isEmpty()) {
+        if (total == 0 && established.isEmpty() && apiLevel >= API_BAL_PRIVILEGES) {
             long[] procBytes = readNetworkBytesProcFallback(uid);
             rxBytes = procBytes[0];
             txBytes = procBytes[1];
@@ -864,6 +1031,12 @@ public class AppTriggersAnalyzer {
                 detail.toString(),
                 context.getString(R.string.triggers_network_explanation),
                 sev));
+
+        // Android 11–13: NetworkPolicyManager background network restriction
+        if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeNetworkPolicy(packageName));
+        }
+
         return list;
     }
 
@@ -1043,6 +1216,15 @@ public class AppTriggersAnalyzer {
                 if (mA.find()) bestAcc = mergeAccuracy(bestAcc, normalizeAccuracy(mA.group(1)));
                 Matcher mI = ivPat.matcher(t);
                 if (mI.find()) { long iv=Long.parseLong(mI.group(1)); if(iv>0&&iv<minIvMs) minIvMs=iv; }
+
+                // Android 11–13: detect location provider type
+                if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+                    Matcher mProv = LOCATION_PROVIDER_PAT.matcher(t);
+                    if (mProv.find()) {
+                        String provider = mProv.group(1).toLowerCase();
+                        if ("gps".equals(provider) && bestAcc == null) bestAcc = "HIGH_ACCURACY";
+                    }
+                }
                 continue;
             }
             if (inBlock && (t.isEmpty() || (!hasPkg && t.startsWith("LocationRequest"))))
@@ -1079,6 +1261,12 @@ public class AppTriggersAnalyzer {
                 context.getString(hasBg ? R.string.triggers_location_bg_explanation
                                         : R.string.triggers_location_fg_explanation),
                 sev));
+
+        // Android 11–13: ACCESS_BACKGROUND_LOCATION permission check
+        if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeBackgroundLocationPermission(packageName));
+        }
+
         return list;
     }
 
@@ -1317,6 +1505,23 @@ public class AppTriggersAnalyzer {
                         scanCnt++;
                         Matcher m = modePat.matcher(t);
                         if (m.find() && scanMode == null) scanMode = m.group(1);
+
+                        // Android 12–13: scanCallbackType and reportDelay
+                        if (apiLevel >= Build.VERSION_CODES.S
+                                && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+                            Matcher mCb = BLE_CALLBACK_PAT.matcher(t);
+                            if (mCb.find() && mCb.group(1).contains("ALL_MATCHES")) {
+                                if (scanMode == null) scanMode = "ALL_MATCHES";
+                                else scanMode += "+ALL_MATCHES";
+                            }
+                            Matcher mDelay = BLE_REPORT_DELAY_PAT.matcher(t);
+                            if (mDelay.find()) {
+                                long delay = Long.parseLong(mDelay.group(1));
+                                String suffix = delay == 0 ? "+report:instant"
+                                        : "+report:" + (delay / 1000) + "s";
+                                scanMode = (scanMode != null ? scanMode : "") + suffix;
+                            }
+                        }
                     }
                 }
 
@@ -1376,84 +1581,152 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "Bluetooth/gatt - ERROR: " + e.getMessage()); }
 
+        // Android 12–13: BLUETOOTH_SCAN / BLUETOOTH_CONNECT permission fallback
+        if (apiLevel >= Build.VERSION_CODES.S && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeBluetoothPermissions(packageName));
+        }
+
         return list;
     }
 
 
-    private long[] readNetworkBytesProcFallback(String uid) {
-        long rx = 0, tx = 0;
-        if (uid == null) return new long[]{0, 0};
+    // ── Android 11–13 fallback methods ───────────────────────────────────────
+
+    private boolean isProcessFrozen(String packageName, String pid) {
+        // Способ 1: dumpsys activity — секция "Apps frozen:"
         try {
-            String stats = shellManager.runShellCommandAndGetFullOutput(
-                    "cat /proc/net/xt_qtaguid/stats | grep \" " + uid + " \"");
-            if (stats == null || stats.trim().isEmpty()) {
-                stats = shellManager.runShellCommandAndGetFullOutput(
-                        "cat /proc/uid_stat/" + uid + "/tcp_rcv");
-                if (stats != null && !stats.trim().isEmpty()) {
-                    try { rx = Long.parseLong(stats.trim()); } catch (NumberFormatException ignored) {}
-                }
-                String txStr = shellManager.runShellCommandAndGetFullOutput(
-                        "cat /proc/uid_stat/" + uid + "/tcp_snd");
-                if (txStr != null && !txStr.trim().isEmpty()) {
-                    try { tx = Long.parseLong(txStr.trim()); } catch (NumberFormatException ignored) {}
-                }
-                return new long[]{rx, tx};
-            }
-            for (String line : stats.split("\n")) {
-                String[] p = line.trim().split("\\s+");
-                if (p.length < 8) continue;
-                try {
-                    rx += Long.parseLong(p[5]);
-                    tx += Long.parseLong(p[7]);
-                } catch (NumberFormatException ignored) {}
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "network /proc fallback failed: " + e.getMessage());
+            String out = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys activity | grep -A3 'Apps frozen'");
+            if (out != null && pid != null && out.contains(pid)) return true;
+        } catch (Exception e) { Log.w(TAG, "frozen check dumpsys failed: " + e.getMessage()); }
+
+        // Способ 2: cgroup freeze файл (требует root)
+        if (cachedUid != null && pid != null) {
+            try {
+                String freeze = shellManager.runShellCommandAndGetFullOutput(
+                        "cat /sys/fs/cgroup/uid_" + cachedUid + "/pid_" + pid + "/cgroup.freeze");
+                if ("1".equals(freeze != null ? freeze.trim() : "")) return true;
+            } catch (Exception e) { Log.w(TAG, "frozen check cgroup failed: " + e.getMessage()); }
         }
-        return new long[]{rx, tx};
+        return false;
     }
 
-    private List<TriggerInfo> analyzeWakelocksSysFsFallback(String packageName, String uid) {
+    private List<TriggerInfo> analyzeFgsStartBlocked(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
         try {
-            String wakeupSrc = shellManager.runShellCommandAndGetFullOutput(
-                    "cat /sys/kernel/wakeup_sources | grep -i " + packageName);
-            if (wakeupSrc == null || wakeupSrc.trim().isEmpty()) {
-                wakeupSrc = shellManager.runShellCommandAndGetFullOutput(
-                        "cat /d/wakeup_sources 2>/dev/null | grep -i " + packageName);
+            String logcat = shellManager.runShellCommandAndGetFullOutput(
+                    "logcat -d -t 200 -s AndroidRuntime:E ActivityManager:W | grep " + packageName);
+            if (logcat != null
+                    && logcat.contains("ForegroundServiceStartNotAllowedException")
+                    && logcat.contains(packageName)) {
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_fg_service),
+                        "FGS заблокирован при старте из фона",
+                        "Android 12+: попытка запустить Foreground Service из фона " +
+                        "без разрешённого exemption. Сервис не запустился.",
+                        TriggerInfo.Severity.MEDIUM));
             }
-            if (wakeupSrc == null || wakeupSrc.trim().isEmpty()) return list;
-
-            Pattern namePat  = Pattern.compile("^(\\S+)");
-            Pattern totalPat = Pattern.compile("\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
-
-            for (String line : wakeupSrc.split("\n")) {
-                Matcher mN = namePat.matcher(line.trim());
-                Matcher mT = totalPat.matcher(line);
-                if (!mN.find() || !mT.find()) continue;
-
-                String name       = mN.group(1);
-                long   activeCount = Long.parseLong(mT.group(1));
-                long   totalTimeMs = Long.parseLong(mT.group(6));
-
-                if (activeCount == 0 && totalTimeMs == 0) continue;
-
-                list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                        context.getString(R.string.triggers_cat_wakelock),
-                        "WakeSrc · " + name
-                        + " · " + context.getString(R.string.triggers_wakelock_detail_held,
-                                formatDuration(totalTimeMs))
-                        + " · " + activeCount + "×",
-                        "Источник пробуждения из /sys/kernel/wakeup_sources " +
-                        "(fallback для Android 14+ когда dumpsys power не показывает wakelock).",
-                        activeCount > 20 || totalTimeMs > 60_000
-                                ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "wakelock wakeup_sources fallback failed: " + e.getMessage());
-        }
+        } catch (Exception e) { Log.w(TAG, "fgs blocked logcat failed: " + e.getMessage()); }
         return list;
     }
+
+    private List<TriggerInfo> analyzeNetworkPolicy(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        if (cachedUid == null) return list;
+        try {
+            String netPolicy = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys netpolicy | grep uid=" + cachedUid);
+            if (netPolicy == null || netPolicy.trim().isEmpty()) {
+                netPolicy = shellManager.runShellCommandAndGetFullOutput(
+                        "dumpsys netpolicy | grep " + packageName);
+            }
+            if (netPolicy == null) return list;
+
+            boolean rejected = netPolicy.contains("REJECT_METERED_BACKGROUND")
+                    || netPolicy.contains("policy=2");
+            boolean allowed  = netPolicy.contains("ALLOW_METERED_BACKGROUND")
+                    || netPolicy.contains("policy=4");
+
+            if (rejected) {
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_network),
+                        "Сетевой доступ в фоне заблокирован (Data Saver)",
+                        "Пользователь включил Data Saver или запретил фоновый доступ к сети. " +
+                        "Приложение не может использовать сеть в фоне на мобильных данных.",
+                        TriggerInfo.Severity.INFO));
+            } else if (allowed) {
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_network),
+                        "Фоновый сетевой доступ: явно разрешён (исключение Data Saver)",
+                        "Приложение добавлено пользователем в белый список Data Saver — " +
+                        "имеет неограниченный доступ к сети в фоне.",
+                        TriggerInfo.Severity.MEDIUM));
+            }
+        } catch (Exception e) { Log.w(TAG, "netpolicy check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeBackgroundLocationPermission(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String pkgOut = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys package " + packageName + " | grep -A1 ACCESS_BACKGROUND_LOCATION");
+            if (pkgOut != null && pkgOut.contains("granted=true")) {
+                list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        context.getString(R.string.triggers_cat_location),
+                        "ACCESS_BACKGROUND_LOCATION granted",
+                        "Android 11+: приложение имеет разрешение получать геолокацию из фона " +
+                        "в любое время, даже когда пользователь не использует приложение. " +
+                        "Требует отдельного одобрения пользователя.",
+                        TriggerInfo.Severity.HIGH));
+            }
+        } catch (Exception e) { Log.w(TAG, "bg location perm check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeBluetoothPermissions(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String pkgOut = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys package " + packageName
+                    + " | grep -E 'BLUETOOTH_SCAN|BLUETOOTH_CONNECT|NEARBY_DEVICES'");
+            if (pkgOut == null) return list;
+
+            boolean hasScan    = pkgOut.contains("BLUETOOTH_SCAN")    && pkgOut.contains("granted=true");
+            boolean hasConnect = pkgOut.contains("BLUETOOTH_CONNECT") && pkgOut.contains("granted=true");
+
+            if (hasScan || hasConnect) {
+                String detail = (hasScan ? "BLUETOOTH_SCAN " : "")
+                        + (hasConnect ? "BLUETOOTH_CONNECT" : "");
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_ble_scan),
+                        detail.trim() + " (Android 12+ permissions)",
+                        "Android 12+: приложение имеет разрешения на BT-сканирование " +
+                        "и/или подключение. Может инициировать сканирование при broadcast.",
+                        TriggerInfo.Severity.LOW));
+            }
+        } catch (Exception e) { Log.w(TAG, "bt permissions check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeKernelWakelocksFallback(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String kernelWl = shellManager.runShellCommandAndGetFullOutput(
+                    "cat /sys/power/wake_lock");
+            if (kernelWl != null && kernelWl.contains(packageName)) {
+                list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        context.getString(R.string.triggers_cat_wakelock),
+                        "Kernel wakelock: " + packageName,
+                        "Приложение удерживает kernel-уровень wakelock (/sys/power/wake_lock). " +
+                        "Крайне редкий случай, указывает на нестандартный драйвер или системный компонент.",
+                        TriggerInfo.Severity.HIGH));
+            }
+        } catch (Exception e) { Log.w(TAG, "kernel wakelock check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    // ── end Android 11–13 fallback methods ───────────────────────────────────
 
     private String resolveUid(String packageName) {
         try {

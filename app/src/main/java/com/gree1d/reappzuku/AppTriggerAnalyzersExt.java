@@ -131,6 +131,12 @@ public class AppTriggerAnalyzersExt {
             }
         } catch (Exception e) { Log.w(TAG, "alarm cancellation parse failed: " + e.getMessage()); }
 
+        // Android 12–13: SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM permission check
+        if (analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
+                && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeExactAlarmPermissions(packageName));
+        }
+
         return list;
     }
 
@@ -247,6 +253,8 @@ public class AppTriggerAnalyzersExt {
                 int pending=0, running=0;
                 int wmPending=0, wmRunning=0;
                 int uijRunning=0, uijPending=0;
+                int expeditedRunning=0, expeditedPending=0; // Android 12+
+                int prefetchPending=0;                       // Android 13+
                 boolean inPending=false, inRunning=false, inPast=false, inJobBlock=false;
                 List<String> jobDetails  = new ArrayList<>();
                 List<String> stopReasons = new ArrayList<>();
@@ -270,11 +278,34 @@ public class AppTriggerAnalyzersExt {
                     if ((inPending || inRunning) && t.contains(packageName)) {
                         boolean isWmLine = t.contains("androidx.work") || t.contains("WorkManager")
                                 || t.contains("systemjobscheduler");
-                        boolean isUijLine = t.contains("isUserInitiated=true")
-                                || t.contains("userInitiated=true")
-                                || t.contains("RUN_USER_INITIATED_JOBS");
-                        if (inPending) { pending++; if (isWmLine) wmPending++; if (isUijLine) uijPending++; }
-                        if (inRunning) { running++; if (isWmLine) wmRunning++; if (isUijLine) uijRunning++; }
+                        boolean isUijLine = analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES
+                                && (t.contains("isUserInitiated=true")
+                                    || t.contains("userInitiated=true")
+                                    || t.contains("RUN_USER_INITIATED_JOBS"));
+
+                        // Android 12–13: expedited jobs
+                        boolean isExpeditedLine = analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
+                                && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU
+                                && (t.contains("EXPEDITED")
+                                    || t.contains("isExpedited=true")
+                                    || t.contains("isExpedited: true"));
+                        // Android 13: prefetch jobs
+                        boolean isPrefetchLine = analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU
+                                && (t.contains("isPrefetch=true") || t.contains("prefetch=true"));
+
+                        if (inPending) {
+                            pending++;
+                            if (isWmLine)       wmPending++;
+                            if (isUijLine)      uijPending++;
+                            if (isExpeditedLine) expeditedPending++;
+                            if (isPrefetchLine)  prefetchPending++;
+                        }
+                        if (inRunning) {
+                            running++;
+                            if (isWmLine)       wmRunning++;
+                            if (isUijLine)      uijRunning++;
+                            if (isExpeditedLine) expeditedRunning++;
+                        }
                         if (t.startsWith("JOB #") || t.startsWith("JobInfo{")
                                 || t.startsWith("Job{"))
                             { inJobBlock=true; jobBlock.setLength(0); }
@@ -310,6 +341,16 @@ public class AppTriggerAnalyzersExt {
                         if (uijRunning > 0) detail.append(uijRunning).append("r");
                         if (uijPending > 0) detail.append(uijPending).append("p");
                     }
+                    // Android 12–13: expedited
+                    if (expeditedRunning > 0 || expeditedPending > 0) {
+                        detail.append(" · EXP:");
+                        if (expeditedRunning > 0) detail.append(expeditedRunning).append("r");
+                        if (expeditedPending > 0) detail.append(expeditedPending).append("p");
+                    }
+                    // Android 13: prefetch
+                    if (prefetchPending > 0) {
+                        detail.append(" · prefetch:").append(prefetchPending);
+                    }
                     if (!jobDetails.isEmpty())  detail.append(" · ").append(String.join("; ", jobDetails));
                     if (!stopReasons.isEmpty()) detail.append(context.getString(
                             R.string.triggers_jobs_stop_reasons, String.join(", ", stopReasons)));
@@ -327,7 +368,7 @@ public class AppTriggerAnalyzersExt {
             }
         } catch (Exception e) { Log.w(TAG, "analyzeJobs/jobscheduler failed: " + e.getMessage()); }
 
-        if (list.isEmpty()) {
+        if (list.isEmpty() && analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES) {
             List<String> cmdDetails = getJobsFallbackCmdJobscheduler(packageName);
             if (!cmdDetails.isEmpty()) {
                 list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
@@ -773,15 +814,18 @@ public class AppTriggerAnalyzersExt {
 
 
         List<String> dynamicActions = new ArrayList<>();
+        int exportedDynamicReceivers = 0; // Android 13+
         try {
             String regOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys activity broadcasts registered");
             if (regOut != null) {
                 boolean inBlock = false;
+                boolean blockExported = false;
                 for (String line : regOut.split("\n")) {
                     String t = line.trim();
                     if (t.startsWith("ReceiverList{") || t.startsWith("* ReceiverList")) {
                         inBlock = t.contains(packageName);
+                        blockExported = false;
                         continue;
                     }
                     if (inBlock && t.startsWith("ReceiverList{") && !t.contains(packageName)) {
@@ -789,6 +833,15 @@ public class AppTriggerAnalyzersExt {
                         continue;
                     }
                     if (!inBlock) continue;
+
+                    // Android 13: exported flag on dynamic receivers
+                    if (analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU) {
+                        if (t.contains("exported=true")) {
+                            blockExported = true;
+                            exportedDynamicReceivers++;
+                        }
+                    }
+
                     if (t.startsWith("Action:") || t.startsWith("+ Action:")) {
                         String a = analyzer.shortenAction(
                                 t.replaceFirst("\\+?\\s*Action:\\s*\"?", "").replace("\"", "").trim());
@@ -829,12 +882,26 @@ public class AppTriggerAnalyzersExt {
             if (dynamicActions.size() > shown)
                 detail.append(context.getString(
                         R.string.triggers_receivers_detail_overflow, dynamicActions.size() - shown));
+            // Android 13: note exported dynamic receivers
+            if (exportedDynamicReceivers > 0)
+                detail.append(" · exported=").append(exportedDynamicReceivers);
 
             list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
                     context.getString(R.string.triggers_cat_receivers_dynamic, dynamicActions.size()),
                     detail.toString(),
                     context.getString(R.string.triggers_receivers_explanation_base),
                     dynamicActions.size() > 3 ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
+        }
+
+        // Android 13: exported dynamic receiver without declared permission — extra entry
+        if (exportedDynamicReceivers > 0
+                && analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU) {
+            list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    context.getString(R.string.triggers_cat_receivers_dynamic, exportedDynamicReceivers),
+                    "exported=true · Android 13 requires explicit flag",
+                    "Android 13+: динамически зарегистрированный receiver с exported=true доступен " +
+                    "другим приложениям. Может принимать broadcast от любых отправителей.",
+                    TriggerInfo.Severity.MEDIUM));
         }
 
         return list;
@@ -1120,7 +1187,9 @@ public class AppTriggerAnalyzersExt {
         String output = shellManager.runShellCommandAndGetFullOutput(
                 "dumpsys deviceidle | grep -E 'whitelist|except|power-save|restricted|exemption'");
         if (output == null || output.trim().isEmpty()) {
-            return analyzeDozeExemptionFallback(packageName);
+            if (analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES)
+                return analyzeDozeExemptionFallback(packageName);
+            return list;
         }
 
         for (String line : output.split("\n")) {
@@ -1136,7 +1205,16 @@ public class AppTriggerAnalyzersExt {
             break;
         }
 
-        if (list.isEmpty()) list.addAll(analyzeDozeExemptionFallback(packageName));
+        if (list.isEmpty() && analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES)
+            list.addAll(analyzeDozeExemptionFallback(packageName));
+
+        // Android 11–13: doze state from dumpsys deviceidle
+        if (list.isEmpty()
+                && analyzer.apiLevel >= android.os.Build.VERSION_CODES.R
+                && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeDozeStateFallback(packageName));
+        }
+
         return list;
     }
 
@@ -1181,7 +1259,8 @@ public class AppTriggerAnalyzersExt {
         String output = shellManager.runShellCommandAndGetFullOutput(
                 "am get-standby-bucket " + packageName);
         if (output == null || output.trim().isEmpty()) {
-            output = getStandbyBucketFallback(packageName);
+            if (analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES)
+                output = getStandbyBucketFallback(packageName);
         }
         if (output == null || output.trim().isEmpty()) return list;
 
@@ -1218,7 +1297,8 @@ public class AppTriggerAnalyzersExt {
                         String reason = "";
                         Matcher mR = rPat.matcher(line);
                         if (mR.find()) {
-                            int main = ((int) Long.parseLong(mR.group(1), 16) >> 8) & 0xF;
+                            int reasonHex = (int) Long.parseLong(mR.group(1), 16);
+                            int main = (reasonHex >> 8) & 0xF;
                             switch (main) {
                                 case 0x0: reason="default";     break;
                                 case 0x1: reason="usage";       break;
@@ -1226,6 +1306,17 @@ public class AppTriggerAnalyzersExt {
                                 case 0x3: reason="predicted";   break;
                                 case 0x4: reason="sys-forced";  break;
                                 case 0x6: reason="user-forced"; break;
+                            }
+                            // Android 12–13: expand sub-reason for timeout
+                            if (main == 0x2
+                                    && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
+                                    && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                int sub = reasonHex & 0xFF;
+                                switch (sub) {
+                                    case 0x01: reason += "(8d inactive)";  break;
+                                    case 0x02: reason += "(45d inactive)"; break;
+                                    case 0x03: reason += "(RESTRICTED)";   break;
+                                }
                             }
                         }
                         String entry = bn + (reason.isEmpty() ? "" : "(" + reason + ")");
@@ -1267,6 +1358,14 @@ public class AppTriggerAnalyzersExt {
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                 context.getString(R.string.triggers_cat_bucket), detail, expl, sev));
+
+        // Android 12–13: confirm RESTRICTED effects via appops
+        if (bv > 40
+                && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
+                && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
+            list.addAll(analyzeRestrictedBucketEffects(packageName, bv));
+        }
+
         return list;
     }
 
@@ -1822,9 +1921,148 @@ public class AppTriggerAnalyzersExt {
             if (hasRunAny && hasRun)
                 list.removeIf(i -> i.detail != null && i.detail.startsWith("RUN_IN_BACKGROUND ·"));
 
+            // Android 11–13: check ACTIVITY_RECOGNITION / MANAGE_MEDIA op last-used
+            if (analyzer.apiLevel >= android.os.Build.VERSION_CODES.R
+                    && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
+                list.addAll(analyzeRestrictedOps(packageName, out));
+            }
+
         } catch (Exception e) { Log.w(TAG, "analyzeAppOps failed: " + e.getMessage()); }
         return list;
     }
+
+    // ── Android 11–13 fallback methods ───────────────────────────────────────
+
+    private List<TriggerInfo> analyzeExactAlarmPermissions(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String pkgOut = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys package " + packageName
+                    + " | grep -E 'SCHEDULE_EXACT_ALARM|USE_EXACT_ALARM'");
+            if (pkgOut == null) return list;
+
+            boolean hasSchedule = pkgOut.contains("SCHEDULE_EXACT_ALARM") && pkgOut.contains("granted=true");
+            boolean hasUse      = pkgOut.contains("USE_EXACT_ALARM")      && pkgOut.contains("granted=true");
+
+            if (hasSchedule || hasUse) {
+                String permLabel = hasUse ? "USE_EXACT_ALARM" : "SCHEDULE_EXACT_ALARM";
+                list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                        context.getString(R.string.triggers_cat_alarms),
+                        permLabel + " granted (Android 12+)",
+                        "Android 12+: приложение имеет разрешение на точные аларм-срабатывания " +
+                        "независимо от App Standby bucket. " +
+                        (hasUse ? "USE_EXACT_ALARM выдаётся только для системных/привилегированных приложений."
+                                : "SCHEDULE_EXACT_ALARM требует явного разрешения пользователя."),
+                        hasUse ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
+            }
+        } catch (Exception e) { Log.w(TAG, "exact alarm perm check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeRestrictedBucketEffects(String packageName, int bucketValue) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            // Проверяем appops: RUN_ANY_IN_BACKGROUND deny/ignore => подтверждение RESTRICTED
+            String ops = shellManager.runShellCommandAndGetFullOutput(
+                    "cmd appops get " + packageName + " RUN_ANY_IN_BACKGROUND");
+            if (ops == null) return list;
+
+            boolean isDenied = ops.contains("ignore") || ops.contains("deny");
+            if (!isDenied) return list;
+
+            // Дополнительно проверяем jobscheduler — если jobs blocked
+            String jobState = shellManager.runShellCommandAndGetFullOutput(
+                    "cmd jobscheduler get-job-state " + packageName);
+            boolean jobsBlocked = jobState != null
+                    && (jobState.contains("QUOTA") || jobState.contains("RESTRICTED"));
+
+            list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    context.getString(R.string.triggers_cat_bucket),
+                    "RESTRICTED confirmed · RUN_ANY_IN_BACKGROUND=deny"
+                            + (jobsBlocked ? " · jobs blocked" : ""),
+                    "Android 12+: система подтвердила ограничения RESTRICTED bucket через appops. " +
+                    "Jobs и Alarms заблокированы. Приложение не может запуститься самостоятельно.",
+                    TriggerInfo.Severity.HIGH));
+        } catch (Exception e) { Log.w(TAG, "restricted bucket effects check failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeDozeStateFallback(String packageName) {
+        List<TriggerInfo> list = new ArrayList<>();
+        try {
+            String idleOut = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys deviceidle | grep -E 'mState|mLightState'");
+            if (idleOut == null || idleOut.trim().isEmpty()) return list;
+
+            String dozeState = null, lightState = null;
+
+            for (String line : idleOut.split("\n")) {
+                String t = line.trim();
+                Matcher mD = AppTriggersAnalyzer.DOZE_STATE_PAT.matcher(t);
+                if (mD.find() && t.startsWith("mState") && dozeState == null)
+                    dozeState = mD.group(1);
+                Matcher mL = AppTriggersAnalyzer.LIGHT_DOZE_PAT.matcher(t);
+                if (mL.find() && t.startsWith("mLightState") && lightState == null)
+                    lightState = mL.group(1);
+            }
+
+            boolean inDeepDoze  = dozeState  != null && dozeState.contains("IDLE")
+                                  && !dozeState.contains("PENDING");
+            boolean inLightDoze = lightState != null && lightState.contains("IDLE")
+                                  && !lightState.contains("PENDING");
+
+            if (inDeepDoze || inLightDoze) {
+                String stateLabel = inDeepDoze ? "Deep Doze" : "Light Doze";
+                String stateVal   = inDeepDoze ? dozeState : lightState;
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_doze),
+                        stateLabel + " · " + stateVal,
+                        "Android 11+: устройство находится в режиме Doze (" + stateLabel + "). " +
+                        "Wakelock, Network, Jobs и Alarms (кроме ALLOW_WHILE_IDLE) заблокированы. " +
+                        "Приложения без doze-exemption не могут работать в фоне.",
+                        TriggerInfo.Severity.INFO));
+            }
+        } catch (Exception e) { Log.w(TAG, "doze state fallback failed: " + e.getMessage()); }
+        return list;
+    }
+
+    private List<TriggerInfo> analyzeRestrictedOps(String packageName, String appOpsOut) {
+        List<TriggerInfo> list = new ArrayList<>();
+        if (appOpsOut == null) return list;
+        try {
+            // Android 11–13: ACTIVITY_RECOGNITION used recently => sensor-based wakeup
+            boolean hasActRec = appOpsOut.contains("ACTIVITY_RECOGNITION")
+                    && appOpsOut.contains("allow");
+            // Android 12+: MANAGE_MEDIA used => media session background access
+            boolean hasManageMedia = appOpsOut.contains("MANAGE_MEDIA")
+                    && appOpsOut.contains("allow");
+
+            if (hasActRec) {
+                // Extract time if present
+                Matcher mT = Pattern.compile(
+                        "ACTIVITY_RECOGNITION.*?time=\\+([\\d\\w ]+)\\s+ago").matcher(appOpsOut);
+                String timeStr = mT.find() ? mT.group(1).trim() : null;
+                String detail = "ACTIVITY_RECOGNITION" + (timeStr != null ? " · " + timeStr + " ago" : "");
+                list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        context.getString(R.string.triggers_cat_appops),
+                        detail,
+                        context.getString(R.string.triggers_appops_activity_recognition_explanation),
+                        TriggerInfo.Severity.MEDIUM));
+            }
+            if (hasManageMedia
+                    && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S) {
+                list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        context.getString(R.string.triggers_cat_appops),
+                        "MANAGE_MEDIA · allow",
+                        "Android 12+: приложение управляет медиа-сессиями других приложений. " +
+                        "На Android 15 связан с mediaProcessing FGS типом.",
+                        TriggerInfo.Severity.LOW));
+            }
+        } catch (Exception e) { Log.w(TAG, "analyzeRestrictedOps failed: " + e.getMessage()); }
+        return list;
+    }
+
+    // ── end Android 11–13 fallback methods ───────────────────────────────────
 
     private String parseDumpsysAppOpsForPackage(String packageName) {
         try {
