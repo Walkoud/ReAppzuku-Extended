@@ -1814,8 +1814,8 @@ public class AppTriggersAnalyzer {
 
     private int getTriggerScore(TriggerInfo t) {
         switch (t.group) {
-            case ACTIVE_NOW: return 3;
-            case CAN_WAKE:   return 2;
+            case ACTIVE_NOW: return 6;
+            case CAN_WAKE:   return 5;
             case OTHER:      return getOtherScore(t);
             default:         return 0;
         }
@@ -1823,7 +1823,6 @@ public class AppTriggersAnalyzer {
 
     private int getOtherScore(TriggerInfo t) {
         if (t.severity == TriggerInfo.Severity.INFO) return 0;
-        if (t.severity == TriggerInfo.Severity.LOW)  return 0;
 
         String cat    = t.category != null ? t.category : "";
         String detail = t.detail   != null ? t.detail   : "";
@@ -1840,15 +1839,6 @@ public class AppTriggersAnalyzer {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_network))) {
-            return 0;
-        }
-
-        if (cat.equals(context.getString(R.string.triggers_cat_bucket))) {
-            return (t.severity == TriggerInfo.Severity.HIGH
-                    || t.severity == TriggerInfo.Severity.MEDIUM) ? 1 : 0;
-        }
-
         if (cat.equals(context.getString(R.string.triggers_cat_chain_launch))
                 && (detail.contains("blocked") || detail.contains("BAL_BLOCKED"))) {
             return 0;
@@ -1859,6 +1849,17 @@ public class AppTriggersAnalyzer {
             return 0;
         }
 
-        return 1;
+        if (cat.equals(context.getString(R.string.triggers_cat_bucket))) {
+            if (t.severity == TriggerInfo.Severity.HIGH)   return 4;
+            if (t.severity == TriggerInfo.Severity.MEDIUM) return 3;
+            return 1;
+        }
+
+        switch (t.severity) {
+            case HIGH:   return 4;
+            case MEDIUM: return 3;
+            case LOW:    return 1;
+            default:     return 0;
+        }
     }
 }
