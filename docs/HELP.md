@@ -31,7 +31,7 @@
 
 **ReAppzuku** is utility for background process diagnostics and management. It offers wide selection of restriction scenarios for every app.
 
-`Why even need ReAppzuku if modern Android handles app control well on its own?` — yes, it does, but not perfectly. OS developers actively improve and modernize system mechanisms for process management. Meanwhile, numerous loopholes allow apps to remain active in background. These range from harmless receivers to aggressive Alarms, Wakelocks, and other retention mechanisms. Ultimately, they prevent devices from entering deep standby mode, overload CPU/RAM, and gladly drain battery power.
+`Why even need ReAppzuku if modern Android handles app control well on its own?` — yes, it does, but not perfectly. OS developers actively improve and modernize system mechanisms for process management. Meanwhile, numerous loopholes allow apps to remain active in background. These range from simple receivers to aggressive Alarms, Wakelocks, and other retention mechanisms. Ultimately, they prevent devices from entering deep standby mode, overload CPU/RAM, and gladly drain battery power.
 
 ---
 
