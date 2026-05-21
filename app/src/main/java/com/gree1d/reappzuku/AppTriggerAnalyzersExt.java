@@ -125,13 +125,11 @@ public class AppTriggerAnalyzersExt {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_alarms) + " [throttled]",
                         cancelDetail,
-                        "Система отменяет аларм из-за app_standby или battery_saver. " +
-                        "Приложение пытается запустить себя по таймеру, но HyperOS блокирует.",
+                        context.getString(R.string.triggers_alarm_throttled_explanation),                        
                         TriggerInfo.Severity.MEDIUM));
             }
         } catch (Exception e) { Log.w(TAG, "alarm cancellation parse failed: " + e.getMessage()); }
 
-        // Android 12–13: SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM permission check
         if (analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
                 && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeExactAlarmPermissions(packageName));
@@ -253,8 +251,8 @@ public class AppTriggerAnalyzersExt {
                 int pending=0, running=0;
                 int wmPending=0, wmRunning=0;
                 int uijRunning=0, uijPending=0;
-                int expeditedRunning=0, expeditedPending=0; // Android 12+
-                int prefetchPending=0;                       // Android 13+
+                int expeditedRunning=0, expeditedPending=0;
+                int prefetchPending=0;
                 boolean inPending=false, inRunning=false, inPast=false, inJobBlock=false;
                 List<String> jobDetails  = new ArrayList<>();
                 List<String> stopReasons = new ArrayList<>();
@@ -283,13 +281,11 @@ public class AppTriggerAnalyzersExt {
                                     || t.contains("userInitiated=true")
                                     || t.contains("RUN_USER_INITIATED_JOBS"));
 
-                        // Android 12–13: expedited jobs
                         boolean isExpeditedLine = analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
                                 && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU
                                 && (t.contains("EXPEDITED")
                                     || t.contains("isExpedited=true")
                                     || t.contains("isExpedited: true"));
-                        // Android 13: prefetch jobs
                         boolean isPrefetchLine = analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU
                                 && (t.contains("isPrefetch=true") || t.contains("prefetch=true"));
 
@@ -341,13 +337,11 @@ public class AppTriggerAnalyzersExt {
                         if (uijRunning > 0) detail.append(uijRunning).append("r");
                         if (uijPending > 0) detail.append(uijPending).append("p");
                     }
-                    // Android 12–13: expedited
                     if (expeditedRunning > 0 || expeditedPending > 0) {
                         detail.append(" · EXP:");
                         if (expeditedRunning > 0) detail.append(expeditedRunning).append("r");
                         if (expeditedPending > 0) detail.append(expeditedPending).append("p");
                     }
-                    // Android 13: prefetch
                     if (prefetchPending > 0) {
                         detail.append(" · prefetch:").append(prefetchPending);
                     }
@@ -712,9 +706,7 @@ public class AppTriggerAnalyzersExt {
                             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                                     context.getString(R.string.triggers_cat_chain_launch),
                                     "BackgroundStartPrivilege: " + detail,
-                                    "Android 14+: приложение получило токен на запуск из фона. " +
-                                    "Обычно выдаётся системой при FCM high-priority, точном аларме, " +
-                                    "или PendingIntent от видимого приложения.",
+                                    context.getString(R.string.triggers_bal_privilege_explanation),                                    
                                     TriggerInfo.Severity.HIGH));
                         }
                     }
@@ -779,9 +771,8 @@ public class AppTriggerAnalyzersExt {
                 String caller = mC.find() ? mC.group(1) : "unknown";
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_chain_launch),
-                        "BAL blocked by system · caller=" + caller,
-                        "Android 14+: система заблокировала попытку запуска из фона. " +
-                        "Приложение пытается стартовать Activity или FGS без разрешения.",
+                        context.getString(R.string.triggers_bal_blocked_detail_prefix) + caller,
+                        context.getString(R.string.triggers_bal_blocked_explanation),                        
                         TriggerInfo.Severity.MEDIUM));
                 if (list.size() >= 2) break;
             }
@@ -814,7 +805,7 @@ public class AppTriggerAnalyzersExt {
 
 
         List<String> dynamicActions = new ArrayList<>();
-        int exportedDynamicReceivers = 0; // Android 13+
+        int exportedDynamicReceivers = 0;
         try {
             String regOut = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys activity broadcasts registered");
@@ -834,7 +825,6 @@ public class AppTriggerAnalyzersExt {
                     }
                     if (!inBlock) continue;
 
-                    // Android 13: exported flag on dynamic receivers
                     if (analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU) {
                         if (t.contains("exported=true")) {
                             blockExported = true;
@@ -882,7 +872,6 @@ public class AppTriggerAnalyzersExt {
             if (dynamicActions.size() > shown)
                 detail.append(context.getString(
                         R.string.triggers_receivers_detail_overflow, dynamicActions.size() - shown));
-            // Android 13: note exported dynamic receivers
             if (exportedDynamicReceivers > 0)
                 detail.append(" · exported=").append(exportedDynamicReceivers);
 
@@ -893,14 +882,12 @@ public class AppTriggerAnalyzersExt {
                     dynamicActions.size() > 3 ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
         }
 
-        // Android 13: exported dynamic receiver without declared permission — extra entry
         if (exportedDynamicReceivers > 0
                 && analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU) {
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                     context.getString(R.string.triggers_cat_receivers_dynamic, exportedDynamicReceivers),
-                    "exported=true · Android 13 requires explicit flag",
-                    "Android 13+: динамически зарегистрированный receiver с exported=true доступен " +
-                    "другим приложениям. Может принимать broadcast от любых отправителей.",
+                    context.getString(R.string.triggers_receiver_exported_detail),
+                    context.getString(R.string.triggers_receiver_exported_explanation),                    
                     TriggerInfo.Severity.MEDIUM));
         }
 
@@ -979,10 +966,8 @@ public class AppTriggerAnalyzersExt {
                     && bh.contains("FGS_BOOT_COMPLETED_RESTRICTIONS")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_boot),
-                        "FGS заблокирован при boot · FGS_BOOT_COMPLETED_RESTRICTIONS",
-                        "Android 14+: BOOT_COMPLETED receiver не может запустить FGS типа " +
-                        "MICROPHONE (API 34) или PHONE_CALL (API 35). " +
-                        "Приложение пытается обойти это ограничение.",
+                        context.getString(R.string.triggers_fgs_boot_blocked_detail),                        
+                        context.getString(R.string.triggers_fgs_boot_blocked_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
 
@@ -993,10 +978,8 @@ public class AppTriggerAnalyzersExt {
                     && logcat.contains(packageName)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_boot),
-                        "ForegroundServiceStartNotAllowedException при boot",
-                        "Android 15: попытка запустить FGS из BOOT_COMPLETED завершилась " +
-                        "исключением. Тип сервиса (dataSync/mediaProcessing/phoneCall) " +
-                        "запрещён к запуску при загрузке.",
+                        context.getString(R.string.triggers_fgs_boot_exception_detail),                        ,
+                        context.getString(R.string.triggers_fgs_boot_exception_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
         } catch (Exception e) {
@@ -1208,7 +1191,6 @@ public class AppTriggerAnalyzersExt {
         if (list.isEmpty() && analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES)
             list.addAll(analyzeDozeExemptionFallback(packageName));
 
-        // Android 11–13: doze state from dumpsys deviceidle
         if (list.isEmpty()
                 && analyzer.apiLevel >= android.os.Build.VERSION_CODES.R
                 && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -1226,9 +1208,8 @@ public class AppTriggerAnalyzersExt {
             if (ops != null && ops.contains("allow")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_doze),
-                        "Battery optimization disabled · RUN_ANY_IN_BACKGROUND=allow",
-                        "Приложение исключено из оптимизации батареи пользователем или системой. " +
-                        "Может работать в фоне без ограничений Doze/App Standby.",
+                        context.getString(R.string.triggers_doze_battery_opt_detail),                        
+                        context.getString(R.string.triggers_doze_battery_opt_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
         } catch (Exception e) {
@@ -1242,8 +1223,8 @@ public class AppTriggerAnalyzersExt {
                     && battery.toLowerCase().contains("exempt")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_doze),
-                        "Battery exempt (dumpsys battery)",
-                        "Приложение в списке исключений battery manager.",
+                        context.getString(R.string.triggers_doze_battery_exempt_detail),                        
+                        context.getString(R.string.triggers_doze_battery_exempt_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
         } catch (Exception e) {
@@ -1307,7 +1288,6 @@ public class AppTriggerAnalyzersExt {
                                 case 0x4: reason="sys-forced";  break;
                                 case 0x6: reason="user-forced"; break;
                             }
-                            // Android 12–13: expand sub-reason for timeout
                             if (main == 0x2
                                     && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
                                     && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -1347,19 +1327,16 @@ public class AppTriggerAnalyzersExt {
         else if (bv <= 40) { sev=TriggerInfo.Severity.INFO;   expl=context.getString(R.string.triggers_bucket_rare_explanation); }
         else if (bv <= 45) {
             sev  = TriggerInfo.Severity.HIGH;
-            expl = "RESTRICTED bucket (Android 12+): Jobs и Alarms полностью заблокированы. " +
-                   "На Android 14 даже ALLOW_WHILE_IDLE аларм игнорируется. " +
-                   "Приложение попало под ограничения за чрезмерное потребление в фоне.";
+            expl = context.getString(R.string.triggers_bucket_restricted_explanation);
         }
         else {
             sev  = TriggerInfo.Severity.HIGH;
-            expl = "NEVER bucket: фоновая работа полностью отключена системой.";
+            expl = context.getString(R.string.triggers_bucket_never_explanation);
         }
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                 context.getString(R.string.triggers_cat_bucket), detail, expl, sev));
 
-        // Android 12–13: confirm RESTRICTED effects via appops
         if (bv > 40
                 && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
                 && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
@@ -1921,7 +1898,6 @@ public class AppTriggerAnalyzersExt {
             if (hasRunAny && hasRun)
                 list.removeIf(i -> i.detail != null && i.detail.startsWith("RUN_IN_BACKGROUND ·"));
 
-            // Android 11–13: check ACTIVITY_RECOGNITION / MANAGE_MEDIA op last-used
             if (analyzer.apiLevel >= android.os.Build.VERSION_CODES.R
                     && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU) {
                 list.addAll(analyzeRestrictedOps(packageName, out));
@@ -1931,7 +1907,6 @@ public class AppTriggerAnalyzersExt {
         return list;
     }
 
-    // ── Android 11–13 fallback methods ───────────────────────────────────────
 
     private List<TriggerInfo> analyzeExactAlarmPermissions(String packageName) {
         List<TriggerInfo> list = new ArrayList<>();
@@ -1948,11 +1923,10 @@ public class AppTriggerAnalyzersExt {
                 String permLabel = hasUse ? "USE_EXACT_ALARM" : "SCHEDULE_EXACT_ALARM";
                 list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
                         context.getString(R.string.triggers_cat_alarms),
-                        permLabel + " granted (Android 12+)",
-                        "Android 12+: приложение имеет разрешение на точные аларм-срабатывания " +
-                        "независимо от App Standby bucket. " +
-                        (hasUse ? "USE_EXACT_ALARM выдаётся только для системных/привилегированных приложений."
-                                : "SCHEDULE_EXACT_ALARM требует явного разрешения пользователя."),
+                        context.getString(R.string.trigger_exact_alarm_label, permLabel),
+                        context.getString(hasUse
+                                ? R.string.trigger_exact_alarm_desc_use
+                                : R.string.trigger_exact_alarm_desc_schedule),
                         hasUse ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
             }
         } catch (Exception e) { Log.w(TAG, "exact alarm perm check failed: " + e.getMessage()); }
@@ -1962,7 +1936,6 @@ public class AppTriggerAnalyzersExt {
     private List<TriggerInfo> analyzeRestrictedBucketEffects(String packageName, int bucketValue) {
         List<TriggerInfo> list = new ArrayList<>();
         try {
-            // Проверяем appops: RUN_ANY_IN_BACKGROUND deny/ignore => подтверждение RESTRICTED
             String ops = shellManager.runShellCommandAndGetFullOutput(
                     "cmd appops get " + packageName + " RUN_ANY_IN_BACKGROUND");
             if (ops == null) return list;
@@ -1970,7 +1943,6 @@ public class AppTriggerAnalyzersExt {
             boolean isDenied = ops.contains("ignore") || ops.contains("deny");
             if (!isDenied) return list;
 
-            // Дополнительно проверяем jobscheduler — если jobs blocked
             String jobState = shellManager.runShellCommandAndGetFullOutput(
                     "cmd jobscheduler get-job-state " + packageName);
             boolean jobsBlocked = jobState != null
@@ -1980,8 +1952,7 @@ public class AppTriggerAnalyzersExt {
                     context.getString(R.string.triggers_cat_bucket),
                     "RESTRICTED confirmed · RUN_ANY_IN_BACKGROUND=deny"
                             + (jobsBlocked ? " · jobs blocked" : ""),
-                    "Android 12+: система подтвердила ограничения RESTRICTED bucket через appops. " +
-                    "Jobs и Alarms заблокированы. Приложение не может запуститься самостоятельно.",
+                    context.getString(R.string.triggers_restricted_confirmed_explanation),                    
                     TriggerInfo.Severity.HIGH));
         } catch (Exception e) { Log.w(TAG, "restricted bucket effects check failed: " + e.getMessage()); }
         return list;
@@ -2017,9 +1988,8 @@ public class AppTriggerAnalyzersExt {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_doze),
                         stateLabel + " · " + stateVal,
-                        "Android 11+: устройство находится в режиме Doze (" + stateLabel + "). " +
-                        "Wakelock, Network, Jobs и Alarms (кроме ALLOW_WHILE_IDLE) заблокированы. " +
-                        "Приложения без doze-exemption не могут работать в фоне.",
+                        context.getString(R.string.triggers_doze_state_prefix, stateLabel) + 
+                        context.getString(R.string.triggers_doze_state_suffix),
                         TriggerInfo.Severity.INFO));
             }
         } catch (Exception e) { Log.w(TAG, "doze state fallback failed: " + e.getMessage()); }
@@ -2030,15 +2000,12 @@ public class AppTriggerAnalyzersExt {
         List<TriggerInfo> list = new ArrayList<>();
         if (appOpsOut == null) return list;
         try {
-            // Android 11–13: ACTIVITY_RECOGNITION used recently => sensor-based wakeup
             boolean hasActRec = appOpsOut.contains("ACTIVITY_RECOGNITION")
                     && appOpsOut.contains("allow");
-            // Android 12+: MANAGE_MEDIA used => media session background access
             boolean hasManageMedia = appOpsOut.contains("MANAGE_MEDIA")
                     && appOpsOut.contains("allow");
 
             if (hasActRec) {
-                // Extract time if present
                 Matcher mT = Pattern.compile(
                         "ACTIVITY_RECOGNITION.*?time=\\+([\\d\\w ]+)\\s+ago").matcher(appOpsOut);
                 String timeStr = mT.find() ? mT.group(1).trim() : null;
@@ -2053,16 +2020,14 @@ public class AppTriggerAnalyzersExt {
                     && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_appops),
-                        "MANAGE_MEDIA · allow",
-                        "Android 12+: приложение управляет медиа-сессиями других приложений. " +
-                        "На Android 15 связан с mediaProcessing FGS типом.",
+                        context.getString(R.string.trigger_manage_media_label),
+                        context.getString(R.string.trigger_manage_media_desc),
                         TriggerInfo.Severity.LOW));
             }
         } catch (Exception e) { Log.w(TAG, "analyzeRestrictedOps failed: " + e.getMessage()); }
         return list;
     }
 
-    // ── end Android 11–13 fallback methods ───────────────────────────────────
 
     private String parseDumpsysAppOpsForPackage(String packageName) {
         try {
@@ -2137,9 +2102,7 @@ public class AppTriggerAnalyzersExt {
                         TriggerInfo.Group.CAN_WAKE, TriggerInfo.Severity.HIGH);
             case "SCHEDULE_EXACT_ALARM":
                 return new OpDescriptor("Exact Alarm",
-                        "Разрешение планировать точные аларм-срабатывания. " +
-                        "Android 14: deny по умолчанию для новых установок. " +
-                        "Если allow — приложение может точно будить устройство по таймеру.",
+                        context.getString(R.string.triggers_appops_schedule_exact_alarm_explanation),                        
                         TriggerInfo.Group.CAN_WAKE, TriggerInfo.Severity.HIGH);
             case "USE_EXACT_ALARM":
                 return new OpDescriptor("USE_EXACT_ALARM",
@@ -2147,24 +2110,19 @@ public class AppTriggerAnalyzersExt {
                         TriggerInfo.Group.CAN_WAKE, TriggerInfo.Severity.HIGH);
             case "USE_FULL_SCREEN_INTENT":
                 return new OpDescriptor("Full-Screen Intent",
-                        "Разрешение показывать уведомления поверх экрана блокировки. " +
-                        "Android 14+: разрешено только alarm/call приложениям. " +
-                        "Наличие у стороннего приложения — аномалия.",
+                        context.getString(R.string.triggers_appops_full_screen_intent_explanation),                       
                         TriggerInfo.Group.CAN_WAKE, TriggerInfo.Severity.MEDIUM);
             case "MANAGE_MEDIA":
                 return new OpDescriptor("Manage Media",
-                        "Управление медиа-сессиями других приложений. " +
-                        "На Android 15 связан с mediaProcessing FGS типом.",
+                        context.getString(R.string.triggers_appops_manage_media_explanation),                        
                         TriggerInfo.Group.OTHER, TriggerInfo.Severity.LOW);
             case "RUN_USER_INITIATED_JOBS":
                 return new OpDescriptor("User-Initiated Jobs",
-                        "Разрешение запускать User-Initiated Jobs (длинные задачи по инициативе пользователя). " +
-                        "Android 14: замена 'long jobs'. Могут выполняться при заблокированном экране.",
+                        context.getString(R.string.triggers_appops_user_initiated_jobs_explanation),                        
                         TriggerInfo.Group.CAN_WAKE, TriggerInfo.Severity.MEDIUM);
             case "START_FOREGROUND":
                 return new OpDescriptor("Start FGS (blocked)",
-                        "Система заблокировала право запускать Foreground Service. " +
-                        "Приложение пытается работать в фоне но ограничено.",
+                        context.getString(R.string.triggers_appops_start_fgs_blocked_explanation),                        
                         TriggerInfo.Group.OTHER, TriggerInfo.Severity.HIGH);
             case "RECEIVE_EXPLICIT_USER_INTERACTION":
                 return new OpDescriptor("USER_INTERACTION",

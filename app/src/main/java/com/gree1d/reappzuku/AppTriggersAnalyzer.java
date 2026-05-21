@@ -223,7 +223,6 @@ public class AppTriggersAnalyzer {
     static final int API_BAL_PRIVILEGES    = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     static final int API_MEDIA_PROCESSING  = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
-    // ── Android 11–13 fallback patterns ──────────────────────────────────────
     private static final Pattern FROZEN_SECTION_PAT  = Pattern.compile(
             "Apps frozen:\\s*([\\d, ]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern FGS_BG_START_PAT    = Pattern.compile("startedFromBg=(true|false)");
@@ -447,7 +446,6 @@ public class AppTriggersAnalyzer {
                 context.getString(R.string.triggers_proc_state_explanation, label),
                 severity));
 
-        // Android 11–13: Process Freezer (cgroup v2)
         if (apiLevel >= API_PROCESS_FREEZER && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             String pid = null;
             try {
@@ -465,9 +463,8 @@ public class AppTriggersAnalyzer {
             if (isProcessFrozen(packageName, pid)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_proc_state),
-                        "Process Frozen (cgroup freezer)",
-                        "Процесс заморожен системой (Android 11+): выполнение остановлено, " +
-                        "но процесс не убит. Размораживается автоматически при обращении.",
+                        context.getString(R.string.triggers_proc_frozen_detail),
+                        context.getString(R.string.triggers_proc_frozen_explanation),
                         TriggerInfo.Severity.INFO));
             }
         }
@@ -608,7 +605,6 @@ public class AppTriggersAnalyzer {
                 }
             }
 
-            // Android 12–13: FGS started from background / via exemption
             if (apiLevel >= API_FGS_BG_BLOCKED && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
                 Matcher mBg = FGS_BG_START_PAT.matcher(t);
                 if (mBg.find() && "true".equals(mBg.group(1)) && fgsAllowStartReason == null) {
@@ -624,10 +620,9 @@ public class AppTriggersAnalyzer {
                 Matcher mExceeded = FGS_EXCEEDED_PAT.matcher(t);
                 if (mExceeded.find() && "true".equals(mExceeded.group(1))) {
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                            "FGS Timeout Exceeded",
+                            context.getString(R.string.triggers_cat_fgs_timeout_exceeded),
                             currentSvc + " · timeLimitExceeded",
-                            "Android 15: сервис типа dataSync или mediaProcessing превысил 6-часовой лимит. " +
-                            "Система должна была вызвать onTimeout() и остановить сервис.",
+                            context.getString(R.string.triggers_fgs_timeout_exceeded_explanation),
                             TriggerInfo.Severity.HIGH));
                 }
                 Matcher mRemain = FGS_TIMEOUT_PAT.matcher(t);
@@ -635,9 +630,9 @@ public class AppTriggersAnalyzer {
                     long remainMs = Long.parseLong(mRemain.group(1));
                     if (remainMs < 30 * 60 * 1000L) {
                         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                                "FGS Near Timeout",
+                                context.getString(R.string.triggers_cat_fgs_near_timeout),
                                 currentSvc + " · remaining=" + formatDuration(remainMs),
-                                "Android 15: сервису осталось менее 30 мин из 6-часового лимита (dataSync/mediaProcessing).",
+                                context.getString(R.string.triggers_fgs_near_timeout_explanation),
                                 TriggerInfo.Severity.MEDIUM));
                     }
                 }
@@ -682,7 +677,6 @@ public class AppTriggersAnalyzer {
                     TriggerInfo.Severity.HIGH));
         }
 
-        // Android 12–13: FGS start blocked from background (logcat fallback)
         if (apiLevel >= API_FGS_BG_BLOCKED && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeFgsStartBlocked(packageName));
         }
@@ -821,7 +815,6 @@ public class AppTriggersAnalyzer {
                         .append(context.getString(R.string.triggers_wakelock_detail_held, heldStr));
                 if (!acqRel.isEmpty())  detail.append(" · ").append(acqRel);
 
-                // Android 12–13: WorkSource attribution
                 if (apiLevel >= Build.VERSION_CODES.S && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
                     Matcher mWs = WORK_SOURCE_PAT.matcher(line);
                     while (mWs.find()) {
@@ -873,7 +866,6 @@ public class AppTriggersAnalyzer {
             list.addAll(analyzeWakelocksSysFsFallback(packageName, cachedUid));
         }
 
-        // Android 11–13: kernel wakelock fallback (/sys/power/wake_lock)
         if (list.isEmpty()
                 && apiLevel >= Build.VERSION_CODES.R
                 && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
@@ -947,8 +939,7 @@ public class AppTriggersAnalyzer {
                         + " · " + context.getString(R.string.triggers_wakelock_detail_held,
                                 formatDuration(totalTimeMs))
                         + " · " + activeCount + "×",
-                        "Источник пробуждения из /sys/kernel/wakeup_sources " +
-                        "(fallback для Android 14+ когда dumpsys power не показывает wakelock).",
+                        context.getString(R.string.triggers_wakelock_wakeup_sources_explanation),
                         activeCount > 20 || totalTimeMs > 60_000
                                 ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
             }
@@ -1032,7 +1023,6 @@ public class AppTriggersAnalyzer {
                 context.getString(R.string.triggers_network_explanation),
                 sev));
 
-        // Android 11–13: NetworkPolicyManager background network restriction
         if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeNetworkPolicy(packageName));
         }
@@ -1217,7 +1207,6 @@ public class AppTriggersAnalyzer {
                 Matcher mI = ivPat.matcher(t);
                 if (mI.find()) { long iv=Long.parseLong(mI.group(1)); if(iv>0&&iv<minIvMs) minIvMs=iv; }
 
-                // Android 11–13: detect location provider type
                 if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
                     Matcher mProv = LOCATION_PROVIDER_PAT.matcher(t);
                     if (mProv.find()) {
@@ -1262,7 +1251,6 @@ public class AppTriggersAnalyzer {
                                         : R.string.triggers_location_fg_explanation),
                 sev));
 
-        // Android 11–13: ACCESS_BACKGROUND_LOCATION permission check
         if (apiLevel >= Build.VERSION_CODES.R && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeBackgroundLocationPermission(packageName));
         }
@@ -1506,7 +1494,6 @@ public class AppTriggersAnalyzer {
                         Matcher m = modePat.matcher(t);
                         if (m.find() && scanMode == null) scanMode = m.group(1);
 
-                        // Android 12–13: scanCallbackType and reportDelay
                         if (apiLevel >= Build.VERSION_CODES.S
                                 && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
                             Matcher mCb = BLE_CALLBACK_PAT.matcher(t);
@@ -1581,7 +1568,6 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "Bluetooth/gatt - ERROR: " + e.getMessage()); }
 
-        // Android 12–13: BLUETOOTH_SCAN / BLUETOOTH_CONNECT permission fallback
         if (apiLevel >= Build.VERSION_CODES.S && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeBluetoothPermissions(packageName));
         }
@@ -1589,18 +1575,13 @@ public class AppTriggersAnalyzer {
         return list;
     }
 
-
-    // ── Android 11–13 fallback methods ───────────────────────────────────────
-
     private boolean isProcessFrozen(String packageName, String pid) {
-        // Способ 1: dumpsys activity — секция "Apps frozen:"
         try {
             String out = shellManager.runShellCommandAndGetFullOutput(
                     "dumpsys activity | grep -A3 'Apps frozen'");
             if (out != null && pid != null && out.contains(pid)) return true;
         } catch (Exception e) { Log.w(TAG, "frozen check dumpsys failed: " + e.getMessage()); }
 
-        // Способ 2: cgroup freeze файл (требует root)
         if (cachedUid != null && pid != null) {
             try {
                 String freeze = shellManager.runShellCommandAndGetFullOutput(
@@ -1621,9 +1602,8 @@ public class AppTriggersAnalyzer {
                     && logcat.contains(packageName)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_fg_service),
-                        "FGS заблокирован при старте из фона",
-                        "Android 12+: попытка запустить Foreground Service из фона " +
-                        "без разрешённого exemption. Сервис не запустился.",
+                        context.getString(R.string.triggers_fgs_blocked_detail),
+                        context.getString(R.string.triggers_fgs_blocked_explanation),
                         TriggerInfo.Severity.MEDIUM));
             }
         } catch (Exception e) { Log.w(TAG, "fgs blocked logcat failed: " + e.getMessage()); }
@@ -1650,16 +1630,14 @@ public class AppTriggersAnalyzer {
             if (rejected) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_network),
-                        "Сетевой доступ в фоне заблокирован (Data Saver)",
-                        "Пользователь включил Data Saver или запретил фоновый доступ к сети. " +
-                        "Приложение не может использовать сеть в фоне на мобильных данных.",
+                        context.getString(R.string.triggers_network_bg_blocked_detail),
+                        context.getString(R.string.triggers_network_bg_blocked_explanation),
                         TriggerInfo.Severity.INFO));
             } else if (allowed) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_network),
-                        "Фоновый сетевой доступ: явно разрешён (исключение Data Saver)",
-                        "Приложение добавлено пользователем в белый список Data Saver — " +
-                        "имеет неограниченный доступ к сети в фоне.",
+                        context.getString(R.string.triggers_network_bg_allowed_detail),                       
+                        context.getString(R.string.triggers_network_bg_allowed_explanation),                       
                         TriggerInfo.Severity.MEDIUM));
             }
         } catch (Exception e) { Log.w(TAG, "netpolicy check failed: " + e.getMessage()); }
@@ -1674,10 +1652,8 @@ public class AppTriggersAnalyzer {
             if (pkgOut != null && pkgOut.contains("granted=true")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
                         context.getString(R.string.triggers_cat_location),
-                        "ACCESS_BACKGROUND_LOCATION granted",
-                        "Android 11+: приложение имеет разрешение получать геолокацию из фона " +
-                        "в любое время, даже когда пользователь не использует приложение. " +
-                        "Требует отдельного одобрения пользователя.",
+                        context.getString(R.string.triggers_bg_location_detail),                        
+                        context.getString(R.string.triggers_bg_location_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
         } catch (Exception e) { Log.w(TAG, "bg location perm check failed: " + e.getMessage()); }
@@ -1701,8 +1677,7 @@ public class AppTriggersAnalyzer {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                         context.getString(R.string.triggers_cat_ble_scan),
                         detail.trim() + " (Android 12+ permissions)",
-                        "Android 12+: приложение имеет разрешения на BT-сканирование " +
-                        "и/или подключение. Может инициировать сканирование при broadcast.",
+                        context.getString(R.string.triggers_bt_permissions_explanation),                        
                         TriggerInfo.Severity.LOW));
             }
         } catch (Exception e) { Log.w(TAG, "bt permissions check failed: " + e.getMessage()); }
@@ -1718,15 +1693,12 @@ public class AppTriggersAnalyzer {
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
                         context.getString(R.string.triggers_cat_wakelock),
                         "Kernel wakelock: " + packageName,
-                        "Приложение удерживает kernel-уровень wakelock (/sys/power/wake_lock). " +
-                        "Крайне редкий случай, указывает на нестандартный драйвер или системный компонент.",
+                        context.getString(R.string.triggers_kernel_wakelock_explanation),                        
                         TriggerInfo.Severity.HIGH));
             }
         } catch (Exception e) { Log.w(TAG, "kernel wakelock check failed: " + e.getMessage()); }
         return list;
     }
-
-    // ── end Android 11–13 fallback methods ───────────────────────────────────
 
     private String resolveUid(String packageName) {
         try {
