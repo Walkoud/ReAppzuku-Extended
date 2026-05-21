@@ -44,8 +44,8 @@
 
 ### Root vs Shizuku
 
-- **Root** — preferred mode, used automatically if available
-- **Shizuku** — root-free alternative. Installed from Play Store, requires initial setup via ADB or MIUI/HyperOS developer mode
+- **Root** — preferred mode, used automatically if available.
+- **Shizuku** — root-free alternative. Installed from Play Store, requires initial setup via ADB or developer mode.
 
 > Current operating mode is always shown in **Settings → Information → Operating Mode**
 
