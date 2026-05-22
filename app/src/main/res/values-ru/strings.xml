@@ -916,5 +916,5 @@
     <string name="update_dialog_close">Закрыть</string>
     <string name="update_up_to_date">Последняя версия (%s)</string>
     <string name="update_check_failed">Ошибка проверки обновления</string>
-
+    <string name="easter_egg_hunter">🐱 Поздравляю, вы нашли пасхалку!</string>
 </resources>
