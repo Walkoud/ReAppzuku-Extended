@@ -1069,30 +1069,85 @@ public class SettingsActivity extends BaseActivity {
                 : (currentAccent == ACCENT_CUSTOM) ? 1
                 : currentAccent + 1;
 
-        showSingleChoiceDialog(getString(R.string.settings_accent_title), allLabels, selectedIndex, which -> {
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        android.widget.TextView titleView = view.findViewById(R.id.single_choice_title);
+        android.widget.RadioGroup group = view.findViewById(R.id.single_choice_group);
+
+        titleView.setText(getString(R.string.settings_accent_title));
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor())
+                : null;
+
+        final AlertDialog[] dialogRef = {null};
+
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+        for (int i = 0; i < allLabels.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(allLabels[i]);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            if (i == 1) {
+                rb.setOnClickListener(v -> {
+                    if (rb.getId() == group.getCheckedRadioButtonId()) {
+                        openCustomColorPicker(dialogRef[0]);
+                    }
+                });
+            }
+            group.addView(rb);
+        }
+        group.check(1000 + selectedIndex);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .create();
+
+        dialogRef[0] = dialog;
+
+        final boolean[] userInteracted = {false};
+        group.setOnCheckedChangeListener((g, checkedId) -> {
+            if (!userInteracted[0] || checkedId == -1) return;
+            int which = checkedId - 1000;
             if (which == 0) {
                 sharedPreferences.edit().putInt(KEY_ACCENT, ACCENT_SYSTEM).apply();
                 updateAccentText(ACCENT_SYSTEM);
                 updateOnColorLayoutVisibility(ACCENT_SYSTEM);
+                dialog.dismiss();
                 recreate();
             } else if (which == 1) {
-                int currentCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-                ColorPickerDialog.show(this, currentCustomColor, pickedColor -> {
-                    sharedPreferences.edit()
-                            .putInt(KEY_ACCENT, ACCENT_CUSTOM)
-                            .putInt(KEY_ACCENT_CUSTOM_COLOR, pickedColor)
-                            .apply();
-                    updateAccentText(ACCENT_CUSTOM);
-                    updateOnColorLayoutVisibility(ACCENT_CUSTOM);
-                    recreate();
-                });
+                openCustomColorPicker(dialog);
             } else {
                 int accentValue = which - 1;
                 sharedPreferences.edit().putInt(KEY_ACCENT, accentValue).apply();
                 updateAccentText(accentValue);
                 updateOnColorLayoutVisibility(accentValue);
+                dialog.dismiss();
                 recreate();
             }
+        });
+        view.post(() -> userInteracted[0] = true);
+
+        dialog.show();
+    }
+
+    private void openCustomColorPicker(AlertDialog parentDialog) {
+        if (parentDialog != null) parentDialog.dismiss();
+        int currentCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        ColorPickerDialog.show(this, currentCustomColor, pickedColor -> {
+            sharedPreferences.edit()
+                    .putInt(KEY_ACCENT, ACCENT_CUSTOM)
+                    .putInt(KEY_ACCENT_CUSTOM_COLOR, pickedColor)
+                    .apply();
+            updateAccentText(ACCENT_CUSTOM);
+            updateOnColorLayoutVisibility(ACCENT_CUSTOM);
+            recreate();
         });
     }
 
