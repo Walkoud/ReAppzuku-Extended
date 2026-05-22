@@ -46,6 +46,7 @@
                 android:layout_marginBottom="8dp">
 
                 <ImageView
+                    android:id="@+id/section_icon_information"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="8dp"
@@ -53,6 +54,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                    android:id="@+id/section_title_information"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_section_information"
@@ -120,6 +122,7 @@
                 android:layout_marginBottom="8dp">
 
                 <ImageView
+                    android:id="@+id/section_icon_appearance"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="8dp"
@@ -127,6 +130,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                    android:id="@+id/section_title_appearance"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_section_appearance"
@@ -184,6 +188,39 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/layout_accent_on_color"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_accent_on_color_title"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/text_accent_on_color"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/layout_notification_mode"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -221,6 +258,7 @@
                 android:layout_marginBottom="8dp">
 
                 <ImageView
+                    android:id="@+id/section_icon_stability"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="8dp"
@@ -228,6 +266,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                    android:id="@+id/section_title_stability"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_section_background_service"
@@ -285,6 +324,7 @@
                 android:layout_marginBottom="8dp">
 
                 <ImageView
+                    android:id="@+id/section_icon_autokill"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="8dp"
@@ -292,6 +332,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                    android:id="@+id/section_title_autokill"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_section_kill_rules"
@@ -566,6 +607,7 @@
                 android:layout_marginBottom="8dp">
 
                 <ImageView
+                    android:id="@+id/section_icon_advanced"
                     android:layout_width="24dp"
                     android:layout_height="24dp"
                     android:layout_marginEnd="8dp"
@@ -573,6 +615,7 @@
                     android:contentDescription="@null" />
 
                 <TextView
+                    android:id="@+id/section_title_advanced"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_section_advanced_tools"
@@ -811,6 +854,7 @@
 
             <!-- 5. About app -->
             <TextView
+                android:id="@+id/section_title_about"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/settings_about_section"

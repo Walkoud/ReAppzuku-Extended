@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.21'
 }
 
 android {
@@ -11,7 +13,7 @@ android {
         minSdk 23
         targetSdk 36
         versionCode 21
-        versionName "1.6.1"
+        versionName "1.7.0"
         multiDexEnabled = true
         vectorDrawables {
             useSupportLibrary true
@@ -41,6 +43,7 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled true
             shrinkResources true
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
 
@@ -63,10 +66,20 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.14'
+    }
+
     buildFeatures {
         aidl true
         viewBinding true
+        compose true
     }
+
     lint {
         baseline = file("lint-baseline.xml")
     }
@@ -91,5 +104,12 @@ dependencies {
 
     // WorkManager
     def work_version = "2.11.1"
-    implementation "androidx.work:work-runtime:$work_version"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+
+    // Kotlin
+    implementation "androidx.core:core-ktx:1.16.0"
+
+    // Glance
+    implementation "androidx.glance:glance-appwidget:1.1.0"
+    implementation "androidx.glance:glance:1.1.0"
 }

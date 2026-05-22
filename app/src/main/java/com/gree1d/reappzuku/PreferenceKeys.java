@@ -8,6 +8,10 @@ public final class PreferenceKeys {
 
     public static final String PREFERENCES_NAME = "AppPreferences";
 
+    // Custom accents
+    public static final String KEY_ACCENT_CUSTOM_COLOR = "accent_custom_color";
+    public static final String KEY_ACCENT_ON_COLOR = "accent_on_color";
+    
     // App Lists
     public static final String KEY_HIDDEN_APPS = "hidden_apps";
     public static final String KEY_WHITELISTED_APPS = "whitelisted_apps";
@@ -30,6 +34,7 @@ public final class PreferenceKeys {
     // Service & Automation
     public static final String KEY_AUTO_KILL_ENABLED = "autoKillEnabled";
     public static final String KEY_PERIODIC_KILL_ENABLED = "periodicKillEnabled";
+    public static final String KEY_AUTO_KILL_PENDING_RSS = "auto_kill_pending_rss";
     public static final String KEY_KILL_INTERVAL = "killInterval";
     public static final String KEY_KILL_ON_SCREEN_OFF = "killOnScreenOff";
 

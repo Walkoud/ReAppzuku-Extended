@@ -45,6 +45,15 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     private final Map<String, Integer> manualOpsMaskMap;
 
     private OnSelectionChangedListener selectionChangedListener;
+    private int accentColor = 0;
+
+    public void setAccentColor(int color) {
+        this.accentColor = color;
+    }
+
+    private boolean hasAccent() {
+        return accentColor != 0;
+    }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps, Set<String> selectedApps) {
         this(context, apps, selectedApps, null, null, null, false);
@@ -213,6 +222,10 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
         holder.appIcon.setImageDrawable(app.getAppIcon());
         holder.checkBox.setChecked(app.isSelected());
+        if (hasAccent()) {
+            holder.checkBox.setButtonTintList(
+                    android.content.res.ColorStateList.valueOf(accentColor));
+        }
 
         if (restrictionMode && holder.restrictionType != null) {
             if (app.isSelected()) {
@@ -221,6 +234,24 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                                 BackgroundAppManager.RestrictionType.SOFT);
                 holder.restrictionType.setVisibility(View.VISIBLE);
                 holder.restrictionType.setText(badgeLabel(type));
+                if (hasAccent()) {
+                    holder.restrictionType.setTextColor(accentColor);
+                    android.graphics.drawable.Drawable bg = holder.restrictionType.getBackground();
+                    if (bg != null) {
+                        android.graphics.drawable.Drawable mutated = bg.mutate();
+                        if (mutated instanceof android.graphics.drawable.GradientDrawable) {
+                            ((android.graphics.drawable.GradientDrawable) mutated).setStroke(
+                                    (int) (holder.restrictionType.getContext().getResources()
+                                            .getDisplayMetrics().density * 1.5f),
+                                    accentColor);
+                            ((android.graphics.drawable.GradientDrawable) mutated)
+                                    .setColor(android.graphics.Color.argb(30,
+                                            android.graphics.Color.red(accentColor),
+                                            android.graphics.Color.green(accentColor),
+                                            android.graphics.Color.blue(accentColor)));
+                        }
+                    }
+                }
                 holder.restrictionType.setOnClickListener(
                         v -> showRestrictionTypeDialog(app, holder.restrictionType));
             } else {
@@ -333,6 +364,14 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     }
                 })
                 .show();
+
+        if (hasAccent()) {
+            android.content.res.ColorStateList tint =
+                    android.content.res.ColorStateList.valueOf(accentColor);
+            softBtn.setButtonTintList(tint);
+            hardBtn.setButtonTintList(tint);
+            manualBtn.setButtonTintList(tint);
+        }
     }
 
     private void showManualOpsDialog(AppModel app, TextView chipView, int currentMask) {
@@ -401,6 +440,12 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     notifySelectionChanged();
                 })
                 .show();
+
+        if (hasAccent()) {
+            android.content.res.ColorStateList tint =
+                    android.content.res.ColorStateList.valueOf(accentColor);
+            for (CheckBox cb : boxes) cb.setButtonTintList(tint);
+        }
     }
 
     private View makeDivider(int paddingH) {

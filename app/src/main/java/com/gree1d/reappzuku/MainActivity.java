@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.Manifest;
 import android.os.Build;
@@ -13,6 +14,7 @@ import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.text.SpannableString;
@@ -40,6 +42,11 @@ import android.widget.Toast;
 import android.net.Uri;
 import androidx.appcompat.app.AlertDialog;
 
+import android.widget.PopupWindow;
+import android.widget.ImageView;
+import android.view.LayoutInflater;
+import android.widget.CheckBox;
+
 import rikka.shizuku.Shizuku;
 
 import static com.gree1d.reappzuku.PreferenceKeys.*;
@@ -66,7 +73,8 @@ public class MainActivity extends BaseActivity {
 
     private int appliedAccent;
     private boolean appliedIsAmoled;
-    private int fabNavBarHeight = 0;
+    private int appliedCustomColor;
+    private int appliedOnColor;
 
     private final Shizuku.OnRequestPermissionResultListener shizukuPermissionListener = (requestCode, grantResult) -> {
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
@@ -91,14 +99,27 @@ public class MainActivity extends BaseActivity {
         setContentView(binding.getRoot());
 
         setSupportActionBar(binding.toolbar);
-        binding.toolbar.setTitleTextColor(Color.WHITE);
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         boolean isAmoled = sharedPreferences.getBoolean(KEY_AMOLED, false);
-        if (!isAmoled && accent == ACCENT_SYSTEM) {
+        if (accent == ACCENT_CUSTOM) {
+            int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+            binding.toolbar.setBackgroundColor(customColor);
+            binding.toolbar.setTitleTextColor(onColor);
+            if (binding.toolbar.getNavigationIcon() != null)
+                androidx.core.graphics.drawable.DrawableCompat.setTint(
+                        binding.toolbar.getNavigationIcon(), onColor);
+        } else if (!isAmoled && accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
+            binding.toolbar.setTitleTextColor(Color.WHITE);
+        } else {
+            binding.toolbar.setTitleTextColor(isLightAccent() ? Color.BLACK : Color.WHITE);
         }
         appliedAccent = accent;
         appliedIsAmoled = isAmoled;
+        appliedCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        appliedOnColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
 
         shellManager = new ShellManager(this, handler, executor);
         appManager = new BackgroundAppManager(this, handler, executor, shellManager);
@@ -124,11 +145,9 @@ public class MainActivity extends BaseActivity {
 
         cpuMonitor.setAppsList(fullAppsList);
 
-
-        setupListeners();
+        setupKillButton();
         setupBottomNavigation();
-        setupFabInsets();
-
+        setupListeners();
 
         binding.swiperefreshlayout1.post(this::recalculateListHeight);
         loadSettingsAndApplyToManager();
@@ -169,24 +188,6 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private void setupFabInsets() {
-
-
-        ViewCompat.setOnApplyWindowInsetsListener(binding.fab, (v, insets) -> {
-            fabNavBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-            return insets;
-        });
-    }
-
-
-    private void applyFabMargin() {
-        final int baseMarginPx = (int) (72 * getResources().getDisplayMetrics().density);
-        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams params =
-                (androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) binding.fab.getLayoutParams();
-        params.bottomMargin = baseMarginPx + fabNavBarHeight;
-        binding.fab.setLayoutParams(params);
-    }
-
     private void setupBottomNavigation() {
         binding.bottomNavigation.navIconMain.setSelected(true);
         binding.bottomNavigation.navIconSettings.setSelected(false);
@@ -199,53 +200,41 @@ public class MainActivity extends BaseActivity {
         applyNavBarInsets(binding.bottomNavigation.getRoot());
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        setupBottomNavigation();
-
-        int newAccent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        boolean newIsAmoled = sharedPreferences.getBoolean(KEY_AMOLED, false);
-        if (newAccent != appliedAccent || newIsAmoled != appliedIsAmoled) {
-            recreate();
-            return;
+    private boolean isLightAccent() {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            return sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK;
         }
-        loadSettingsAndApplyToManager();
-        ensureServiceRunning();
-        loadBackgroundApps();
-        cpuMonitor.startMonitoring();
+        return accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
+                accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
+                accent == ACCENT_MINT || accent == ACCENT_PEACH ||
+                accent == ACCENT_POWDER || accent == ACCENT_FOG;
     }
 
-    @Override
-    protected void onPause() {
-        super.onPause();
-        cpuMonitor.stopMonitoring();
-    }
-
-
-    private void ensureServiceRunning() {
-        if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
-                && !ShappkyService.isRunning()) {
-            Intent intent = new Intent(this, ShappkyService.class);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent);
-            } else {
-                startService(intent);
-            }
+    private void setupKillButton() {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+            binding.killButton.setBackgroundTintList(
+                    ColorStateList.valueOf(customColor));
+            binding.killButton.setTextColor(onColor);
+        } else if (accent != ACCENT_SYSTEM) {
+            int accentColor = resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+            binding.killButton.setBackgroundTintList(
+                    ColorStateList.valueOf(accentColor));
+            binding.killButton.setTextColor(isLightAccent() ? Color.BLACK : Color.WHITE);
+        } else {
+            binding.killButton.setBackgroundTintList(
+                    ColorStateList.valueOf(Color.parseColor("#0136FF")));
+            binding.killButton.setTextColor(Color.WHITE);
         }
-    }
-
-    private void loadSettingsAndApplyToManager() {
-        boolean showSystemApps = sharedPreferences.getBoolean(KEY_SHOW_SYSTEM_APPS, false);
-        boolean showPersistentApps = sharedPreferences.getBoolean(KEY_SHOW_PERSISTENT_APPS, false);
-        currentSortMode = sharedPreferences.getInt(KEY_SORT_MODE, AppConstants.SORT_MODE_DEFAULT);
-        appManager.setShowSystemApps(showSystemApps);
-        appManager.setShowPersistentApps(showPersistentApps);
     }
 
     private void setupListeners() {
         binding.swiperefreshlayout1.setOnRefreshListener(this::loadBackgroundApps);
-        binding.fab.setOnClickListener(view -> killSelectedApps());
+        binding.killButton.setOnClickListener(view -> killSelectedApps());
 
         listAdapter.setOnAppActionListener(new BackgroundAppsRecyclerViewAdapter.OnAppActionListener() {
             @Override
@@ -286,72 +275,139 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showAppOptionsMenu(AppModel app, View anchor) {
-        PopupMenu popup = new PopupMenu(this, anchor);
-        popup.getMenuInflater().inflate(R.menu.menu_app_options, popup.getMenu());
-
-        if (app.isProtected()) {
-            Menu menu = popup.getMenu();
-            menu.findItem(R.id.action_add_to_list).setVisible(false);
-            menu.findItem(R.id.action_uninstall).setVisible(false);
-            popup.setOnMenuItemClickListener(item -> {
-                int id = item.getItemId();
-                if (id == R.id.action_app_info) {
-                    openAppInfo(app.getPackageName());
-                    return true;
-                } else if (id == R.id.action_app_triggers) {
-                    showAppTriggersDialog(app);
-                    return true;
-                }
-                return false;
-            });
-            popup.show();
-            return;
-        }
-
-        if (app.isSystemApp()) {
-            popup.getMenu().findItem(R.id.action_uninstall).setVisible(false);
-        }
-
+        LayoutInflater inflater = LayoutInflater.from(this);
+        LinearLayout popupRoot = (LinearLayout) inflater.inflate(R.layout.popup_app_options, null);
+    
+        boolean isDark = sharedPreferences.getBoolean(KEY_AMOLED, false)
+                || sharedPreferences.getInt(KEY_THEME,
+                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                        == androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
+    
         String packageName = app.getPackageName();
-        popup.getMenu().findItem(R.id.action_whitelist).setChecked(
-                appManager.getWhitelistedApps().contains(packageName));
-        popup.getMenu().findItem(R.id.action_blacklist).setChecked(
-                autoKillManager.getBlacklistedApps().contains(packageName));
-        popup.getMenu().findItem(R.id.action_hidden).setChecked(
-                appManager.getHiddenApps().contains(packageName));
-        MenuItem restrictionItem = popup.getMenu().findItem(R.id.action_background_restriction);
-        restrictionItem.setVisible(appManager.supportsBackgroundRestriction());
-        restrictionItem.setChecked(app.isBackgroundRestrictionDesired());
-        restrictionItem.setTitle(getBackgroundRestrictionMenuTitle(app));
-
-        popup.setOnMenuItemClickListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.action_app_info) {
-                openAppInfo(packageName);
-                return true;
-            } else if (id == R.id.action_app_triggers) {
-                showAppTriggersDialog(app);
-                return true;
-            } else if (id == R.id.action_uninstall) {
-                showUninstallConfirmation(app);
-                return true;
-            } else if (id == R.id.action_whitelist) {
-                toggleListMembership(app, "whitelist");
-                return true;
-            } else if (id == R.id.action_blacklist) {
-                toggleListMembership(app, "blacklist");
-                return true;
-            } else if (id == R.id.action_hidden) {
-                toggleListMembership(app, "hidden");
-                return true;
-            } else if (id == R.id.action_background_restriction) {
-                toggleBackgroundRestriction(app);
-                return true;
-            }
-            return false;
+    
+        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_info), false, false, () -> {
+            openAppInfo(packageName);
         });
-
-        popup.show();
+    
+        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_triggers), false, false, () -> {
+            showAppTriggersDialog(app);
+        });
+    
+        if (app.isProtected()) {
+            addPopupItem(inflater, popupRoot, getString(R.string.menu_hidden), true,
+                    appManager.getHiddenApps().contains(packageName), () -> {
+                        toggleListMembership(app, "hidden");
+                    });
+        } else {
+            if (!app.isSystemApp()) {
+                addPopupItem(inflater, popupRoot, getString(R.string.menu_uninstall), false, false, () -> {
+                    showUninstallConfirmation(app);
+                });
+            }
+    
+            View groupHeader = inflater.inflate(R.layout.popup_menu_group_header, popupRoot, false);
+            TextView groupTitle = groupHeader.findViewById(R.id.group_title);
+            ImageView groupArrow = groupHeader.findViewById(R.id.group_arrow);
+            groupTitle.setText(getString(R.string.menu_add_to));
+    
+            LinearLayout subContainer = new LinearLayout(this);
+            subContainer.setOrientation(LinearLayout.VERTICAL);
+            subContainer.setVisibility(View.GONE);
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_whitelist), true,
+                    appManager.getWhitelistedApps().contains(packageName), () -> {
+                        toggleListMembership(app, "whitelist");
+                    });
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_blacklist), true,
+                    autoKillManager.getBlacklistedApps().contains(packageName), () -> {
+                        toggleListMembership(app, "blacklist");
+                    });
+    
+            addPopupItemToContainer(inflater, subContainer, getString(R.string.menu_hidden), true,
+                    appManager.getHiddenApps().contains(packageName), () -> {
+                        toggleListMembership(app, "hidden");
+                    });
+    
+            if (appManager.supportsBackgroundRestriction()) {
+                addPopupItemToContainer(inflater, subContainer, getBackgroundRestrictionMenuTitle(app), true,
+                        app.isBackgroundRestrictionDesired(), () -> {
+                            toggleBackgroundRestriction(app);
+                        });
+            }
+    
+            groupHeader.setOnClickListener(v -> {
+                if (subContainer.getVisibility() == View.GONE) {
+                    subContainer.setVisibility(View.VISIBLE);
+                    groupArrow.setRotation(180f);
+                } else {
+                    subContainer.setVisibility(View.GONE);
+                    groupArrow.setRotation(0f);
+                }
+            });
+    
+            popupRoot.addView(groupHeader);
+            popupRoot.addView(subContainer);
+        }
+    
+        PopupWindow popupWindow = new PopupWindow(popupRoot,
+                (int) (220 * getResources().getDisplayMetrics().density),
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                true);
+        popupWindow.setElevation(12f);
+        popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        popupWindow.setOutsideTouchable(true);
+    
+        popupRoot.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+    
+        int[] location = new int[2];
+        anchor.getLocationOnScreen(location);
+        int anchorX = location[0];
+        int anchorY = location[1];
+        int anchorHeight = anchor.getHeight();
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int popupHeight = popupRoot.getMeasuredHeight();
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        int popupWidth = (int) (220 * getResources().getDisplayMetrics().density);
+    
+        int x = Math.min(anchorX, screenWidth - popupWidth - 8);
+        int y;
+        if (anchorY + anchorHeight + popupHeight <= screenHeight) {
+            y = anchorY + anchorHeight;
+        } else {
+            y = anchorY - popupHeight;
+        }
+    
+        popupWindow.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y);
+    }
+    
+    private void addPopupItem(LayoutInflater inflater, LinearLayout container,
+                               String title, boolean checkable, boolean checked, Runnable action) {
+        addPopupItemToContainer(inflater, container, title, checkable, checked, action);
+    }
+    
+    private void addPopupItemToContainer(LayoutInflater inflater, LinearLayout container,
+                                          String title, boolean checkable, boolean checked, Runnable action) {
+        View item = inflater.inflate(R.layout.popup_menu_item, container, false);
+        TextView tv = item.findViewById(R.id.item_title);
+        CheckBox cb = item.findViewById(R.id.item_checkbox);
+        tv.setText(title);
+        if (checkable) {
+            cb.setVisibility(View.VISIBLE);
+            cb.setChecked(checked);
+            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            if (accent == ACCENT_CUSTOM) {
+                int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+                cb.setButtonTintList(android.content.res.ColorStateList.valueOf(color));
+            }
+        }
+        item.setOnClickListener(v -> {
+            if (checkable) {
+                cb.setChecked(!cb.isChecked());
+            }
+            action.run();
+        });
+        container.addView(item);
     }
 
     private void openAppInfo(String packageName) {
@@ -375,7 +431,6 @@ public class MainActivity extends BaseActivity {
                 .show();
     }
 
-
     private void showAppTriggersDialog(AppModel app) {
         AlertDialog loadingDialog = new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.menu_app_triggers) + ": " + app.getAppName())
@@ -388,21 +443,21 @@ public class MainActivity extends BaseActivity {
             AppTriggersAnalyzer analyzer = new AppTriggersAnalyzer(MainActivity.this, shellManager);
             List<AppTriggersAnalyzer.TriggerInfo> triggers = analyzer.analyze(app.getPackageName());
             AppTriggersAnalyzer.AppStatus status = analyzer.resolveAppStatus(app.getPackageName());
+            int aggressionScore = analyzer.calculateAggressionScore(triggers);
 
             handler.post(() -> {
                 loadingDialog.dismiss();
                 if (isFinishing() || isDestroyed()) return;
-                showTriggersResult(app, triggers, status);
+                showTriggersResult(app, triggers, status, aggressionScore);
             });
         });
     }
 
     private void showTriggersResult(AppModel app, List<AppTriggersAnalyzer.TriggerInfo> triggers,
-                                     AppTriggersAnalyzer.AppStatus status) {
+                                     AppTriggersAnalyzer.AppStatus status, int aggressionScore) {
 
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_app_triggers, null);
         LinearLayout container = dialogView.findViewById(R.id.triggers_container);
-
 
         if (status != null) {
             String statusLabel;
@@ -416,18 +471,38 @@ public class MainActivity extends BaseActivity {
             String labelPart = getString(R.string.triggers_status_label_prefix);
             String fullText = labelPart + " " + statusLabel;
             SpannableString spannable = new SpannableString(fullText);
-            int primaryColor = resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            int primaryColor = (accent == ACCENT_CUSTOM)
+                    ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                    : resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
             spannable.setSpan(new ForegroundColorSpan(primaryColor), 0, labelPart.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             statusView.setText(spannable);
             statusView.setTextSize(13f);
             LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            statusLp.setMargins(8, 4, 8, 16);
+            statusLp.setMargins(8, 4, 8, 4);
             statusView.setLayoutParams(statusLp);
             container.addView(statusView);
         }
 
+        TextView scoreView = new TextView(this);
+        String scoreLabelPart = getString(R.string.triggers_aggression_label_prefix);
+        String scoreFullText = scoreLabelPart + " " + aggressionScore + "/100";
+        SpannableString scoreSpannable = new SpannableString(scoreFullText);
+        int accentScore = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int scoreColor = (accentScore == ACCENT_CUSTOM)
+                ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                : resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+        scoreSpannable.setSpan(new ForegroundColorSpan(scoreColor), 0, scoreLabelPart.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        scoreView.setText(scoreSpannable);
+        scoreView.setTextSize(13f);
+        LinearLayout.LayoutParams scoreLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        scoreLp.setMargins(8, 4, 8, 16);
+        scoreView.setLayoutParams(scoreLp);
+        container.addView(scoreView);
 
         List<AppTriggersAnalyzer.TriggerInfo> activeNow = new ArrayList<>();
         List<AppTriggersAnalyzer.TriggerInfo> canWake   = new ArrayList<>();
@@ -464,7 +539,11 @@ public class MainActivity extends BaseActivity {
         TextView header = new TextView(this);
         header.setText(title);
         header.setTextSize(12f);
-        header.setTextColor(resolveColorAttr(androidx.appcompat.R.attr.colorPrimary));
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int color = (accent == ACCENT_CUSTOM)
+                ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                : resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+        header.setTextColor(color);
         header.setAllCaps(true);
         header.setTypeface(null, android.graphics.Typeface.BOLD);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -506,7 +585,6 @@ public class MainActivity extends BaseActivity {
         getTheme().resolveAttribute(attr, tv, true);
         return tv.data;
     }
-
 
     private void toggleListMembership(AppModel app, String listType) {
         String packageName = app.getPackageName();
@@ -625,7 +703,6 @@ public class MainActivity extends BaseActivity {
         return getString(R.string.main_restriction_menu_default);
     }
 
-
     private void loadBackgroundApps() {
         binding.swiperefreshlayout1.setRefreshing(true);
 
@@ -676,7 +753,8 @@ public class MainActivity extends BaseActivity {
                 .map(AppModel::getPackageName)
                 .collect(Collectors.toList());
 
-        binding.fab.hide();
+        binding.killButton.setVisibility(View.GONE);
+        binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
 
         for (AppModel app : fullAppsList) {
             app.setSelected(false);
@@ -685,27 +763,97 @@ public class MainActivity extends BaseActivity {
 
         autoKillManager.killPackages(packagesToKill, () -> {
             loadBackgroundApps();
-            applyFabMargin();
-            binding.fab.show();
         });
     }
 
-    private void updateFabText() {
+    private void updateKillButtonText() {
         long count = fullAppsList.stream().filter(AppModel::isSelected).count();
-        binding.fab.setText(count >= 2
-                ? getString(R.string.fab_kill_apps)
-                : getString(R.string.fab_kill_app));
+        binding.killButton.setText(count >= 2
+                ? getString(R.string.fab_kill_apps) + " (" + count + ")"
+                : getString(R.string.fab_kill_app) + " (" + count + ")");
     }
 
     private void updateSelectMenuVisibility() {
         boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
         if (hasSelection) {
-            applyFabMargin();
-            binding.fab.show();
-            updateFabText();
+            binding.bottomNavigation.getRoot().setVisibility(View.GONE);
+            int navBarHeight = 0;
+            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(binding.coordinator);
+            if (insets != null) {
+                navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            }
+            int basePx = (int) (64 * getResources().getDisplayMetrics().density);
+            android.view.ViewGroup.LayoutParams params = binding.killButton.getLayoutParams();
+            params.height = basePx + navBarHeight;
+            binding.killButton.setLayoutParams(params);
+            binding.killButton.setPadding(0, 0, 0, navBarHeight);
+            binding.killButton.setVisibility(View.VISIBLE);
+            updateKillButtonText();
         } else {
-            binding.fab.hide();
+            binding.killButton.setVisibility(View.GONE);
+            binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
         }
+        updateSelectAllMenuItem();
+    }
+
+    private void updateSelectAllMenuItem() {
+        if (selectAllMenuItem == null) return;
+        boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
+        if (hasSelection) {
+            selectAllMenuItem.setIcon(R.drawable.ic_unselect_all);
+            selectAllMenuItem.setTitle(getString(R.string.menu_deselect_all));
+        } else {
+            selectAllMenuItem.setIcon(R.drawable.ic_select_all);
+            selectAllMenuItem.setTitle(getString(R.string.menu_select_all));
+        }
+        tintMenuItem(selectAllMenuItem);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setupBottomNavigation();
+
+        int newAccent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean newIsAmoled = sharedPreferences.getBoolean(KEY_AMOLED, false);
+        int newCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        int newOnColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        if (newAccent != appliedAccent || newIsAmoled != appliedIsAmoled
+                || (newAccent == ACCENT_CUSTOM && newCustomColor != appliedCustomColor)
+                || (newAccent == ACCENT_CUSTOM && newOnColor != appliedOnColor)) {
+            recreate();
+            return;
+        }
+        loadSettingsAndApplyToManager();
+        ensureServiceRunning();
+        loadBackgroundApps();
+        cpuMonitor.startMonitoring();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        cpuMonitor.stopMonitoring();
+    }
+
+    private void ensureServiceRunning() {
+        if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
+                && !ShappkyService.isRunning()) {
+            Intent intent = new Intent(this, ShappkyService.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent);
+            } else {
+                startService(intent);
+            }
+        }
+    }
+
+    private void loadSettingsAndApplyToManager() {
+        boolean showSystemApps = sharedPreferences.getBoolean(KEY_SHOW_SYSTEM_APPS, false);
+        boolean showPersistentApps = sharedPreferences.getBoolean(KEY_SHOW_PERSISTENT_APPS, false);
+        currentSortMode = sharedPreferences.getInt(KEY_SORT_MODE, AppConstants.SORT_MODE_DEFAULT);
+        appManager.setShowSystemApps(showSystemApps);
+        appManager.setShowPersistentApps(showPersistentApps);
     }
 
     private void selectAll() {
@@ -738,12 +886,7 @@ public class MainActivity extends BaseActivity {
 
     private void tintMenuItem(MenuItem item) {
         if (item == null || item.getIcon() == null) return;
-        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        boolean isNewAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
-                accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
-                accent == ACCENT_MINT || accent == ACCENT_PEACH ||
-                accent == ACCENT_POWDER || accent == ACCENT_FOG);
-        item.getIcon().setTint(isNewAccent ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
+        item.getIcon().setTint(isLightAccent() ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
     }
 
     @Override
@@ -858,24 +1001,29 @@ public class MainActivity extends BaseActivity {
 
         sortDialog.show();
 
-        boolean isDarkTheme = sharedPreferences.getBoolean(KEY_AMOLED, false)
-                || sharedPreferences.getInt(KEY_THEME,
-                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                        == androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
-        if (isDarkTheme) {
-            sortDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(Color.WHITE);
-            sortDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(Color.WHITE);
+        int accentForDialog = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accentForDialog == ACCENT_CUSTOM) {
+            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(
+                    sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
+            for (int i = 0; i < radioGroup.getChildCount(); i++) {
+                android.view.View child = radioGroup.getChildAt(i);
+                if (child instanceof android.widget.RadioButton)
+                    ((android.widget.RadioButton) child).setButtonTintList(tint);
+            }
+            checkboxSystem.setButtonTintList(tint);
+            checkboxPersistent.setButtonTintList(tint);
         }
     }
 
     private void applyToolbarIconTint(Menu menu) {
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        boolean isNewAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
-                accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
-                accent == ACCENT_MINT || accent == ACCENT_PEACH ||
-                accent == ACCENT_POWDER || accent == ACCENT_FOG);
-
-        int color = isNewAccent ? android.graphics.Color.BLACK : android.graphics.Color.WHITE;
+        int color;
+        if (accent == ACCENT_CUSTOM) {
+            color = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+        } else {
+            color = isLightAccent() ? Color.BLACK : Color.WHITE;
+        }
 
         int[] iconIds = {R.id.action_search, R.id.action_sort, R.id.action_select_all};
         for (int id : iconIds) {
@@ -886,5 +1034,4 @@ public class MainActivity extends BaseActivity {
         }
         binding.toolbar.setTitleTextColor(color);
     }
-
 }

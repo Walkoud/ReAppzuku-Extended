@@ -27,6 +27,7 @@
     <!-- Единицы измерения -->
     <string name="unit_kb">%d KB</string>
     <string name="unit_mb">%d МБ</string>
+    <string name="unit_mbb">%1$.0f МБ</string>
     <string name="unit_mb_precise">%.2f МБ</string>
     <string name="unit_mb_short">МБ</string>
     <string name="unit_gb">%.1f ГБ</string>
@@ -200,6 +201,11 @@
     <string name="settings_notification_mode_title">Уведомления</string>
     <string name="settings_notification_mode_all">Все</string>
     <string name="settings_notification_mode_important_only">Только важные</string>
+    <string name="settings_accent_custom_label">Кастомный</string>
+    <string name="settings_accent_custom_picker_title">Выберите цвет акцента</string>
+    <string name="settings_accent_on_color_title">Цвет текста</string>
+    <string name="settings_accent_on_color_white">Белый</string>
+    <string name="settings_accent_on_color_black">Чёрный</string>
 
     <string-array name="settings_theme_labels">
         <item>@string/settings_theme_system</item>
@@ -842,15 +848,65 @@
     <string name="triggers_appops_activity_recognition_explanation">Приложение использует Activity Recognition API — периодически получает обновления о движении в фоне.</string>
 
     <!-- UsageStats -->
+    <string name="triggers_cat_receivers_dynamic">Динамические ресиверы (%d)</string>
     <string name="triggers_cat_usagestats">Фоновый запуск</string>
     <string name="triggers_usagestats_last_used">использовалось %1$s назад</string>
     <string name="triggers_usagestats_last_fg">на переднем плане %1$s назад</string>
     <string name="triggers_usagestats_total_fg">всего на переднем плане %1$s</string>
     <string name="triggers_usagestats_explanation">Приложение недавно было активно, но не находилось на переднем плане — признак скрытого фонового пробуждения от будильника, задания, push-уведомления или цепного запуска.</string>
+
+    <string name="triggers_proc_frozen_detail">Процесс заморожен (cgroup freezer)</string>
+    <string name="triggers_proc_frozen_explanation">Процесс заморожен системой (Android 11+): выполнение остановлено, но процесс не убит. Размораживается автоматически при обращении.</string>
+    <string name="triggers_cat_fgs_timeout_exceeded">Превышен лимит времени FGS</string>
+    <string name="triggers_fgs_timeout_exceeded_explanation">Android 15: сервис типа dataSync или mediaProcessing превысил 6-часовой лимит. Система должна была вызвать onTimeout() и остановить сервис.</string>
+    <string name="triggers_cat_fgs_near_timeout">Приближение к лимиту времени FGS</string>
+    <string name="triggers_fgs_near_timeout_explanation">Android 15: сервису осталось менее 30 мин из 6-часового лимита (dataSync/mediaProcessing).</string>
+    <string name="triggers_wakelock_wakeup_sources_explanation">Источник пробуждения из /sys/kernel/wakeup_sources (fallback для Android 14+ когда dumpsys power не показывает wakelock).</string>
+    <string name="triggers_fgs_blocked_detail">FGS заблокирован при старте из фона</string>
+    <string name="triggers_fgs_blocked_explanation">Android 12+: попытка запустить Foreground Service из фона без разрешённого exemption. Сервис не запустился.</string>
+    <string name="triggers_network_bg_blocked_detail">Сетевой доступ в фоне заблокирован (Data Saver)</string>
+    <string name="triggers_network_bg_blocked_explanation">Пользователь включил Data Saver или запретил фоновый доступ к сети. Приложение не может использовать сеть в фоне на мобильных данных.</string>
+    <string name="triggers_network_bg_allowed_detail">Фоновый сетевой доступ: явно разрешён (исключение Data Saver)</string>
+    <string name="triggers_network_bg_allowed_explanation">Приложение добавлено пользователем в белый список Data Saver — имеет неограниченный доступ к сети в фоне.</string>
+    <string name="triggers_bg_location_detail">ACCESS_BACKGROUND_LOCATION granted</string>
+    <string name="triggers_bg_location_explanation">Android 11+: приложение имеет разрешение получать геолокацию из фона в любое время, даже когда пользователь не использует приложение. Требует отдельного одобрения пользователя.</string>
+    <string name="triggers_bt_permissions_explanation">Android 12+: приложение имеет разрешения на BT-сканирование и/или подключение. Может инициировать сканирование при broadcast.</string>
+    <string name="triggers_kernel_wakelock_explanation">Приложение удерживает kernel-уровень wakelock (/sys/power/wake_lock). Крайне редкий случай, указывает на нестандартный драйвер или системный компонент.</string>
+
+    <string name="triggers_alarm_throttled_explanation">Система отменяет аларм из-за app_standby или battery_saver. Приложение пытается запустить себя по таймеру, но система блокирует.</string>
+    <string name="triggers_bal_privilege_explanation">Android 14+: приложение получило токен на запуск из фона. Обычно выдаётся системой при FCM high-priority, точном аларме, или PendingIntent от видимого приложения.</string>
+    <string name="triggers_bal_blocked_detail_prefix">BAL blocked by system · caller=</string>
+    <string name="triggers_bal_blocked_explanation">Android 14+: система заблокировала попытку запуска из фона. Приложение пытается стартовать Activity или FGS без разрешения.</string>
+    <string name="triggers_receiver_exported_detail">exported=true · Android 13 requires explicit flag</string>
+    <string name="triggers_receiver_exported_explanation">Android 13+: динамически зарегистрированный receiver с exported=true доступен другим приложениям. Может принимать broadcast от любых отправителей.</string>
+    <string name="triggers_fgs_boot_blocked_detail">FGS заблокирован при boot · FGS_BOOT_COMPLETED_RESTRICTIONS</string>
+    <string name="triggers_fgs_boot_blocked_explanation">Android 14+: BOOT_COMPLETED receiver не может запустить FGS типа MICROPHONE (API 34) или PHONE_CALL (API 35). Приложение пытается обойти это ограничение.</string>
+    <string name="triggers_fgs_boot_exception_detail">ForegroundServiceStartNotAllowedException при boot</string>
+    <string name="triggers_fgs_boot_exception_explanation">Android 15: попытка запустить FGS из BOOT_COMPLETED завершилась исключением. Тип сервиса (dataSync/mediaProcessing/phoneCall) запрещён к запуску при загрузке.</string>
+    <string name="triggers_doze_battery_opt_detail">Battery optimization disabled · RUN_ANY_IN_BACKGROUND=allow</string>
+    <string name="triggers_doze_battery_opt_explanation">Приложение исключено из оптимизации батареи пользователем или системой. Может работать в фоне без ограничений Doze/App Standby.</string>
+    <string name="triggers_doze_battery_exempt_detail">Battery exempt (dumpsys battery)</string>
+    <string name="triggers_doze_battery_exempt_explanation">Приложение в списке исключений battery manager.</string>
+    <string name="triggers_bucket_restricted_explanation">RESTRICTED bucket (Android 12+): Jobs и Alarms полностью заблокированы. На Android 14 даже ALLOW_WHILE_IDLE аларм игнорируется. Приложение попало под ограничения за чрезмерное потребление в фоне.</string>
+    <string name="triggers_bucket_never_explanation">NEVER bucket: фоновая работа полностью отключена системой.</string>
+    <string name="triggers_restricted_confirmed_explanation">Android 12+: система подтвердила ограничения RESTRICTED bucket через appops. Jobs и Alarms заблокированы. Приложение не может запуститься самостоятельно.</string>
+    <string name="triggers_doze_state_prefix">Android 11+: устройство находится в режиме Doze (%1$s). </string>
+    <string name="triggers_doze_state_suffix">Wakelock, Network, Jobs и Alarms (кроме ALLOW_WHILE_IDLE) заблокированы. Приложения без doze-exemption не могут работать в фоне.</string>
+    <string name="triggers_appops_schedule_exact_alarm_explanation">Разрешение планировать точные аларм-срабатывания. Android 14: deny по умолчанию для новых установок. Если allow — приложение может точно будить устройство по таймеру.</string>
+    <string name="triggers_appops_full_screen_intent_explanation">Разрешение показывать уведомления поверх экрана блокировки. Android 14+: разрешено только alarm/call приложениям. Наличие у стороннего приложения — аномалия.</string>
+    <string name="triggers_appops_manage_media_explanation">Управление медиа-сессиями других приложений. На Android 15 связан с mediaProcessing FGS типом.</string>
+    <string name="triggers_appops_user_initiated_jobs_explanation">Разрешение запускать User-Initiated Jobs (длинные задачи по инициативе пользователя). Android 14: замена \'long jobs\'. Могут выполняться при заблокированном экране.</string>
+    <string name="triggers_appops_start_fgs_blocked_explanation">Система заблокировала право запускать Foreground Service. Приложение пытается работать в фоне но ограничено.</string>
+    <string name="trigger_manage_media_label">MANAGE_MEDIA · allow</string>
+    <string name="trigger_manage_media_desc">Android 12+: приложение управляет медиа-сессиями других приложений. На Android 15 связан с mediaProcessing FGS типом.</string>
+    <string name="trigger_exact_alarm_label">%1$s выдано (Android 12+)</string>
+    <string name="trigger_exact_alarm_desc_use">Android 12+: приложение имеет разрешение на точные аларм-срабатывания независимо от App Standby bucket. USE_EXACT_ALARM выдаётся только для системных/привилегированных приложений.</string>
+    <string name="trigger_exact_alarm_desc_schedule">Android 12+: приложение имеет разрешение на точные аларм-срабатывания независимо от App Standby bucket. SCHEDULE_EXACT_ALARM требует явного разрешения пользователя.</string>
     
     <string name="triggers_status_active">Активное</string>
     <string name="triggers_status_background">Фоновое</string>
     <string name="triggers_status_cached">Кэшированное</string>
+    <string name="triggers_aggression_label_prefix">Агрессивность:</string>
     
     <!-- ══════════════════════════════════════════════
          ДИАЛОГ ОБНОВЛЕНИЯ
@@ -860,5 +916,5 @@
     <string name="update_dialog_close">Закрыть</string>
     <string name="update_up_to_date">Последняя версия (%s)</string>
     <string name="update_check_failed">Ошибка проверки обновления</string>
-
+    <string name="easter_egg_hunter">🐱 Поздравляю, вы нашли пасхалку!</string>
 </resources>

@@ -9,6 +9,7 @@ import android.app.NotificationManager;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -98,7 +99,12 @@ public class ShappkyService extends Service {
                 .setOngoing(true)
                 .build();
 
-        startForeground(NOTIFICATION_ID_SERVICE, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID_SERVICE, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        } else {
+            startForeground(NOTIFICATION_ID_SERVICE, notification);
+        }
         isRunning = true;
 
         screenOffReceiver = new KillTriggerReceiver();
@@ -113,6 +119,7 @@ public class ShappkyService extends Service {
         cancelShizukuLostNotification();
         shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
         scheduleSnapshotCollection();
+        scheduleWidgetUpdate();
 
         appManager.reapplySavedBackgroundRestrictions(null);
         watchdog.startIfNeeded();
@@ -286,6 +293,19 @@ public class ShappkyService extends Service {
 
     private static final long SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000L;
     private static final long UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L;
+    private static final long WIDGET_UPDATE_INTERVAL_MS = 60 * 1000L;
+
+    private void scheduleWidgetUpdate() {
+        Runnable widgetRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!isRunning) return;
+                AppzukuWidget.updateAllWidgetsFromJava(ShappkyService.this);
+                handler.postDelayed(this, WIDGET_UPDATE_INTERVAL_MS);
+            }
+        };
+        handler.post(widgetRunnable);
+    }
 
     private void scheduleSnapshotCollection() {
         Runnable snapshotRunnable = new Runnable() {

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <view
+        class="com.gree1d.reappzuku.ColorPickerDialog$HueSaturationView"
+        android:id="@+id/color_picker_hsv"
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:layout_marginBottom="16dp" />
+
+    <view
+        class="com.gree1d.reappzuku.ColorPickerDialog$HueBarView"
+        android:id="@+id/color_picker_hue"
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:layout_marginBottom="16dp" />
+
+    <View
+        android:id="@+id/color_picker_preview"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/rounded_preview_bg" />
+
+</LinearLayout>

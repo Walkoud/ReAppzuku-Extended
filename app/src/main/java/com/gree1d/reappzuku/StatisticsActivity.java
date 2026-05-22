@@ -1,6 +1,7 @@
 package com.gree1d.reappzuku;
 
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -127,14 +128,25 @@ public class StatisticsActivity extends BaseActivity {
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        if (accent == ACCENT_SYSTEM) {
+        if (accent == ACCENT_CUSTOM) {
+            int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+            binding.toolbar.setBackgroundColor(customColor);
+            binding.toolbar.setTitleTextColor(onColor);
+            if (binding.toolbar.getNavigationIcon() != null)
+                androidx.core.graphics.drawable.DrawableCompat.setTint(
+                        binding.toolbar.getNavigationIcon(), onColor);
+        } else if (accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
+            binding.toolbar.setTitleTextColor(Color.WHITE);
+        } else {
+            boolean isLightAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
+                    accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
+                    accent == ACCENT_MINT || accent == ACCENT_PEACH ||
+                    accent == ACCENT_POWDER || accent == ACCENT_FOG);
+            binding.toolbar.setTitleTextColor(isLightAccent ? Color.BLACK : Color.WHITE);
         }
-        boolean isNewAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
-                accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
-                accent == ACCENT_MINT || accent == ACCENT_PEACH ||
-                accent == ACCENT_POWDER || accent == ACCENT_FOG);
-        binding.toolbar.setTitleTextColor(isNewAccent ? Color.BLACK : Color.WHITE);
     }
 
     private void setupBottomNavigation() {
@@ -159,6 +171,13 @@ public class StatisticsActivity extends BaseActivity {
         com.google.android.material.tabs.TabLayout tabs = binding.tabPeriodSelector;
         for (String label : chartPeriodLabels) tabs.addTab(tabs.newTab().setText(label));
         tabs.selectTab(tabs.getTabAt(selectedPeriodIdx));
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            applyCustomAccentToTabLayout(tabs, color);
+        }
+
         tabs.addOnTabSelectedListener(new com.google.android.material.tabs.TabLayout.OnTabSelectedListener() {
             @Override public void onTabSelected(com.google.android.material.tabs.TabLayout.Tab tab) {
                 selectedPeriodIdx = tab.getPosition();
@@ -313,14 +332,10 @@ public class StatisticsActivity extends BaseActivity {
         binding.chartCpu.setVisibility(currentChartIdx == CHART_CPU     ? View.VISIBLE : View.GONE);
         binding.chartRam.setVisibility(currentChartIdx == CHART_RAM     ? View.VISIBLE : View.GONE);
 
-        double totalBat = 0, totalCpu = 0, totalRam = 0, peakRam = 0;
-        int count = 0;
+        double totalBat = 0, totalCpu = 0;
         for (BatteryStatsManager.AppResourceStats s : sorted) {
             totalBat += s.batteryMah;
             totalCpu += s.cpuPct;
-            totalRam += s.ramMb;
-            if (s.peakRamMb > peakRam) peakRam = s.peakRamMb;
-            count++;
         }
 
         switch (currentChartIdx) {
@@ -331,13 +346,6 @@ public class StatisticsActivity extends BaseActivity {
             case CHART_CPU:
                 binding.tvChartTotal.setText(
                         String.format(Locale.US, "%.1f%%", Math.min(100.0, totalCpu)));
-                break;
-            case CHART_RAM:
-
-                binding.tvChartTotal.setText(String.format(Locale.US,
-                        "Ср. %s / Пик %s",
-                        formatRamMb(totalRam / Math.max(count, 1)),
-                        formatRamMb(peakRam)));
                 break;
         }
     }
@@ -590,17 +598,6 @@ public class StatisticsActivity extends BaseActivity {
         }
     }
 
-    private String formatMetricValue(BatteryStatsManager.AppResourceStats s, ChartMetric m) {
-        if (s == null) return "";
-        switch (m) {
-            case BATTERY: return String.format(Locale.US, "%.2f mAh", s.batteryMah);
-            case CPU:     return String.format(Locale.US, "%.1f%%", s.cpuPct);
-            case RAM:     return String.format(Locale.US, "Ср. %s / Пик %s",
-                              formatRamMb(s.ramMb), formatRamMb(s.peakRamMb));
-            default:      return "";
-        }
-    }
-
     private BatteryStatsManager.AppResourceStats findByPkg(
             List<BatteryStatsManager.AppResourceStats> list, String pkg) {
         for (BatteryStatsManager.AppResourceStats s : list) {
@@ -686,7 +683,6 @@ public class StatisticsActivity extends BaseActivity {
                         content.rootView);
                 dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
                 dialog.show();
-                styleDialogButtons(dialog);
             });
         });
     }
@@ -721,7 +717,6 @@ public class StatisticsActivity extends BaseActivity {
                 content.rootView);
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.show();
-        styleDialogButtons(dialog);
 
         filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
@@ -833,7 +828,6 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
-        styleDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildRestrictionLogRows(BackgroundRestrictionLog.readEntries(this));
@@ -878,7 +872,6 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
-        styleDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSleepModeLogRows(SleepModeLogManager.readEntries(this));
@@ -923,7 +916,6 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
-        styleDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSchedulerLogRows(RestrictionsScheduler.SchedulerLog.readEntries(this));
@@ -1014,6 +1006,16 @@ public class StatisticsActivity extends BaseActivity {
             bindOptionalText((TextView) view.findViewById(R.id.offender_package), item.subtitle);
             bindOptionalText((TextView) view.findViewById(R.id.offender_metrics), item.detail);
             bindOptionalText((TextView) view.findViewById(R.id.offender_score), item.badge);
+
+            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            if (accent == ACCENT_CUSTOM) {
+                int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+                TextView rank  = view.findViewById(R.id.offender_rank);
+                TextView score = view.findViewById(R.id.offender_score);
+                if (rank  != null) rank.setTextColor(color);
+                if (score != null) score.setTextColor(color);
+            }
+
             return view;
         }
     }
@@ -1210,14 +1212,11 @@ public class StatisticsActivity extends BaseActivity {
         }
     }
 
-    private void styleDialogButtons(AlertDialog dialog) {
-        int color = ContextCompat.getColor(this, R.color.dialog_button_text);
-        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(color);
-        if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null)
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(color);
-        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null)
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(color);
+    private void applyCustomAccentToTabLayout(com.google.android.material.tabs.TabLayout tabs, int color) {
+        tabs.setSelectedTabIndicatorColor(color);
+        tabs.setTabTextColors(
+                ContextCompat.getColor(this, R.color.text_secondary),
+                color);
     }
 
     private String formatRecoveredSize(long kb) {

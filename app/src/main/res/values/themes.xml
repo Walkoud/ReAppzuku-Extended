@@ -36,7 +36,7 @@
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
     </style>
 
-    <!-- dark accents (white text needed)-->
+    
     <style name="AppTheme.AccentIndigo" parent="AppTheme">
         <item name="colorPrimary">@color/accent_indigo_primary</item>
         <item name="colorSecondary">@color/accent_indigo_secondary</item>
@@ -243,7 +243,7 @@
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 
-    <!-- light accents (black text needed) -->
+    
     <style name="AppTheme.AccentApricot" parent="AppTheme">
         <item name="colorPrimary">@color/accent_apricot_primary</item>
         <item name="colorSecondary">@color/accent_apricot_secondary</item>
@@ -396,6 +396,16 @@
             <item name="toolbarStyle">@style/ToolbarDarkText</item>
 </style>
 
+    <style name="Widget.App.KillButton" parent="Widget.Material3.Button.UnelevatedButton">
+        <item name="shapeAppearance">@style/ShapeAppearance.App.ZeroCorner</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+    </style>
+
+    <style name="ShapeAppearance.App.ZeroCorner" parent="ShapeAppearance.Material3.Corner.None">
+        <item name="cornerSize">0dp</item>
+    </style>
+
     <style name="ToolbarDarkText" parent="Widget.Material3.Toolbar">
         <item name="titleTextColor">#FF000000</item>
         <item name="android:theme">@style/ThemeOverlay.DarkToolbarIcons</item>
@@ -403,5 +413,42 @@
 
     <style name="ThemeOverlay.DarkToolbarIcons" parent="ThemeOverlay.AppCompat.Light">
         <item name="colorControlNormal">#FF000000</item>
+    </style>
+    <style name="AppTheme.AccentCustom" parent="AppTheme">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="android:colorControlActivated">@color/colorPrimary</item>
+        <item name="colorControlActivated">@color/colorPrimary</item>
+        <item name="buttonBarButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Custom.DialogButton</item>
+    </style>
+
+    <style name="AppTheme.AccentCustom.Amoled" parent="AppTheme.Amoled">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorSecondary">@color/colorAccent</item>
+        <item name="android:colorControlActivated">@color/colorPrimary</item>
+        <item name="colorControlActivated">@color/colorPrimary</item>
+        <item name="buttonBarButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Custom.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Custom.DialogButton</item>
+    </style>
+
+    <style name="Widget.Custom.DialogButton" parent="Widget.Material3.Button.TextButton.Dialog">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="AppTheme_AccentCustomOverride" parent="">
+    </style>
+
+    <style name="ToolbarWhiteText" parent="Widget.Material3.Toolbar">
+        <item name="titleTextColor">#FFFFFFFF</item>
+        <item name="android:theme">@style/ThemeOverlay.LightToolbarIcons</item>
+    </style>
+
+    <style name="ThemeOverlay.LightToolbarIcons" parent="ThemeOverlay.AppCompat.Dark">
+        <item name="colorControlNormal">#FFFFFFFF</item>
     </style>
 </resources>

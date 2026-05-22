@@ -7,8 +7,14 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.GradientDrawable;
+import android.widget.ImageView;
+import android.widget.RadioGroup;
+import android.widget.RadioButton;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -67,6 +73,8 @@ public class SettingsActivity extends BaseActivity {
     private RestrictionsScheduler scheduler;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
+    private int easterEggClickCount = 0;
+    private static final int EASTER_EGG_THRESHOLD = 5;
 
     private final ActivityResultLauncher<String> createBackupLauncher = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
@@ -98,15 +106,92 @@ public class SettingsActivity extends BaseActivity {
 
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
-        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int accent    = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int onColor   = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        boolean isAmoled = sharedPreferences.getBoolean(KEY_AMOLED, false);
+
         if (accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
+            binding.toolbar.setTitleTextColor(Color.WHITE);
+            return;
         }
-        boolean isNewAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
+
+        if (accent == ACCENT_CUSTOM) {
+            int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            binding.toolbar.setBackgroundColor(customColor);
+            int textColor = (onColor == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE;
+            binding.toolbar.setTitleTextColor(textColor);
+            if (binding.toolbar.getNavigationIcon() != null)
+                androidx.core.graphics.drawable.DrawableCompat.setTint(
+                        binding.toolbar.getNavigationIcon(), textColor);
+            applyCustomAccentToSectionHeaders(customColor);
+            applyCustomAccentToSwitches(customColor);
+            return;
+        }
+
+        boolean isLightAccent = (accent == ACCENT_APRICOT || accent == ACCENT_SKY ||
                 accent == ACCENT_PAPAYA || accent == ACCENT_LAVENDER ||
                 accent == ACCENT_MINT || accent == ACCENT_PEACH ||
                 accent == ACCENT_POWDER || accent == ACCENT_FOG);
-        binding.toolbar.setTitleTextColor(isNewAccent ? android.graphics.Color.BLACK : android.graphics.Color.WHITE);
+        binding.toolbar.setTitleTextColor(isLightAccent ? Color.BLACK : Color.WHITE);
+    }
+
+    private void applyCustomAccentToSectionHeaders(int color) {
+        int[] titleIds = {
+            R.id.section_title_information,
+            R.id.section_title_appearance,
+            R.id.section_title_stability,
+            R.id.section_title_autokill,
+            R.id.section_title_advanced,
+            R.id.section_title_about
+        };
+        for (int id : titleIds) {
+            TextView tv = findViewById(id);
+            if (tv != null) tv.setTextColor(color);
+        }
+    }
+
+    private void applyCustomAccentToSwitches(int color) {
+        int trackColor = darkenColor(color, 0.6f);
+
+        int[] switchIds = {
+            R.id.switch_auto_kill,
+            R.id.switch_periodic_kill,
+            R.id.switch_kill_screen_off,
+            R.id.switch_ram_threshold,
+            R.id.switch_sleep_mode
+        };
+
+        for (int id : switchIds) {
+            com.google.android.material.switchmaterial.SwitchMaterial sw = findViewById(id);
+            if (sw == null) continue;
+
+            android.content.res.ColorStateList thumbTint = new android.content.res.ColorStateList(
+                new int[][] {
+                    new int[] { android.R.attr.state_checked },
+                    new int[] {}
+                },
+                new int[] { color, 0xFFAAAAAA }
+            );
+            android.content.res.ColorStateList trackTint = new android.content.res.ColorStateList(
+                new int[][] {
+                    new int[] { android.R.attr.state_checked },
+                    new int[] {}
+                },
+                new int[] { trackColor, 0xFF555555 }
+            );
+            sw.setThumbTintList(thumbTint);
+            sw.setTrackTintList(trackTint);
+        }
+    }
+
+    private static int darkenColor(int color, float factor) {
+        int a = android.graphics.Color.alpha(color);
+        int r = Math.round(android.graphics.Color.red(color)   * factor);
+        int g = Math.round(android.graphics.Color.green(color) * factor);
+        int b = Math.round(android.graphics.Color.blue(color)  * factor);
+        return android.graphics.Color.argb(a,
+                Math.min(r, 255), Math.min(g, 255), Math.min(b, 255));
     }
 
     private void setupBottomNavigation() {
@@ -136,6 +221,10 @@ public class SettingsActivity extends BaseActivity {
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         updateAccentText(accent);
         updateAccentLayoutEnabled(theme);
+
+        int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        updateOnColorText(onColor);
+        updateOnColorLayoutVisibility(accent);
 
         int notificationMode = sharedPreferences.getInt(KEY_NOTIFICATION_MODE, NOTIFICATION_MODE_ALL);
         updateNotificationModeText(notificationMode);
@@ -181,6 +270,8 @@ public class SettingsActivity extends BaseActivity {
             if (theme == androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) return;
             showAccentDialog();
         });
+
+        binding.layoutAccentOnColor.setOnClickListener(v -> showAccentOnColorDialog());
 
         binding.layoutNotificationMode.setOnClickListener(v -> showNotificationModeDialog());
 
@@ -310,6 +401,13 @@ public class SettingsActivity extends BaseActivity {
         binding.layoutGithub.setOnClickListener(v -> openUrl("https://github.com/gree1d/ReAppzuku"));
         binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this));
         binding.layoutTelegram.setOnClickListener(v -> openUrl("https://t.me/AkM0o"));
+        binding.textVersion.setOnClickListener(v -> {
+            easterEggClickCount++;
+            if (easterEggClickCount == EASTER_EGG_THRESHOLD) {
+                easterEggClickCount = 0;
+                showEasterEggDialog();
+            }
+        });
 
         updateKillModeVisibility();
         applyServiceDependentState(isServiceEnabled());
@@ -402,21 +500,40 @@ public class SettingsActivity extends BaseActivity {
         View titleView = LayoutInflater.from(this).inflate(R.layout.dialog_killtype_info, null);
         ((TextView) titleView.findViewById(R.id.dialog_title)).setText(R.string.settings_auto_kill_type_title);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
-                .setCustomTitle(titleView)
-                .setSingleChoiceItems(types, autoKillManager.getAutoKillType(), (d, which) -> {
-                    autoKillManager.setAutoKillType(which);
-                    updateAutoKillTypeText(which);
-                    d.dismiss();
-                });
+        View bodyView = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        bodyView.findViewById(R.id.single_choice_title).setVisibility(View.GONE);
+        android.widget.RadioGroup group = bodyView.findViewById(R.id.single_choice_group);
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor()) : null;
+        for (int i = 0; i < types.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(types[i]); rb.setId(1000 + i);
+            int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            group.addView(rb);
+        }
+        group.check(1000 + autoKillManager.getAutoKillType());
 
-        AlertDialog dialog = builder.create();
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setCustomTitle(titleView)
+                .setView(bodyView)
+                .create();
         titleView.findViewById(R.id.btn_help).setOnClickListener(v -> {
             dialog.dismiss();
             showAutoKillTypeHelpDialog(() -> showAutoKillTypeDialog());
         });
+        group.setOnCheckedChangeListener((g, id) -> {
+            autoKillManager.setAutoKillType(id - 1000);
+            updateAutoKillTypeText(id - 1000);
+            dialog.dismiss();
+        });
         dialog.show();
-        styleDialogButtons(dialog);
     }
 
     private void showAutoKillTypeHelpDialog(Runnable onBack) {
@@ -429,7 +546,6 @@ public class SettingsActivity extends BaseActivity {
                 })
                 .create();
         dialog.show();
-        styleDialogButtons(dialog);
     }
 
     private void showKillModeDialog() {
@@ -437,12 +553,10 @@ public class SettingsActivity extends BaseActivity {
                 getString(R.string.settings_mode_whitelist),
                 getString(R.string.settings_mode_blacklist)
         };
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_kill_mode_dialog_title))
-                .setSingleChoiceItems(modes, autoKillManager.getKillMode(), (dialog, which) -> {
+        showSingleChoiceDialog(getString(R.string.settings_kill_mode_dialog_title),
+                modes, autoKillManager.getKillMode(), which -> {
                     autoKillManager.setKillMode(which);
                     updateKillModeVisibility();
-                    dialog.dismiss();
                     if (which == 0) {
                         boolean autoKillEnabled = sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
                         Set<String> whitelistedApps = sharedPreferences.getStringSet(KEY_WHITELISTED_APPS, new HashSet<>());
@@ -455,8 +569,7 @@ public class SettingsActivity extends BaseActivity {
                                     .show();
                         }
                     }
-                })
-                .show();
+                });
     }
 
     private void showBlacklistDialog() {
@@ -477,13 +590,13 @@ public class SettingsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
         searchBox.setVisibility(View.GONE);
         dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
         appManager.loadAllApps(allApps -> {
             allApps = filterOutProtected(allApps);
             Set<String> blacklisted = autoKillManager.getBlacklistedApps();
             FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, blacklisted);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
             progressBar.setVisibility(View.GONE);
             listView.setVisibility(View.VISIBLE);
@@ -506,7 +619,6 @@ public class SettingsActivity extends BaseActivity {
                 autoKillManager.saveBlacklistedApps(filterAdapter.getSelectedPackages());
                 dialog.dismiss();
             });
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         });
     }
 
@@ -531,13 +643,13 @@ public class SettingsActivity extends BaseActivity {
         listView.setVisibility(View.GONE);
         searchBox.setVisibility(View.GONE);
         whitelistDialog.show();
-        whitelistDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
-        whitelistDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
         appManager.loadAllApps(allApps -> {
             allApps = filterOutProtected(allApps);
             Set<String> whitelistedApps = appManager.getWhitelistedApps();
             FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, whitelistedApps);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
             listView.setOnItemClickListener(null);
 
@@ -562,7 +674,6 @@ public class SettingsActivity extends BaseActivity {
                 appManager.saveWhitelistedApps(filterAdapter.getSelectedPackages());
                 whitelistDialog.dismiss();
             });
-            whitelistDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         });
     }
 
@@ -587,13 +698,12 @@ public class SettingsActivity extends BaseActivity {
         listView.setVisibility(View.GONE);
         searchBox.setVisibility(View.GONE);
         filterDialog.show();
-        filterDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
-        filterDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
         appManager.loadAllApps(allApps -> {
-            allApps = filterOutProtected(allApps);
             Set<String> hiddenApps = appManager.getHiddenApps();
             FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, hiddenApps);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
             listView.setOnItemClickListener(null);
 
@@ -618,7 +728,6 @@ public class SettingsActivity extends BaseActivity {
                 appManager.saveHiddenApps(filterAdapter.getSelectedPackages());
                 filterDialog.dismiss();
             });
-            filterDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         });
     }
 
@@ -652,8 +761,6 @@ public class SettingsActivity extends BaseActivity {
             showRestrictionTypeHelpDialog(() -> showBackgroundRestrictionDialog());
         });
 
-        restrictionDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
-        restrictionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
         appManager.loadBackgroundRestrictionApps(rawApps -> {
             List<AppModel> allApps = filterOutProtected(rawApps);
@@ -668,6 +775,8 @@ public class SettingsActivity extends BaseActivity {
                     hardRestrictedApps,
                     manualRestrictedApps,
                     initialMasks);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
             listView.setOnItemClickListener(null);
 
@@ -690,7 +799,6 @@ public class SettingsActivity extends BaseActivity {
 
             filterAdapter.setOnSelectionChangedListener(() -> {
                 restrictionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(getString(R.string.dialog_apply));
-                restrictionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
             });
 
             Runnable doApply = () -> {
@@ -740,7 +848,6 @@ public class SettingsActivity extends BaseActivity {
             };
 
             restrictionDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> doApply.run());
-            restrictionDialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         });
     }
 
@@ -778,7 +885,6 @@ public class SettingsActivity extends BaseActivity {
         dialog.show();
         TextView messageView = dialog.findViewById(android.R.id.message);
         if (messageView != null) messageView.setText(sb);
-        styleDialogButtons(dialog);
     }
 
     private void updateSleepModeDelayText(long delayMs) {
@@ -795,20 +901,11 @@ public class SettingsActivity extends BaseActivity {
         for (int i = 0; i < SLEEP_MODE_DELAYS_MS.length; i++) {
             if (SLEEP_MODE_DELAYS_MS[i] == current) { selected = i; break; }
         }
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(R.string.settings_sleep_mode_delay_title)
-                .setSingleChoiceItems(getResources().getStringArray(R.array.settings_sleep_mode_delay_labels), selected,
-                        (d, which) -> {
-                            sharedPreferences.edit().putLong(KEY_SLEEP_MODE_DELAY, SLEEP_MODE_DELAYS_MS[which]).apply();
-                            updateSleepModeDelayText(SLEEP_MODE_DELAYS_MS[which]);
-                            d.dismiss();
-                        })
-                .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
-        dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
+        showSingleChoiceDialog(getString(R.string.settings_sleep_mode_delay_title),
+                getResources().getStringArray(R.array.settings_sleep_mode_delay_labels), selected, which -> {
+                    sharedPreferences.edit().putLong(KEY_SLEEP_MODE_DELAY, SLEEP_MODE_DELAYS_MS[which]).apply();
+                    updateSleepModeDelayText(SLEEP_MODE_DELAYS_MS[which]);
+                });
     }
 
     private void showSleepModeAppsDialog() {
@@ -832,13 +929,13 @@ public class SettingsActivity extends BaseActivity {
         searchBox.setVisibility(View.GONE);
         filterOptions.setVisibility(View.GONE);
         dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
 
         sleepModeManager.loadSleepModeApps(allApps -> {
             allApps = filterOutProtected(allApps);
             Set<String> sleepModeApps = sleepModeManager.getSleepModeApps();
             FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, sleepModeApps);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
             listView.setOnItemClickListener(null);
 
@@ -854,7 +951,6 @@ public class SettingsActivity extends BaseActivity {
 
             dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) ->
                     sleepModeManager.saveSleepModeApps(filterAdapter.getSelectedPackages()));
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
         });
     }
 
@@ -873,15 +969,11 @@ public class SettingsActivity extends BaseActivity {
         for (int i = 0; i < RAM_THRESHOLD_VALUES.length; i++) {
             if (RAM_THRESHOLD_VALUES[i] == current) { selected = i; break; }
         }
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_ram_threshold_dialog_title))
-                .setSingleChoiceItems(getResources().getStringArray(R.array.settings_ram_threshold_labels), selected,
-                        (dialog, which) -> {
-                            sharedPreferences.edit().putInt(KEY_RAM_THRESHOLD, RAM_THRESHOLD_VALUES[which]).apply();
-                            updateRamThresholdText(RAM_THRESHOLD_VALUES[which]);
-                            dialog.dismiss();
-                        })
-                .show();
+        showSingleChoiceDialog(getString(R.string.settings_ram_threshold_dialog_title),
+                getResources().getStringArray(R.array.settings_ram_threshold_labels), selected, which -> {
+                    sharedPreferences.edit().putInt(KEY_RAM_THRESHOLD, RAM_THRESHOLD_VALUES[which]).apply();
+                    updateRamThresholdText(RAM_THRESHOLD_VALUES[which]);
+                });
     }
 
     private void updateNotificationModeText(int mode) {
@@ -896,15 +988,11 @@ public class SettingsActivity extends BaseActivity {
                 getString(R.string.settings_notification_mode_all),
                 getString(R.string.settings_notification_mode_important_only)
         };
-        new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_notification_mode_title))
-                .setSingleChoiceItems(options, current, (dialog, which) -> {
+        showSingleChoiceDialog(getString(R.string.settings_notification_mode_title),
+                options, current, which -> {
                     sharedPreferences.edit().putInt(KEY_NOTIFICATION_MODE, which).apply();
                     updateNotificationModeText(which);
-                    dialog.dismiss();
-                })
-                .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .show();
+                });
     }
 
     private void updateThemeText(int themeValue, boolean isAmoled) {
@@ -916,8 +1004,25 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void updateAccentText(int accentValue) {
-        String[] accentLabels = getResources().getStringArray(R.array.settings_accent_labels);
-        if (accentValue >= 0 && accentValue < accentLabels.length) binding.textAccent.setText(accentLabels[accentValue]);
+        if (accentValue == ACCENT_CUSTOM) {
+            int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            binding.textAccent.setText(String.format("#%06X", 0xFFFFFF & color));
+        } else {
+            String[] accentLabels = getResources().getStringArray(R.array.settings_accent_labels);
+            if (accentValue >= 0 && accentValue < accentLabels.length)
+                binding.textAccent.setText(accentLabels[accentValue]);
+        }
+    }
+
+    private void updateOnColorText(int onColor) {
+        binding.textAccentOnColor.setText(onColor == ACCENT_ON_BLACK
+                ? R.string.settings_accent_on_color_black
+                : R.string.settings_accent_on_color_white);
+    }
+
+    private void updateOnColorLayoutVisibility(int accent) {
+        boolean visible = (accent == ACCENT_CUSTOM);
+        binding.layoutAccentOnColor.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     private void updateAccentLayoutEnabled(int themeValue) {
@@ -936,10 +1041,8 @@ public class SettingsActivity extends BaseActivity {
                 if (THEME_VALUES[i] == currentTheme) { selectedIndex = i; break; }
             }
         }
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_theme_dialog_title))
-                .setSingleChoiceItems(getResources().getStringArray(R.array.settings_theme_labels), selectedIndex, (d, which) -> {
+        showSingleChoiceDialog(getString(R.string.settings_theme_dialog_title),
+                getResources().getStringArray(R.array.settings_theme_labels), selectedIndex, which -> {
                     if (which == 3) {
                         sharedPreferences.edit()
                                 .putBoolean(KEY_AMOLED, true)
@@ -958,31 +1061,117 @@ public class SettingsActivity extends BaseActivity {
                         }
                         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(newTheme);
                     }
-                    d.dismiss();
                     recreate();
-                })
-                .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
-        dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
+                });
     }
 
     private void showAccentDialog() {
         int currentAccent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_INDIGO);
+
+        String[] builtinLabels = getResources().getStringArray(R.array.settings_accent_labels);
+        String[] allLabels = new String[builtinLabels.length + 1];
+        allLabels[0] = builtinLabels[0];
+        allLabels[1] = getString(R.string.settings_accent_custom_label);
+        System.arraycopy(builtinLabels, 1, allLabels, 2, builtinLabels.length - 1);
+
+        int selectedIndex = (currentAccent == ACCENT_SYSTEM) ? 0
+                : (currentAccent == ACCENT_CUSTOM) ? 1
+                : currentAccent + 1;
+
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        android.widget.TextView titleView = view.findViewById(R.id.single_choice_title);
+        android.widget.RadioGroup group = view.findViewById(R.id.single_choice_group);
+
+        titleView.setText(getString(R.string.settings_accent_title));
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor())
+                : null;
+
+        final AlertDialog[] dialogRef = {null};
+
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+        for (int i = 0; i < allLabels.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(allLabels[i]);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            if (i == 1) {
+                rb.setOnClickListener(v -> {
+                    if (rb.getId() == group.getCheckedRadioButtonId()) {
+                        openCustomColorPicker(dialogRef[0]);
+                    }
+                });
+            }
+            group.addView(rb);
+        }
+        group.check(1000 + selectedIndex);
+
         AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_accent_title))
-                .setSingleChoiceItems(getResources().getStringArray(R.array.settings_accent_labels), currentAccent, (d, which) -> {
-                    sharedPreferences.edit().putInt(KEY_ACCENT, which).apply();
-                    updateAccentText(which);
-                    d.dismiss();
-                    recreate();
-                })
+                .setView(view)
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
                 .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
+
+        dialogRef[0] = dialog;
+
+        final boolean[] userInteracted = {false};
+        group.setOnCheckedChangeListener((g, checkedId) -> {
+            if (!userInteracted[0] || checkedId == -1) return;
+            int which = checkedId - 1000;
+            if (which == 0) {
+                sharedPreferences.edit().putInt(KEY_ACCENT, ACCENT_SYSTEM).apply();
+                updateAccentText(ACCENT_SYSTEM);
+                updateOnColorLayoutVisibility(ACCENT_SYSTEM);
+                dialog.dismiss();
+                recreate();
+            } else if (which == 1) {
+                openCustomColorPicker(dialog);
+            } else {
+                int accentValue = which - 1;
+                sharedPreferences.edit().putInt(KEY_ACCENT, accentValue).apply();
+                updateAccentText(accentValue);
+                updateOnColorLayoutVisibility(accentValue);
+                dialog.dismiss();
+                recreate();
+            }
+        });
+        view.post(() -> userInteracted[0] = true);
+
         dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
+    }
+
+    private void openCustomColorPicker(AlertDialog parentDialog) {
+        if (parentDialog != null) parentDialog.dismiss();
+        int currentCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        ColorPickerDialog.show(this, currentCustomColor, pickedColor -> {
+            sharedPreferences.edit()
+                    .putInt(KEY_ACCENT, ACCENT_CUSTOM)
+                    .putInt(KEY_ACCENT_CUSTOM_COLOR, pickedColor)
+                    .apply();
+            updateAccentText(ACCENT_CUSTOM);
+            updateOnColorLayoutVisibility(ACCENT_CUSTOM);
+            recreate();
+        });
+    }
+
+    private void showAccentOnColorDialog() {
+        int current = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        String[] options = {
+                getString(R.string.settings_accent_on_color_white),
+                getString(R.string.settings_accent_on_color_black)
+        };
+        showSingleChoiceDialog(getString(R.string.settings_accent_on_color_title),
+                options, current, which -> {
+                    sharedPreferences.edit().putInt(KEY_ACCENT_ON_COLOR, which).apply();
+                    updateOnColorText(which);
+                    recreate();
+                });
     }
 
     private void updateAutomationOptionsVisibility(boolean serviceEnabled, boolean periodicEnabled) {
@@ -1017,26 +1206,16 @@ public class SettingsActivity extends BaseActivity {
 
     private void showKillIntervalDialog() {
         if (!binding.switchAutoKill.isChecked() || !binding.switchPeriodicKill.isChecked()) return;
-
         int currentInterval = sharedPreferences.getInt(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS);
         int selectedIndex = 1;
         for (int i = 0; i < KILL_INTERVALS_MS.length; i++) {
             if (KILL_INTERVALS_MS[i] == currentInterval) { selectedIndex = i; break; }
         }
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle(getString(R.string.settings_check_frequency_title))
-                .setSingleChoiceItems(getResources().getStringArray(R.array.settings_kill_interval_labels), selectedIndex,
-                        (d, which) -> {
-                            sharedPreferences.edit().putInt(KEY_KILL_INTERVAL, KILL_INTERVALS_MS[which]).apply();
-                            updateKillIntervalText(KILL_INTERVALS_MS[which]);
-                            d.dismiss();
-                        })
-                .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
-        dialog.show();
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(ContextCompat.getColor(this, R.color.dialog_button_text));
+        showSingleChoiceDialog(getString(R.string.settings_check_frequency_title),
+                getResources().getStringArray(R.array.settings_kill_interval_labels), selectedIndex, which -> {
+                    sharedPreferences.edit().putInt(KEY_KILL_INTERVAL, KILL_INTERVALS_MS[which]).apply();
+                    updateKillIntervalText(KILL_INTERVALS_MS[which]);
+                });
     }
 
     private void openUrl(String url) {
@@ -1053,6 +1232,16 @@ public class SettingsActivity extends BaseActivity {
         CheckBox chkUser = dialogView.findViewById(R.id.filter_chk_user);
         CheckBox chkRunning = dialogView.findViewById(R.id.filter_chk_running);
         android.widget.TextView btnClear = dialogView.findViewById(R.id.filter_btn_clear);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            android.content.res.ColorStateList tint =
+                    android.content.res.ColorStateList.valueOf(getDialogAccentColor());
+            chkSystem.setButtonTintList(tint);
+            chkUser.setButtonTintList(tint);
+            chkRunning.setButtonTintList(tint);
+            btnClear.setTextColor(getDialogAccentColor());
+        }
 
         android.widget.CompoundButton.OnCheckedChangeListener listener = (buttonView, isChecked) ->
                 adapter.setFilters(chkSystem.isChecked(), chkUser.isChecked(), chkRunning.isChecked());
@@ -1113,7 +1302,6 @@ public class SettingsActivity extends BaseActivity {
         mainDialog.getWindow().setBackgroundDrawable(
                 new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         mainDialog.show();
-        styleDialogButtons(mainDialog);
 
         for (SchedulerAppItem item : items) {
             View row = inflater.inflate(R.layout.item_scheduler_app, listContainer, false);
@@ -1130,6 +1318,9 @@ public class SettingsActivity extends BaseActivity {
                 schedIcon.setVisibility(View.VISIBLE);
                 schedTime.setVisibility(View.VISIBLE);
                 schedTime.setText(formatScheduleTime(item.entry, use24h));
+                int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+                if (accent == ACCENT_CUSTOM)
+                    schedTime.setTextColor(getDialogAccentColor());
             } else {
                 schedIcon.setVisibility(View.INVISIBLE);
                 schedTime.setVisibility(View.INVISIBLE);
@@ -1236,7 +1427,23 @@ public class SettingsActivity extends BaseActivity {
         entryDialog.getWindow().setBackgroundDrawable(
                 new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         entryDialog.show();
-        styleDialogButtons(entryDialog);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            int color = getDialogAccentColor();
+            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(color);
+            cbAutoKill.setButtonTintList(tint);
+            cbBg.setButtonTintList(tint);
+            cbSleep.setButtonTintList(tint);
+            for (int i = 0; i < rgAction.getChildCount(); i++) {
+                android.view.View child = rgAction.getChildAt(i);
+                if (child instanceof android.widget.RadioButton)
+                    ((android.widget.RadioButton) child).setButtonTintList(tint);
+            }
+            btnFrom.setTextColor(color);
+            btnTo.setTextColor(color);
+            btnComponent.setTextColor(color);
+        }
 
         entryDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             int flags = 0;
@@ -1504,14 +1711,55 @@ public class SettingsActivity extends BaseActivity {
         });
     }
 
-    private void styleDialogButtons(AlertDialog dialog) {
-        int color = ContextCompat.getColor(this, R.color.dialog_button_text);
-        if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null)
-            dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(color);
-        if (dialog.getButton(AlertDialog.BUTTON_NEUTRAL) != null)
-            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setTextColor(color);
-        if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null)
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(color);
+    private void showSingleChoiceDialog(String title, String[] options, int selected,
+                                        java.util.function.IntConsumer onPick) {
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        android.widget.TextView titleView = view.findViewById(R.id.single_choice_title);
+        android.widget.RadioGroup group = view.findViewById(R.id.single_choice_group);
+
+        titleView.setText(title);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor())
+                : null;
+
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+        for (int i = 0; i < options.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(options[i]);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            group.addView(rb);
+        }
+        group.check(1000 + selected);
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .create();
+
+        final boolean[] userInteracted = {false};
+        group.setOnCheckedChangeListener((g, checkedId) -> {
+            if (!userInteracted[0] || checkedId == -1) return;
+            onPick.accept(checkedId - 1000);
+            dialog.dismiss();
+        });
+        view.post(() -> userInteracted[0] = true);
+
+        dialog.show();
+    }
+
+    private int getDialogAccentColor() {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM)
+            return sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        return ContextCompat.getColor(this, R.color.dialog_button_text);
     }
 
     private void startAutomationService() {
@@ -1547,6 +1795,38 @@ public class SettingsActivity extends BaseActivity {
             stopService(new Intent(this, ShappkyService.class));
             AutoKillWorker.cancel(this);
         }
+    }
+
+    private void showEasterEggDialog() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(android.view.Gravity.CENTER);
+        int pad = (int) (getResources().getDisplayMetrics().density * 24);
+        layout.setPadding(pad, pad, pad, pad);
+
+        ImageView imageView = new ImageView(this);
+        imageView.setImageResource(R.drawable.settings_page_info);
+        int size = (int) (getResources().getDisplayMetrics().density * 220);
+        LinearLayout.LayoutParams imgParams = new LinearLayout.LayoutParams(size, size);
+        imageView.setLayoutParams(imgParams);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        layout.addView(imageView);
+
+        TextView textView = new TextView(this);
+        textView.setText(getString(R.string.easter_egg_hunter));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        textView.setGravity(android.view.Gravity.CENTER);
+        LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        tvParams.topMargin = (int) (getResources().getDisplayMetrics().density * 16);
+        textView.setLayoutParams(tvParams);
+        layout.addView(textView);
+
+        new AlertDialog.Builder(this)
+                .setView(layout)
+                .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show();
     }
 
     @Override
