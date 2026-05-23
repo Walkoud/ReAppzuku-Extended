@@ -23,13 +23,11 @@ public class ScanResultAdapter extends RecyclerView.Adapter<ScanResultAdapter.Vi
     private final Context                  context;
     private final List<ScanSystem.AppLoad> items;
     private final PackageManager           pm;
-    private final float                    dp;
 
     public ScanResultAdapter(Context context, List<ScanSystem.AppLoad> items) {
         this.context = context;
         this.items   = items;
         this.pm      = context.getPackageManager();
-        this.dp      = context.getResources().getDisplayMetrics().density;
     }
 
     @NonNull
@@ -76,30 +74,19 @@ public class ScanResultAdapter extends RecyclerView.Adapter<ScanResultAdapter.Vi
             grouped.get(f.category).add(f.detail);
         }
 
+        LayoutInflater inflater = LayoutInflater.from(container.getContext());
+
         for (Map.Entry<ScanSystem.Category, List<String>> entry : grouped.entrySet()) {
-            TextView title = new TextView(context);
+            TextView title = (TextView) inflater.inflate(
+                    R.layout.item_scan_category_title, container, false);
             title.setText(categoryTitle(entry.getKey()));
-            title.setTextSize(13f);
-            title.setTypeface(null, android.graphics.Typeface.BOLD);
-            LinearLayout.LayoutParams titleLp = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            titleLp.topMargin    = (int) (8 * dp);
-            titleLp.bottomMargin = (int) (2 * dp);
-            title.setLayoutParams(titleLp);
             container.addView(title);
 
             for (String detail : entry.getValue()) {
-                TextView sub = new TextView(context);
+                if (detail == null || detail.trim().isEmpty()) continue;
+                TextView sub = (TextView) inflater.inflate(
+                        R.layout.item_scan_category_detail, container, false);
                 sub.setText(detail);
-                sub.setTextSize(12f);
-                int secondaryColor = resolveTextColorSecondary();
-                sub.setTextColor(secondaryColor);
-                LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                subLp.topMargin = (int) (1 * dp);
-                sub.setLayoutParams(subLp);
                 container.addView(sub);
             }
         }
@@ -115,12 +102,6 @@ public class ScanResultAdapter extends RecyclerView.Adapter<ScanResultAdapter.Vi
             case LOCATION: return context.getString(R.string.scansystem_cat_location);
             default:       return cat.name();
         }
-    }
-
-    private int resolveTextColorSecondary() {
-        android.util.TypedValue tv = new android.util.TypedValue();
-        context.getTheme().resolveAttribute(android.R.attr.textColorSecondary, tv, true);
-        return tv.data;
     }
 
     @Override
