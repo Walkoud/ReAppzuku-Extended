@@ -987,7 +987,7 @@ public class AppTriggersAnalyzer {
         }
 
         boolean activeNow = list.stream().anyMatch(
-                t -> t.group() == TriggerInfo.Group.ACTIVE_NOW);
+                t -> t.group == TriggerInfo.Group.ACTIVE_NOW);
         appendWakelockHistory(list, packageName, activeNow);
 
         return list;
@@ -1876,7 +1876,7 @@ public class AppTriggersAnalyzer {
             if (activeNow && !historyHasOpen) {
                 java.text.SimpleDateFormat nowSdf = new java.text.SimpleDateFormat(
                         "HH:mm:ss", java.util.Locale.getDefault());
-                syntheticLine = nowSdf.format(new java.util.Date()) + " → now  (active, confirmed by AppOps)";
+                syntheticLine = nowSdf.format(new java.util.Date()) + " → now  (active, not in history buffer)";
             }
 
             if (pairs.isEmpty() && syntheticLine == null) return;
