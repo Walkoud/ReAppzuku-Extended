@@ -70,6 +70,7 @@ public class MainActivity extends BaseActivity {
     private String currentSearchQuery = "";
     private int currentSortMode = AppConstants.SORT_MODE_DEFAULT;
     private MenuItem selectAllMenuItem;
+    private MenuItem scanMenuItem;
 
     private int appliedAccent;
     private boolean appliedIsAmoled;
@@ -449,6 +450,49 @@ public class MainActivity extends BaseActivity {
                 loadingDialog.dismiss();
                 if (isFinishing() || isDestroyed()) return;
                 showTriggersResult(app, triggers, status, aggressionScore);
+            });
+        });
+    }
+
+    private void showSystemScanDialog() {
+        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.scansystem_dialog_title))
+                .setMessage(getString(R.string.scansystem_scanning))
+                .setCancelable(true)
+                .create();
+        loadingDialog.show();
+
+        List<AppModel> snapshot = new ArrayList<>(fullAppsList);
+
+        executor.execute(() -> {
+            ScanSystem scanner = new ScanSystem(MainActivity.this, shellManager);
+            List<ScanSystem.AppLoad> loads = scanner.scan(snapshot);
+
+            handler.post(() -> {
+                loadingDialog.dismiss();
+                if (isFinishing() || isDestroyed()) return;
+
+                if (loads.isEmpty()) {
+                    new AlertDialog.Builder(this)
+                            .setTitle(getString(R.string.scansystem_dialog_title))
+                            .setMessage(getString(R.string.scansystem_no_load))
+                            .setPositiveButton(getString(R.string.dialog_ok), null)
+                            .show();
+                    return;
+                }
+
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_system_scan, null);
+                androidx.recyclerview.widget.RecyclerView recycler =
+                        dialogView.findViewById(R.id.scan_recycler);
+                recycler.setLayoutManager(
+                        new androidx.recyclerview.widget.LinearLayoutManager(this));
+                recycler.setAdapter(new ScanResultAdapter(this, loads));
+
+                new AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.scansystem_dialog_title))
+                        .setView(dialogView)
+                        .setPositiveButton(getString(R.string.dialog_ok), null)
+                        .show();
             });
         });
     }
@@ -894,6 +938,7 @@ public class MainActivity extends BaseActivity {
         getMenuInflater().inflate(R.menu.main, menu);
 
         selectAllMenuItem = menu.findItem(R.id.action_select_all);
+        scanMenuItem = menu.findItem(R.id.action_scan);
 
         applyToolbarIconTint(menu);
 
@@ -929,6 +974,9 @@ public class MainActivity extends BaseActivity {
             return true;
         } else if (itemId == R.id.action_sort) {
             showSortDialog();
+            return true;
+        } else if (itemId == R.id.action_scan) {
+            showSystemScanDialog();
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -1025,7 +1073,7 @@ public class MainActivity extends BaseActivity {
             color = isLightAccent() ? Color.BLACK : Color.WHITE;
         }
 
-        int[] iconIds = {R.id.action_search, R.id.action_sort, R.id.action_select_all};
+        int[] iconIds = {R.id.action_search, R.id.action_sort, R.id.action_select_all, R.id.action_scan};
         for (int id : iconIds) {
             MenuItem menuItem = menu.findItem(id);
             if (menuItem != null && menuItem.getIcon() != null) {

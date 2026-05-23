@@ -8,13 +8,87 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // for debug logcat -s AppTriggersAnalyzer:D AppTriggerAnalyzersExt:D
 
+// AnalysisType — pass to analyze(packageName, types) for targeted analysis.
+// Full list of available values:
+//
+//   PROCESS_STATE                  — process state (proc state, oom adj)
+//   SERVICES_AND_BINDINGS          — running services and bindings (FGS, sticky, bound)
+//   FG_NOTIFICATION                — foreground service notification
+//   FGS_START_BLOCKED              — FGS start attempts blocked by the system
+//   WAKELOCKS                      — CPU held via wakelock
+//   NETWORK_ACTIVITY               — network activity (background data transfer)
+//   NETWORK_POLICY                 — network policy (background access allowed/blocked)
+//   SENSORS                        — sensor usage
+//   LOCATION_REQUESTS              — active location requests
+//   BACKGROUND_LOCATION_PERMISSION — background location permission granted
+//   AUDIO_FOCUS                    — audio focus acquisition
+//   BLUETOOTH                      — Bluetooth activity (scanning, connections)
+//   BLUETOOTH_PERMISSIONS          — Bluetooth permissions
+//   ALARMS                         — alarms (including WAKEUP types)
+//   EXCESSIVE_WAKEUPS              — excessive device wakeups
+//   JOBS                           — background JobScheduler tasks
+//   PENDING_INTENTS                — registered PendingIntents
+//   CONTENT_OBSERVERS              — ContentObserver subscriptions
+//   FCM_REGISTRATION               — Firebase Cloud Messaging registration
+//   APP_OPS                        — AppOps operations (system resource access)
+//   CHAIN_LAUNCH                   — chain launch (one app waking another)
+//   BROADCAST_RECEIVERS            — registered BroadcastReceivers
+//   BOOT_RECEIVERS                 — BOOT_COMPLETED receivers
+//   CONTENT_PROVIDERS              — registered ContentProviders
+//   SYNC_ADAPTERS                  — background sync (SyncAdapter)
+//   DOZE_EXEMPTION                 — Doze mode exemption
+//   STANDBY_BUCKET                 — app standby bucket (priority tier)
+//   BATTERY_STATS                  — cumulative power consumption (since last charge)
+//   BROADCAST_EFFICIENCY           — broadcast handling efficiency
+//   MULTIPLE_PROCESSES             — multiple active processes for the app
+//   ACCESSIBILITY_AND_IME          — Accessibility Service or IME usage
+//   DEVICE_ADMIN                   — device administrator rights
+//   USAGE_STATS                    — app usage statistics
+
 public class AppTriggersAnalyzer {
+
+    public enum AnalysisType {
+        PROCESS_STATE,
+        SERVICES_AND_BINDINGS,
+        FG_NOTIFICATION,
+        WAKELOCKS,
+        NETWORK_ACTIVITY,
+        NETWORK_POLICY,
+        SENSORS,
+        LOCATION_REQUESTS,
+        BACKGROUND_LOCATION_PERMISSION,
+        AUDIO_FOCUS,
+        BLUETOOTH,
+        BLUETOOTH_PERMISSIONS,
+        FGS_START_BLOCKED,
+        ALARMS,
+        JOBS,
+        PENDING_INTENTS,
+        EXCESSIVE_WAKEUPS,
+        CONTENT_OBSERVERS,
+        FCM_REGISTRATION,
+        APP_OPS,
+        CHAIN_LAUNCH,
+        BROADCAST_RECEIVERS,
+        BOOT_RECEIVERS,
+        CONTENT_PROVIDERS,
+        SYNC_ADAPTERS,
+        DOZE_EXEMPTION,
+        STANDBY_BUCKET,
+        BATTERY_STATS,
+        BROADCAST_EFFICIENCY,
+        MULTIPLE_PROCESSES,
+        ACCESSIBILITY_AND_IME,
+        DEVICE_ADMIN,
+        USAGE_STATS
+    }
 
     private static final String TAG = "AppTriggersAnalyzer";
 
@@ -246,41 +320,81 @@ public class AppTriggersAnalyzer {
     }
 
     public List<TriggerInfo> analyze(String packageName) {
+        return analyze(packageName, EnumSet.allOf(AnalysisType.class));
+    }
+
+    public List<TriggerInfo> analyze(String packageName, EnumSet<AnalysisType> types) {
         cachedUid = resolveUid(packageName);
 
         List<TriggerInfo> results = new ArrayList<>();
 
-        safeAdd(results, "ProcessState",          () -> analyzeProcessState(packageName));
-        safeAdd(results, "ServicesAndBindings",    () -> analyzeServicesAndBindings(packageName));
-        safeAdd(results, "FgNotification",         () -> analyzeFgNotification(packageName));
-        safeAdd(results, "Wakelocks",              () -> analyzeWakelocks(packageName));
-        safeAdd(results, "NetworkActivity",        () -> analyzeNetworkActivity(packageName));
-        safeAdd(results, "Sensors",                () -> analyzeSensors(packageName));
-        safeAdd(results, "LocationRequests",       () -> analyzeLocationRequests(packageName));
-        safeAdd(results, "AudioFocus",             () -> analyzeAudioFocus(packageName));
-        safeAdd(results, "Bluetooth",              () -> analyzeBluetooth(packageName));
+        if (types.contains(AnalysisType.PROCESS_STATE))
+            safeAdd(results, "ProcessState",              () -> analyzeProcessState(packageName));
+        if (types.contains(AnalysisType.SERVICES_AND_BINDINGS))
+            safeAdd(results, "ServicesAndBindings",       () -> analyzeServicesAndBindings(packageName));
+        if (types.contains(AnalysisType.FG_NOTIFICATION))
+            safeAdd(results, "FgNotification",            () -> analyzeFgNotification(packageName));
+        if (types.contains(AnalysisType.WAKELOCKS))
+            safeAdd(results, "Wakelocks",                 () -> analyzeWakelocks(packageName));
+        if (types.contains(AnalysisType.NETWORK_ACTIVITY))
+            safeAdd(results, "NetworkActivity",           () -> analyzeNetworkActivity(packageName));
+        if (types.contains(AnalysisType.SENSORS))
+            safeAdd(results, "Sensors",                   () -> analyzeSensors(packageName));
+        if (types.contains(AnalysisType.LOCATION_REQUESTS))
+            safeAdd(results, "LocationRequests",          () -> analyzeLocationRequests(packageName));
+        if (types.contains(AnalysisType.AUDIO_FOCUS))
+            safeAdd(results, "AudioFocus",                () -> analyzeAudioFocus(packageName));
+        if (types.contains(AnalysisType.BLUETOOTH))
+            safeAdd(results, "Bluetooth",                 () -> analyzeBluetooth(packageName));
+        if (types.contains(AnalysisType.FGS_START_BLOCKED))
+            safeAdd(results, "FgsStartBlocked",           () -> analyzeFgsStartBlocked(packageName));
+        if (types.contains(AnalysisType.NETWORK_POLICY))
+            safeAdd(results, "NetworkPolicy",             () -> analyzeNetworkPolicy(packageName));
+        if (types.contains(AnalysisType.BACKGROUND_LOCATION_PERMISSION))
+            safeAdd(results, "BackgroundLocationPerm",    () -> analyzeBackgroundLocationPermission(packageName));
+        if (types.contains(AnalysisType.BLUETOOTH_PERMISSIONS))
+            safeAdd(results, "BluetoothPermissions",      () -> analyzeBluetoothPermissions(packageName));
 
-        safeAdd(results, "Alarms",                 () -> ext.analyzeAlarms(packageName));
-        safeAdd(results, "Jobs",                   () -> ext.analyzeJobs(packageName));
-        safeAdd(results, "PendingIntents",         () -> ext.analyzePendingIntents(packageName));
-        safeAdd(results, "ExcessiveWakeups",       () -> ext.analyzeExcessiveWakeups(packageName));
-        safeAdd(results, "ContentObservers",       () -> ext.analyzeContentObservers(packageName));
-        safeAdd(results, "FcmRegistration",        () -> ext.analyzeFcmRegistration(packageName));
-        safeAdd(results, "AppOps",                 () -> ext.analyzeAppOps(packageName));
-
-        safeAdd(results, "ChainLaunch",            () -> ext.analyzeChainLaunch(packageName));
-        safeAdd(results, "BroadcastReceivers",     () -> ext.analyzeBroadcastReceivers(packageName));
-        safeAdd(results, "BootReceivers",          () -> ext.analyzeBootReceivers(packageName));
-        safeAdd(results, "ContentProviders",       () -> ext.analyzeContentProviders(packageName));
-        safeAdd(results, "SyncAdapters",           () -> ext.analyzeSyncAdapters(packageName));
-        safeAdd(results, "DozeExemption",          () -> ext.analyzeDozeExemption(packageName));
-        safeAdd(results, "StandbyBucket",          () -> ext.analyzeStandbyBucket(packageName));
-        safeAdd(results, "BatteryStats",           () -> ext.analyzeBatteryStats(packageName));
-        safeAdd(results, "BroadcastEfficiency",    () -> ext.analyzeBroadcastEfficiency(packageName));
-        safeAdd(results, "MultipleProcesses",      () -> ext.analyzeMultipleProcesses(packageName));
-        safeAdd(results, "AccessibilityAndIme",    () -> ext.analyzeAccessibilityAndIme(packageName));
-        safeAdd(results, "DeviceAdmin",            () -> ext.analyzeDeviceAdmin(packageName));
-        safeAdd(results, "UsageStats",             () -> ext.analyzeUsageStats(packageName));
+        if (types.contains(AnalysisType.ALARMS))
+            safeAdd(results, "Alarms",                    () -> ext.analyzeAlarms(packageName));
+        if (types.contains(AnalysisType.JOBS))
+            safeAdd(results, "Jobs",                      () -> ext.analyzeJobs(packageName));
+        if (types.contains(AnalysisType.PENDING_INTENTS))
+            safeAdd(results, "PendingIntents",            () -> ext.analyzePendingIntents(packageName));
+        if (types.contains(AnalysisType.EXCESSIVE_WAKEUPS))
+            safeAdd(results, "ExcessiveWakeups",          () -> ext.analyzeExcessiveWakeups(packageName));
+        if (types.contains(AnalysisType.CONTENT_OBSERVERS))
+            safeAdd(results, "ContentObservers",          () -> ext.analyzeContentObservers(packageName));
+        if (types.contains(AnalysisType.FCM_REGISTRATION))
+            safeAdd(results, "FcmRegistration",           () -> ext.analyzeFcmRegistration(packageName));
+        if (types.contains(AnalysisType.APP_OPS))
+            safeAdd(results, "AppOps",                    () -> ext.analyzeAppOps(packageName));
+        if (types.contains(AnalysisType.CHAIN_LAUNCH))
+            safeAdd(results, "ChainLaunch",               () -> ext.analyzeChainLaunch(packageName));
+        if (types.contains(AnalysisType.BROADCAST_RECEIVERS))
+            safeAdd(results, "BroadcastReceivers",        () -> ext.analyzeBroadcastReceivers(packageName));
+        if (types.contains(AnalysisType.BOOT_RECEIVERS))
+            safeAdd(results, "BootReceivers",             () -> ext.analyzeBootReceivers(packageName));
+        if (types.contains(AnalysisType.CONTENT_PROVIDERS))
+            safeAdd(results, "ContentProviders",          () -> ext.analyzeContentProviders(packageName));
+        if (types.contains(AnalysisType.SYNC_ADAPTERS))
+            safeAdd(results, "SyncAdapters",              () -> ext.analyzeSyncAdapters(packageName));
+        if (types.contains(AnalysisType.DOZE_EXEMPTION))
+            safeAdd(results, "DozeExemption",             () -> ext.analyzeDozeExemption(packageName));
+        if (types.contains(AnalysisType.STANDBY_BUCKET))
+            safeAdd(results, "StandbyBucket",             () -> ext.analyzeStandbyBucket(packageName));
+        if (types.contains(AnalysisType.BATTERY_STATS))
+            safeAdd(results, "BatteryStats",              () -> ext.analyzeBatteryStats(packageName));
+        if (types.contains(AnalysisType.BROADCAST_EFFICIENCY))
+            safeAdd(results, "BroadcastEfficiency",       () -> ext.analyzeBroadcastEfficiency(packageName));
+        if (types.contains(AnalysisType.MULTIPLE_PROCESSES))
+            safeAdd(results, "MultipleProcesses",         () -> ext.analyzeMultipleProcesses(packageName));
+        if (types.contains(AnalysisType.ACCESSIBILITY_AND_IME))
+            safeAdd(results, "AccessibilityAndIme",       () -> ext.analyzeAccessibilityAndIme(packageName));
+        if (types.contains(AnalysisType.DEVICE_ADMIN))
+            safeAdd(results, "DeviceAdmin",               () -> ext.analyzeDeviceAdmin(packageName));
+        if (types.contains(AnalysisType.USAGE_STATS))
+            safeAdd(results, "UsageStats",                () -> ext.analyzeUsageStats(packageName));
 
         if (results.isEmpty()) {
             results.add(new TriggerInfo(
