@@ -986,6 +986,8 @@ public class AppTriggersAnalyzer {
             list.addAll(analyzeKernelWakelocksFallback(packageName));
         }
 
+        appendWakelockHistory(list, packageName);
+
         return list;
     }
 
@@ -1812,6 +1814,95 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "kernel wakelock check failed: " + e.getMessage()); }
         return list;
+    }
+
+    private void appendWakelockHistory(List<TriggerInfo> list, String packageName) {
+        try {
+            String history = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys batterystats --history");
+            if (history == null || history.trim().isEmpty()) return;
+
+            Pattern eventPat = Pattern.compile(
+                    "\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?\\s.*?([+-])wake_lock[^=]*=\\S*"
+                    + Pattern.quote(packageName) + "\\S*");
+            Pattern timePat = Pattern.compile("RESET:TIME:\\s*(\\d+)");
+
+            long baseUnixMs = 0;
+            long baseOffsetMs = 0;
+
+            for (String line : history.split("\n")) {
+                Matcher mt = timePat.matcher(line);
+                if (!mt.find()) continue;
+                baseUnixMs = Long.parseLong(mt.group(1)) * 1000L;
+                baseOffsetMs = parseHistoryOffset(line);
+            }
+
+            List<long[]> pairs = new ArrayList<>();
+            long pendingAcquire = -1;
+
+            for (String line : history.split("\n")) {
+                Matcher me = eventPat.matcher(line);
+                if (!me.find()) continue;
+                long offsetMs = parseHistoryOffset(line);
+                char sign = me.group(5).charAt(0);
+                if (sign == '+') {
+                    pendingAcquire = offsetMs;
+                } else if (sign == '-' && pendingAcquire >= 0) {
+                    pairs.add(new long[]{pendingAcquire, offsetMs});
+                    pendingAcquire = -1;
+                }
+            }
+            if (pendingAcquire >= 0) {
+                pairs.add(new long[]{pendingAcquire, -1});
+            }
+
+            if (pairs.isEmpty()) return;
+
+            int from = Math.max(0, pairs.size() - 5);
+            List<long[]> last5 = pairs.subList(from, pairs.size());
+
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+                    "HH:mm:ss", java.util.Locale.getDefault());
+            StringBuilder sb = new StringBuilder();
+
+            for (long[] pair : last5) {
+                long acqUnix = baseUnixMs + pair[0] - baseOffsetMs;
+                String acqTime = sdf.format(new java.util.Date(acqUnix));
+                if (pair[1] < 0) {
+                    sb.append(acqTime).append(" → now\n");
+                } else {
+                    long relUnix = baseUnixMs + pair[1] - baseOffsetMs;
+                    String relTime = sdf.format(new java.util.Date(relUnix));
+                    long durMs = pair[1] - pair[0];
+                    sb.append(acqTime).append(" → ").append(relTime)
+                      .append("  (").append(formatDuration(durMs)).append(")\n");
+                }
+            }
+
+            String detail = sb.toString().trim();
+            if (detail.isEmpty()) return;
+
+            list.add(new TriggerInfo(
+                    TriggerInfo.Group.OTHER,
+                    "WakeLock History",
+                    detail,
+                    "Last " + last5.size() + " wakelock events from battery history",
+                    TriggerInfo.Severity.INFO));
+
+        } catch (Exception e) {
+            Log.w(TAG, "wakelock history parse failed: " + e.getMessage());
+        }
+    }
+
+    private long parseHistoryOffset(String line) {
+        Pattern p = Pattern.compile("\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?");
+        Matcher m = p.matcher(line);
+        if (!m.find()) return 0;
+        long ms = Long.parseLong(m.group(1)) * 3_600_000L
+                + Long.parseLong(m.group(2)) * 60_000L
+                + Long.parseLong(m.group(3)) * 1_000L;
+        if (m.group(4) != null) ms += Long.parseLong(m.group(4));
+        return ms;
     }
 
     private String resolveUid(String packageName) {
