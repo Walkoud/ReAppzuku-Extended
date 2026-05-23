@@ -926,14 +926,11 @@
     <string name="scansystem_menu_title">Сканировать</string>
     <string name="scansystem_dialog_title">Системная нагрузка</string>
     <string name="scansystem_scanning">Сканирование…</string>
-    <string name="scansystem_no_load">Нет приложений с активной нагрузкой</string>    
-    <string name="scansystem_reason_wakelock">Удерживает CPU (wakelock)</string>
-    <string name="scansystem_reason_network">Активная сетевая активность</string>
-    <string name="scansystem_reason_fgs">Foreground Service</string>
-    <string name="scansystem_reason_fgs_typed">Foreground Service (тип %1$s)</string>
-    <string name="scansystem_reason_alarm">Wakeup-будильники: %1$d срабатываний</string>
-    <string name="scansystem_reason_sensor">Активный датчик</string>
-    <string name="scansystem_reason_location">Запросы геолокации</string>
-    <string name="scansystem_reason_location_provider">Геолокация: %1$s</string>
-    
+    <string name="scansystem_no_load">Нет приложений с активной нагрузкой</string>  
+    <string name="scansystem_cat_wakelock">Удерживает CPU</string>
+    <string name="scansystem_cat_network">Удерживает сеть</string>
+    <string name="scansystem_cat_fgs">Foreground Service</string>
+    <string name="scansystem_cat_alarm">Будит устройство</string>
+    <string name="scansystem_cat_sensor">Держит датчики</string>
+    <string name="scansystem_cat_location">Держит геолокацию</string>
 </resources>
