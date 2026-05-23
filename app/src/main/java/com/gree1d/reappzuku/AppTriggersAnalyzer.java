@@ -957,7 +957,7 @@ public class AppTriggersAnalyzer {
                     "dumpsys batterystats " + packageName);
             if (bsOut != null) {
                 Pattern p = Pattern.compile(
-                        "Wakelock\\s+(\\S+):\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)",
+                        "(?:Wakelock|wake_lock)\\s+(\\S+)[^:]*:\\s+(\\d+)ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",
                         Pattern.CASE_INSENSITIVE);
                 for (String line : bsOut.split("\n")) {
                     Matcher m = p.matcher(line);
@@ -1086,8 +1086,10 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "NetworkActivity/netstats - ERROR: " + e.getMessage()); }
         if (netstats != null) {
-            Matcher mRx = Pattern.compile("rxBytes=(\\d+)").matcher(netstats);
-            Matcher mTx = Pattern.compile("txBytes=(\\d+)").matcher(netstats);
+            // New format (Android 14+): rb= tb= rp= tp= st= op=
+            // Old format:               rxBytes= txBytes=
+            Matcher mRx = Pattern.compile("(?:rxBytes|rb)=(\\d+)").matcher(netstats);
+            Matcher mTx = Pattern.compile("(?:txBytes|tb)=(\\d+)").matcher(netstats);
             while (mRx.find()) rxBytes += Long.parseLong(mRx.group(1));
             while (mTx.find()) txBytes += Long.parseLong(mTx.group(1));
         }
@@ -1740,10 +1742,14 @@ public class AppTriggersAnalyzer {
             }
             if (netPolicy == null) return list;
 
-            boolean rejected = netPolicy.contains("REJECT_METERED_BACKGROUND")
-                    || netPolicy.contains("policy=2");
-            boolean allowed  = netPolicy.contains("ALLOW_METERED_BACKGROUND")
-                    || netPolicy.contains("policy=4");
+            boolean rejected = netPolicy.contains("REJECT_METERED_BACKGROUND");
+            boolean allowed  = netPolicy.contains("ALLOW_METERED_BACKGROUND");
+            Matcher mPolicy  = Pattern.compile("policy=(\\d+)").matcher(netPolicy);
+            if (mPolicy.find()) {
+                int policy = Integer.parseInt(mPolicy.group(1));
+                if ((policy & 2) != 0) rejected = true;
+                if ((policy & 4) != 0) allowed  = true;
+            }
 
             if (rejected) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
@@ -1916,8 +1922,8 @@ public class AppTriggersAnalyzer {
             list.add(new TriggerInfo(
                     TriggerInfo.Group.OTHER,
                     "WakeLock History",
+                    "",
                     detail,
-                    "Last " + last5.size() + " wakelock events from battery history",
                     TriggerInfo.Severity.INFO));
 
         } catch (Exception e) {

@@ -605,7 +605,7 @@ public class AppTriggerAnalyzersExt {
         List<String> alarmTags = new ArrayList<>();
 
         Pattern ap = Pattern.compile(
-                "Wakeup alarm\\s+([\\w./]+):\\s*(\\d+)\\s+times", Pattern.CASE_INSENSITIVE);
+                "(?:Wakeup alarm|wakeup_alarm)\\s+([\\w./]+)[^:]*:\\s*(\\d+)\\s+times", Pattern.CASE_INSENSITIVE);
         Pattern jp = Pattern.compile(
                 "Job\\s+\\S+:\\s+\\d+ms.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
         Pattern gp = Pattern.compile(
@@ -1057,7 +1057,7 @@ public class AppTriggerAnalyzersExt {
 
         Pattern authPat      = Pattern.compile("authority=([\\w.]+)");
         Pattern acctPat      = Pattern.compile("accountType=([\\w.]+)");
-        Pattern periodPat    = Pattern.compile("period=(\\d+)s");
+        Pattern periodPat    = Pattern.compile("period=(\\d+)(ms|s)?");
         Pattern periodMsPat  = Pattern.compile("(?:mPeriod|periodMs)=(\\d+)");
         Pattern lastSuccPat  = Pattern.compile("lastSuccessTime=([\\d\\- :]+)");
         Pattern nextRunPat   = Pattern.compile("nextRunTime=([\\d\\- :]+)");
@@ -1114,8 +1114,11 @@ public class AppTriggerAnalyzersExt {
             if (mSy.find()) syncable = "true".equals(mSy.group(1));
 
             Matcher mP = periodPat.matcher(t);
-            if (mP.find() && periodSec == 0) periodSec = Long.parseLong(mP.group(1));
-            else {
+            if (mP.find() && periodSec == 0) {
+                long val    = Long.parseLong(mP.group(1));
+                String unit = mP.group(2);
+                periodSec = "ms".equals(unit) ? val / 1000 : val;
+            } else {
                 Matcher mPms = periodMsPat.matcher(t);
                 if (mPms.find() && periodSec == 0) periodSec = Long.parseLong(mPms.group(1)) / 1000;
             }
@@ -1392,10 +1395,10 @@ public class AppTriggerAnalyzersExt {
         long wlMs=0; int wlCnt=0, alarms=0, jobs=0, syncs=0;
         double powerMah = -1;
 
-        Pattern wp   = Pattern.compile("Wakelock\\s+\\S+:\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
-        Pattern ap   = Pattern.compile("Wakeup alarm.*?:\\s*(\\d+)\\s+times",                            Pattern.CASE_INSENSITIVE);
-        Pattern jp   = Pattern.compile("Job\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",        Pattern.CASE_INSENSITIVE);
-        Pattern sp   = Pattern.compile("Sync\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",       Pattern.CASE_INSENSITIVE);
+        Pattern wp   = Pattern.compile("(?:Wakelock|wake_lock)\\s+\\S+[^:]*:\\s+(\\d+)ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
+        Pattern ap   = Pattern.compile("(?:Wakeup alarm|wakeup_alarm)[^:]*:\\s*(\\d+)\\s+times",                                          Pattern.CASE_INSENSITIVE);
+        Pattern jp   = Pattern.compile("Job\\s+\\S+[^:]*:\\s+\\d+ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",                     Pattern.CASE_INSENSITIVE);
+        Pattern sp   = Pattern.compile("Sync\\s+\\S+[^:]*:\\s+\\d+ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",                    Pattern.CASE_INSENSITIVE);
 
         Pattern pwrP = Pattern.compile("Uid\\s+u0a\\d+:\\s*([\\d.]+)(?:\\s*mAh)?", Pattern.CASE_INSENSITIVE);
 

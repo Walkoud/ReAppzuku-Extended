@@ -62,17 +62,18 @@ public class ScanSystem {
             } catch (PackageManager.NameNotFoundException ignored) {}
         }
 
-        ExecutorService pool = Executors.newFixedThreadPool(6);
+        ExecutorService pool = Executors.newFixedThreadPool(7);
 
-        Future<Void> fWakelocks = pool.submit(() -> { scanWakelocks(map, uidMap); return null; });
-        Future<Void> fNetwork   = pool.submit(() -> { scanNetwork(map, uidMap);   return null; });
-        Future<Void> fServices  = pool.submit(() -> { scanServices(map);          return null; });
-        Future<Void> fAlarms    = pool.submit(() -> { scanAlarms(map);            return null; });
-        Future<Void> fSensors   = pool.submit(() -> { scanSensors(map);           return null; });
-        Future<Void> fLocation  = pool.submit(() -> { scanLocation(map);          return null; });
+        Future<Void> fWakelocks = pool.submit(() -> { scanWakelocks(map, uidMap);    return null; });
+        Future<Void> fNetwork   = pool.submit(() -> { scanNetwork(map, uidMap);      return null; });
+        Future<Void> fServices  = pool.submit(() -> { scanServices(map);             return null; });
+        Future<Void> fAlarms    = pool.submit(() -> { scanAlarms(map);               return null; });
+        Future<Void> fSensors   = pool.submit(() -> { scanSensors(map);              return null; });
+        Future<Void> fLocation  = pool.submit(() -> { scanLocation(map);             return null; });
+        Future<Void> fHistory   = pool.submit(() -> { scanWakelockHistory(map);      return null; });
 
         pool.shutdown();
-        for (Future<Void> f : new Future[]{fWakelocks, fNetwork, fServices, fAlarms, fSensors, fLocation}) {
+        for (Future<Void> f : new Future[]{fWakelocks, fNetwork, fServices, fAlarms, fSensors, fLocation, fHistory}) {
             try { f.get(); } catch (Exception e) { Log.w(TAG, "scan task failed: " + e.getMessage()); }
         }
 
@@ -162,12 +163,19 @@ public class ScanSystem {
             long rxBytes = 0, txBytes = 0;
 
             if (netstats != null) {
-                String section = extractNetstatsSection(netstats, uid);
-                if (section != null) {
-                    Matcher mRx = Pattern.compile("rxBytes=(\\d+)").matcher(section);
-                    Matcher mTx = Pattern.compile("txBytes=(\\d+)").matcher(section);
-                    while (mRx.find()) rxBytes += Long.parseLong(mRx.group(1));
-                    while (mTx.find()) txBytes += Long.parseLong(mTx.group(1));
+                boolean inSection = false;
+                for (String line : netstats.split("\n")) {
+                    if (line.contains("uid=" + uid) && line.contains("ident=")) {
+                        inSection = true; continue;
+                    }
+                    if (inSection && line.contains("ident=") && !line.contains("uid=" + uid)) {
+                        inSection = false;
+                    }
+                    if (!inSection) continue;
+                    Matcher mRb = Pattern.compile("\\brb=(\\d+)").matcher(line);
+                    Matcher mTb = Pattern.compile("\\btb=(\\d+)").matcher(line);
+                    if (mRb.find()) rxBytes += Long.parseLong(mRb.group(1));
+                    if (mTb.find()) txBytes += Long.parseLong(mTb.group(1));
                 }
             }
 
@@ -181,17 +189,6 @@ public class ScanSystem {
             entry.getValue().findings.add(new Finding(Category.NETWORK,
                     "RX " + formatBytes(rxBytes) + " / TX " + formatBytes(txBytes)));
         }
-    }
-
-    private String extractNetstatsSection(String netstats, String uid) {
-        StringBuilder sb = new StringBuilder();
-        boolean inSection = false;
-        for (String line : netstats.split("\n")) {
-            if (line.contains("uid=" + uid)) { inSection = true; }
-            else if (inSection && line.trim().startsWith("uid=")) { break; }
-            if (inSection) sb.append(line).append("\n");
-        }
-        return sb.length() > 0 ? sb.toString() : null;
     }
 
     private long[] readNetworkBytesProcFallback(String uid) {
@@ -332,32 +329,36 @@ public class ScanSystem {
 
     private void scanSensors(Map<String, AppLoad> map) {
         String output = shellManager.runShellCommandAndGetFullOutput("dumpsys sensorservice");
-        if (output == null || output.trim().isEmpty()) return;
+        if (output == null || output.trim().isEmpty()) {
+            scanSensorsBatteryStatsFallback(map);
+            return;
+        }
 
+        Map<String, List<String>> found = new LinkedHashMap<>();
         boolean inConn   = false;
+        boolean relevant = false;
         String  connPkg  = null;
-        List<String> found = new ArrayList<>();
+        List<String> connFound = new ArrayList<>();
 
         for (String line : output.split("\n")) {
             String t = line.trim();
 
             if (t.startsWith("Connection Number:") || t.startsWith("Active connections")) {
-                if (connPkg != null && map.containsKey(connPkg) && !found.isEmpty()) {
-                    AppLoad load = map.get(connPkg);
-                    load.findings.add(new Finding(Category.SENSOR, String.join(", ", found)));
+                if (relevant && connPkg != null && !connFound.isEmpty()) {
+                    found.computeIfAbsent(connPkg, k -> new ArrayList<>()).addAll(connFound);
                 }
-                inConn = true; connPkg = null; found.clear();
+                inConn = true; relevant = false; connPkg = null; connFound.clear();
                 continue;
             }
             if (!inConn) continue;
 
             if (t.startsWith("packageName=") || t.startsWith("package=") || t.startsWith("Identity=")) {
-                connPkg = null;
+                relevant = false; connPkg = null;
                 for (String pkg : map.keySet()) {
-                    if (t.contains(pkg)) { connPkg = pkg; break; }
+                    if (t.contains(pkg)) { relevant = true; connPkg = pkg; break; }
                 }
             }
-            if (connPkg == null) continue;
+            if (!relevant) continue;
 
             if (t.startsWith("Sensor:") || t.startsWith("SensorName=") || t.startsWith("sensor=")) {
                 String raw = t.replaceFirst("(?:Sensor:|SensorName=|sensor=)\\s*", "");
@@ -374,14 +375,60 @@ public class ScanSystem {
                     if (mHz.find()) rate = "@" + mHz.group(1) + "Hz";
                 }
                 String label = classifySensor(raw) + (rate.isEmpty() ? "" : " " + rate);
-                if (!found.contains(label)) found.add(label);
+                if (!connFound.contains(label)) connFound.add(label);
             }
             if (t.contains("GNSS") || t.contains("Gnss") || t.contains("GPS"))
-                if (!found.contains("GPS")) found.add("GPS");
+                if (!connFound.contains("GPS")) connFound.add("GPS");
         }
-        if (connPkg != null && map.containsKey(connPkg) && !found.isEmpty()) {
-            map.get(connPkg).findings.add(new Finding(Category.SENSOR, String.join(", ", found)));
+        if (relevant && connPkg != null && !connFound.isEmpty()) {
+            found.computeIfAbsent(connPkg, k -> new ArrayList<>()).addAll(connFound);
         }
+
+        for (Map.Entry<String, List<String>> e : found.entrySet()) {
+            AppLoad load = map.get(e.getKey());
+            if (load != null) load.findings.add(new Finding(Category.SENSOR,
+                    String.join(", ", e.getValue())));
+        }
+
+        for (String pkg : map.keySet()) {
+            if (!found.containsKey(pkg)) {
+                scanSensorsBatteryStatsFallback(map, pkg);
+            }
+        }
+    }
+
+    private void scanSensorsBatteryStatsFallback(Map<String, AppLoad> map) {
+        for (String pkg : map.keySet()) scanSensorsBatteryStatsFallback(map, pkg);
+    }
+
+    private void scanSensorsBatteryStatsFallback(Map<String, AppLoad> map, String pkg) {
+        try {
+            String output = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys batterystats " + pkg);
+            if (output == null) return;
+            boolean inPkg = false;
+            List<String> sensors = new ArrayList<>();
+            Pattern srPat = Pattern.compile(
+                    "Sensor\\s+(?:#)?(\\d+)[^:]*:\\s*(.*)", Pattern.CASE_INSENSITIVE);
+            for (String line : output.split("\n")) {
+                if (line.contains(pkg)) inPkg = true;
+                if (!inPkg) continue;
+                Matcher m = srPat.matcher(line.trim());
+                if (!m.find()) continue;
+                int handle = Integer.parseInt(m.group(1));
+                String rest = m.group(2).trim();
+                String dur = "";
+                Matcher mDur = Pattern.compile("(\\d+)ms").matcher(rest);
+                if (mDur.find()) dur = " (" + formatDuration(Long.parseLong(mDur.group(1))) + ")";
+                String label = sensorHandleToName(handle) + dur;
+                if (!sensors.contains(label)) sensors.add(label);
+            }
+            if (!sensors.isEmpty()) {
+                AppLoad load = map.get(pkg);
+                if (load != null) load.findings.add(new Finding(Category.SENSOR,
+                        String.join(", ", sensors)));
+            }
+        } catch (Exception e) { Log.w(TAG, "sensors batterystats fallback: " + e.getMessage()); }
     }
 
     private void scanLocation(Map<String, AppLoad> map) {
@@ -529,4 +576,135 @@ public class ScanSystem {
         if (ms < 3_600_000) return (ms / 60_000) + "min";
         return (ms / 3_600_000) + "h";
     }
+    private void scanWakelockHistory(Map<String, AppLoad> map) {
+        try {
+            String history = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys batterystats --history");
+            if (history == null || history.trim().isEmpty()) return;
+
+            Pattern timePat = Pattern.compile("RESET:TIME:\\s*(\\d+)");
+            long baseUnixMs = 0, baseOffsetMs = 0;
+            for (String line : history.split("\n")) {
+                Matcher mt = timePat.matcher(line);
+                if (!mt.find()) continue;
+                baseUnixMs   = Long.parseLong(mt.group(1)) * 1000L;
+                baseOffsetMs = parseHistoryOffset(line);
+            }
+
+            for (Map.Entry<String, AppLoad> entry : map.entrySet()) {
+                String pkg = entry.getKey();
+                boolean activeNow = entry.getValue().findings.stream()
+                        .anyMatch(f -> f.category == Category.WAKELOCK);
+
+                Pattern wakePat = Pattern.compile(
+                        "\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?\\s.*?([+-])wake_lock[^=]*=\\S*"
+                        + Pattern.quote(pkg) + "\\S*");
+                Pattern procPat = Pattern.compile(
+                        "\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?\\s.*?(?:Died|proc).*?"
+                        + Pattern.quote(pkg));
+
+                List<Long> deathOffsets = new ArrayList<>();
+                for (String line : history.split("\n")) {
+                    Matcher mp = procPat.matcher(line);
+                    if (mp.find()) deathOffsets.add(parseHistoryOffset(line));
+                }
+
+                List<long[]> pairs = new ArrayList<>();
+                long pendingAcquire = -1;
+                for (String line : history.split("\n")) {
+                    Matcher me = wakePat.matcher(line);
+                    if (!me.find()) continue;
+                    long offsetMs = parseHistoryOffset(line);
+                    char sign = me.group(5).charAt(0);
+                    if (sign == '+') {
+                        pendingAcquire = offsetMs;
+                    } else if (sign == '-' && pendingAcquire >= 0) {
+                        pairs.add(new long[]{pendingAcquire, offsetMs, 0});
+                        pendingAcquire = -1;
+                    }
+                }
+                if (pendingAcquire >= 0) {
+                    long deathOffset = -1;
+                    for (long d : deathOffsets) {
+                        if (d >= pendingAcquire) { deathOffset = d; break; }
+                    }
+                    pairs.add(new long[]{pendingAcquire, deathOffset, deathOffset >= 0 ? 1 : -1});
+                }
+
+                boolean historyHasOpen = pairs.stream().anyMatch(p -> p[2] == -1);
+                String syntheticLine = null;
+                if (activeNow && !historyHasOpen) {
+                    java.text.SimpleDateFormat nowSdf = new java.text.SimpleDateFormat(
+                            "HH:mm:ss", java.util.Locale.getDefault());
+                    syntheticLine = nowSdf.format(new java.util.Date())
+                            + " → now  (active, not in history buffer)";
+                }
+                if (pairs.isEmpty() && syntheticLine == null) continue;
+
+                int from = Math.max(0, pairs.size() - 5);
+                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+                        "HH:mm:ss", java.util.Locale.getDefault());
+                StringBuilder sb = new StringBuilder();
+                for (long[] pair : pairs.subList(from, pairs.size())) {
+                    long acqUnix = baseUnixMs + pair[0] - baseOffsetMs;
+                    String acqTime = sdf.format(new java.util.Date(acqUnix));
+                    if (pair[2] == 1) {
+                        long relUnix = baseUnixMs + pair[1] - baseOffsetMs;
+                        long durMs = pair[1] - pair[0];
+                        sb.append(acqTime).append(" → ")
+                          .append(sdf.format(new java.util.Date(relUnix)))
+                          .append("  (").append(formatDuration(durMs)).append(") released by system\n");
+                    } else if (pair[2] == -1) {
+                        sb.append(acqTime).append(" → ?\n");
+                    } else {
+                        long relUnix = baseUnixMs + pair[1] - baseOffsetMs;
+                        long durMs = pair[1] - pair[0];
+                        sb.append(acqTime).append(" → ")
+                          .append(sdf.format(new java.util.Date(relUnix)))
+                          .append("  (").append(formatDuration(durMs)).append(")\n");
+                    }
+                }
+                if (syntheticLine != null) sb.append(syntheticLine).append("\n");
+
+                String detail = sb.toString().trim();
+                if (!detail.isEmpty()) {
+                    entry.getValue().findings.add(new Finding(Category.WAKELOCK,
+                            context.getString(R.string.scansystem_wakelock_history) + "\n" + detail));
+                }
+            }
+        } catch (Exception e) { Log.w(TAG, "wakelock history: " + e.getMessage()); }
+    }
+
+    private long parseHistoryOffset(String line) {
+        Pattern p = Pattern.compile("\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?");
+        Matcher m = p.matcher(line);
+        if (!m.find()) return 0;
+        long ms = Long.parseLong(m.group(1)) * 3_600_000L
+                + Long.parseLong(m.group(2)) * 60_000L
+                + Long.parseLong(m.group(3)) * 1_000L;
+        if (m.group(4) != null) ms += Long.parseLong(m.group(4));
+        return ms;
+    }
+
+    private String sensorHandleToName(int h) {
+        switch (h) {
+            case 1:  return "Accelerometer";   case 2:  return "Magnetometer";
+            case 3:  return "Orientation";     case 4:  return "Gyroscope";
+            case 5:  return "Light";           case 6:  return "Pressure";
+            case 8:  return "Proximity";       case 9:  return "Gravity";
+            case 10: return "Linear Accel";    case 11: return "Rotation Vector";
+            case 14: return "Uncal Magneto";   case 15: return "Game Rotation";
+            case 16: return "Uncal Gyro";      case 17: return "Step Detector";
+            case 18: return "Step Counter";    case 19: return "Geo Rotation";
+            case 21: return "Tilt Detector";   case 24: return "Pickup Gesture";
+            case 28: return "Stationary";      case 29: return "Motion Detect";
+            case 30: return "Heart Beat";      case 34: return "OffBody Detect";
+            case 35: return "Uncal Accel";
+            default:
+                int standard = h & 0xFF;
+                if (standard != h && standard > 0) return sensorHandleToName(standard);
+                return "Sensor#" + h;
+        }
+    }
+
 }
