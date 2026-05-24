@@ -1143,35 +1143,6 @@ public class MainActivity extends BaseActivity {
 
     }
 
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterApps(newText);
-                return true;
-            }
-        });
-        searchView.setOnCloseListener(() -> {
-            searchView.setVisibility(View.GONE);
-            binding.toolbar.setTitle(R.string.app_name);
-            return false;
-        });
-        android.widget.Toolbar.LayoutParams slp = new android.widget.Toolbar.LayoutParams(
-                android.widget.Toolbar.LayoutParams.MATCH_PARENT,
-                android.widget.Toolbar.LayoutParams.WRAP_CONTENT);
-        binding.toolbar.addView(searchView, slp);
-
-        android.widget.ImageButton trigger = binding.toolbar.findViewById(R.id.action_quarter_trigger);
-        android.util.Log.d("QCMenu", "setupTriggerButton trigger=" + trigger);
-        if (trigger == null) return;
-        trigger.setOnClickListener(v -> {
-            if (selectionActive) {
-                unselectAll();
-            } else {
-                if (quarterMenuOpen) hideQuarterMenu(); else showQuarterMenu();
-            }
-        });
-        updateQuarterMenuTrigger();
-    }
-
     private void showQuarterMenu() {
         quarterMenuOpen = true;
         quarterCircleOverlay.setVisibility(View.VISIBLE);
