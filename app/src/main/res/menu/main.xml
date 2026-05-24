@@ -3,11 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_quarter_trigger"
+        android:icon="@drawable/ic_select_all"
+        android:title="@string/menu_select_all"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search"
         android:title="@string/main_search_hint"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="always|collapseActionView" />
+        app:showAsAction="ifRoom|collapseActionView" />
 
     <item
         android:id="@+id/action_sort"
@@ -26,11 +32,5 @@
         android:icon="@drawable/ic_select_all"
         android:title="@string/menu_select_all"
         app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_quarter_trigger"
-        android:icon="@drawable/ic_select_all"
-        android:title="@string/menu_select_all"
-        app:showAsAction="always" />
 
 </menu>
