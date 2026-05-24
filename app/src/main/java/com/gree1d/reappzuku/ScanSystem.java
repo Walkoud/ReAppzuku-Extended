@@ -79,7 +79,10 @@ public class ScanSystem {
 
         List<AppLoad> result = new ArrayList<>();
         for (AppLoad load : map.values()) {
-            if (!load.findings.isEmpty()) result.add(load);
+            if (load.findings.isEmpty()) continue;
+            boolean onlyNetwork = load.findings.stream()
+                    .allMatch(f -> f.category == Category.NETWORK);
+            if (!onlyNetwork) result.add(load);
         }
         return result;
     }
