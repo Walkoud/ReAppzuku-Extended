@@ -72,7 +72,9 @@ public class MainActivity extends BaseActivity {
     private MenuItem selectAllMenuItem;
     private MenuItem scanMenuItem;
     private QuarterCircleMenu quarterCircleMenu;
+    private SearchView searchView;
     private View quarterCircleOverlay;
+    private android.widget.FrameLayout quarterCircleContainer;
     private boolean quarterMenuOpen = false;
     private boolean selectionActive = false;
 
@@ -931,26 +933,6 @@ public class MainActivity extends BaseActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main, menu);
-
-        applyToolbarIconTint(menu);
-
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        SearchView searchView = (SearchView) searchItem.getActionView();
-        searchView.setQueryHint(getString(R.string.main_search_hint));
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                filterApps(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterApps(newText);
-                return true;
-            }
-        });
         return true;
     }
 
@@ -1049,11 +1031,6 @@ public class MainActivity extends BaseActivity {
         } else {
             color = isLightAccent() ? Color.BLACK : Color.WHITE;
         }
-
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        if (searchItem != null && searchItem.getIcon() != null) {
-            searchItem.getIcon().setTint(color);
-        }
         binding.toolbar.setTitleTextColor(color);
     }
     private void setupQuarterCircleMenu() {
@@ -1096,36 +1073,76 @@ public class MainActivity extends BaseActivity {
                     if (hasSelection) unselectAll(); else selectAll();
                     break;
                 case 3:
-                    android.view.MenuItem searchItem = binding.toolbar.getMenu() != null
-                            ? binding.toolbar.getMenu().findItem(R.id.action_search) : null;
-                    if (searchItem != null) searchItem.expandActionView();
+                    if (searchView != null) {
+                        binding.toolbar.setTitle("");
+                        searchView.setVisibility(View.VISIBLE);
+                        searchView.requestFocus();
+                        searchView.setIconified(false);
+                    }
                     break;
             }
         });
 
-        androidx.coordinatorlayout.widget.CoordinatorLayout coordinator = binding.coordinator;
+        android.widget.FrameLayout rootFrame = new android.widget.FrameLayout(this);
+        rootFrame.setLayoutParams(new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT));
 
-        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams overlayLp =
-                new androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
-                        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams.MATCH_PARENT,
-                        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams.MATCH_PARENT);
-        coordinator.addView(quarterCircleOverlay, overlayLp);
+        android.widget.FrameLayout.LayoutParams overlayLp = new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT);
+        rootFrame.addView(quarterCircleOverlay, overlayLp);
 
-        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams menuLp =
-                new androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(menuSize, menuSize);
+        android.widget.FrameLayout.LayoutParams menuLp = new android.widget.FrameLayout.LayoutParams(
+                menuSize, menuSize);
         menuLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
         quarterCircleMenu.setVisibility(View.GONE);
-        coordinator.addView(quarterCircleMenu, menuLp);
+        rootFrame.addView(quarterCircleMenu, menuLp);
+
+        android.view.WindowManager.LayoutParams wlp = new android.view.WindowManager.LayoutParams(
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.view.WindowManager.LayoutParams.MATCH_PARENT,
+                android.view.WindowManager.LayoutParams.TYPE_APPLICATION,
+                android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                android.graphics.PixelFormat.TRANSLUCENT);
+        wlp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+        getWindowManager().addView(rootFrame, wlp);
+        quarterCircleContainer = rootFrame;
 
         binding.toolbar.post(this::setupTriggerButton);
     }
 
     private void setupTriggerButton() {
+        searchView = new SearchView(this);
+        searchView.setQueryHint(getString(R.string.main_search_hint));
+        searchView.setVisibility(View.GONE);
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterApps(query);
+                return true;
+            }
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterApps(newText);
+                return true;
+            }
+        });
+        searchView.setOnCloseListener(() -> {
+            searchView.setVisibility(View.GONE);
+            binding.toolbar.setTitle(R.string.app_name);
+            return false;
+        });
+        android.widget.Toolbar.LayoutParams slp = new android.widget.Toolbar.LayoutParams(
+                android.widget.Toolbar.LayoutParams.MATCH_PARENT,
+                android.widget.Toolbar.LayoutParams.WRAP_CONTENT);
+        binding.toolbar.addView(searchView, slp);
+
         android.widget.ImageButton trigger = binding.toolbar.findViewById(R.id.action_quarter_trigger);
-        android.util.Log.d("QCMenu", "setupTriggerButton: trigger=" + trigger);
         if (trigger == null) return;
         trigger.setOnClickListener(v -> {
-            android.util.Log.d("QCMenu", "trigger clicked, selectionActive=" + selectionActive + " quarterMenuOpen=" + quarterMenuOpen);
             if (selectionActive) {
                 unselectAll();
             } else {
@@ -1137,7 +1154,6 @@ public class MainActivity extends BaseActivity {
 
     private void showQuarterMenu() {
         quarterMenuOpen = true;
-        android.util.Log.d("QCMenu", "showQuarterMenu: overlay=" + quarterCircleOverlay + " menu=" + quarterCircleMenu);
         quarterCircleOverlay.setVisibility(View.VISIBLE);
         quarterCircleMenu.setVisibility(View.VISIBLE);
     }
@@ -1168,4 +1184,12 @@ public class MainActivity extends BaseActivity {
     }
 
 
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (quarterCircleContainer != null) {
+            try { getWindowManager().removeView(quarterCircleContainer); } catch (Exception ignored) {}
+        }
+    }
 }
