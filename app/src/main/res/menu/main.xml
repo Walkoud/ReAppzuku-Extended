@@ -10,8 +10,26 @@
         app:showAsAction="always|collapseActionView" />
 
     <item
+        android:id="@+id/action_sort"
+        android:icon="@drawable/ic_sort"
+        android:title="@string/menu_sort"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_scan"
+        android:icon="@drawable/ic_scan"
+        android:title="@string/menu_scan"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_select_all"
+        android:icon="@drawable/ic_select_all"
+        android:title="@string/menu_select_all"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_quarter_trigger"
-        android:icon="@android:drawable/ic_menu_more"
+        android:icon="@drawable/ic_menu_more"
         android:title="@string/menu_open"
         app:showAsAction="always" />
 
