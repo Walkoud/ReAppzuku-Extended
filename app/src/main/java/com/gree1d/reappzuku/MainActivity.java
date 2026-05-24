@@ -1099,6 +1099,7 @@ public class MainActivity extends BaseActivity {
                         | android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 android.graphics.PixelFormat.TRANSLUCENT);
         wlp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+        quarterWlp = wlp;
         getWindowManager().addView(rootFrame, wlp);
         quarterCircleContainer = rootFrame;
     }
@@ -1126,9 +1127,9 @@ public class MainActivity extends BaseActivity {
     private void setupToolbarButtons() {
         int color = getToolbarIconColor();
 
-        android.widget.ImageButton btnSearch = binding.getRoot().findViewById(R.id.btn_search);
-        android.widget.ImageButton btnTrigger = binding.getRoot().findViewById(R.id.btn_menu_trigger);
-        androidx.appcompat.widget.SearchView searchView = binding.getRoot().findViewById(R.id.toolbar_search);
+        android.widget.ImageButton btnSearch = binding.toolbar.findViewById(R.id.btn_search);
+        android.widget.ImageButton btnTrigger = binding.toolbar.findViewById(R.id.btn_menu_trigger);
+        androidx.appcompat.widget.SearchView searchView = binding.toolbar.findViewById(R.id.toolbar_search);
 
         if (btnSearch != null) {
             btnSearch.setColorFilter(color);
@@ -1162,22 +1163,20 @@ public class MainActivity extends BaseActivity {
             });
             searchView.setOnCloseListener(() -> {
                 searchView.setVisibility(View.GONE);
-                android.widget.ImageButton bs = binding.getRoot().findViewById(R.id.btn_search);
-                android.widget.ImageButton bt = binding.getRoot().findViewById(R.id.btn_menu_trigger);
-                android.widget.TextView tt = binding.getRoot().findViewById(R.id.toolbar_title);
-                if (bs != null) bs.setVisibility(View.VISIBLE);
-                if (bt != null) bt.setVisibility(View.VISIBLE);
-                if (tt != null) tt.setVisibility(View.VISIBLE);
+                binding.toolbar.findViewById(R.id.btn_search).setVisibility(View.VISIBLE);
+                binding.toolbar.findViewById(R.id.btn_menu_trigger).setVisibility(View.VISIBLE);
+                android.widget.TextView title = binding.toolbar.findViewById(R.id.toolbar_title);
+                if (title != null) title.setVisibility(View.VISIBLE);
                 return false;
             });
         }
     }
 
     private void openSearch() {
-        androidx.appcompat.widget.SearchView searchView = binding.getRoot().findViewById(R.id.toolbar_search);
-        android.widget.ImageButton btnSearch = binding.getRoot().findViewById(R.id.btn_search);
-        android.widget.ImageButton btnTrigger = binding.getRoot().findViewById(R.id.btn_menu_trigger);
-        android.widget.TextView title = binding.getRoot().findViewById(R.id.toolbar_title);
+        androidx.appcompat.widget.SearchView searchView = binding.toolbar.findViewById(R.id.toolbar_search);
+        android.widget.ImageButton btnSearch = binding.toolbar.findViewById(R.id.btn_search);
+        android.widget.ImageButton btnTrigger = binding.toolbar.findViewById(R.id.btn_menu_trigger);
+        android.widget.TextView title = binding.toolbar.findViewById(R.id.toolbar_title);
         if (searchView != null) {
             if (title != null) title.setVisibility(View.GONE);
             if (btnSearch != null) btnSearch.setVisibility(View.GONE);
@@ -1189,7 +1188,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateTriggerIcon() {
-        android.widget.ImageButton btnTrigger = binding.getRoot().findViewById(R.id.btn_menu_trigger);
+        android.widget.ImageButton btnTrigger = binding.toolbar.findViewById(R.id.btn_menu_trigger);
         if (btnTrigger == null) return;
         btnTrigger.setImageResource(selectionActive ? R.drawable.ic_unselect_all : R.drawable.ic_select_all);
         btnTrigger.setColorFilter(getToolbarIconColor());
