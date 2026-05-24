@@ -462,7 +462,12 @@ public class MainActivity extends BaseActivity {
                 .create();
         loadingDialog.show();
 
-        List<AppModel> snapshot = new ArrayList<>(fullAppsList);
+        List<AppModel> snapshot = fullAppsList.stream()
+                .filter(app -> !app.isProtected())
+                .filter(app -> !app.isPersistent())
+                .filter(app -> !app.isWhitelisted())
+                .filter(app -> !app.getPackageName().equals(getPackageName()))
+                .collect(Collectors.toList());
 
         executor.execute(() -> {
             ScanSystem scanner = new ScanSystem(MainActivity.this, shellManager);
