@@ -71,6 +71,10 @@ public class MainActivity extends BaseActivity {
     private int currentSortMode = AppConstants.SORT_MODE_DEFAULT;
     private MenuItem selectAllMenuItem;
     private MenuItem scanMenuItem;
+    private QuarterCircleMenu quarterCircleMenu;
+    private View quarterCircleOverlay;
+    private boolean quarterMenuOpen = false;
+    private boolean selectionActive = false;
 
     private int appliedAccent;
     private boolean appliedIsAmoled;
@@ -149,6 +153,7 @@ public class MainActivity extends BaseActivity {
         setupKillButton();
         setupBottomNavigation();
         setupListeners();
+        setupQuarterCircleMenu();
 
         binding.swiperefreshlayout1.post(this::recalculateListHeight);
         loadSettingsAndApplyToManager();
@@ -462,12 +467,7 @@ public class MainActivity extends BaseActivity {
                 .create();
         loadingDialog.show();
 
-        List<AppModel> snapshot = fullAppsList.stream()
-                .filter(app -> !app.isProtected())
-                .filter(app -> !app.isPersistentApp())
-                .filter(app -> !app.isWhitelisted())
-                .filter(app -> !app.getPackageName().equals(getPackageName()))
-                .collect(Collectors.toList());
+        List<AppModel> snapshot = new ArrayList<>(fullAppsList);
 
         executor.execute(() -> {
             ScanSystem scanner = new ScanSystem(MainActivity.this, shellManager);
@@ -846,16 +846,12 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updateSelectAllMenuItem() {
-        if (selectAllMenuItem == null) return;
         boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
-        if (hasSelection) {
-            selectAllMenuItem.setIcon(R.drawable.ic_unselect_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_deselect_all));
-        } else {
-            selectAllMenuItem.setIcon(R.drawable.ic_select_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_select_all));
+        selectionActive = hasSelection;
+        updateQuarterMenuTrigger();
+        if (quarterMenuOpen && hasSelection) {
+            hideQuarterMenu();
         }
-        tintMenuItem(selectAllMenuItem);
     }
 
     @Override
@@ -913,11 +909,9 @@ public class MainActivity extends BaseActivity {
         }
         listAdapter.submitList(new ArrayList<>(appsDataList));
         updateSelectMenuVisibility();
-        if (selectAllMenuItem != null) {
-            selectAllMenuItem.setIcon(R.drawable.ic_unselect_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_deselect_all));
-            tintMenuItem(selectAllMenuItem);
-        }
+        selectionActive = true;
+        updateQuarterMenuTrigger();
+        if (quarterMenuOpen) hideQuarterMenu();
     }
 
     private void unselectAll() {
@@ -926,11 +920,8 @@ public class MainActivity extends BaseActivity {
         }
         listAdapter.submitList(new ArrayList<>(appsDataList));
         updateSelectMenuVisibility();
-        if (selectAllMenuItem != null) {
-            selectAllMenuItem.setIcon(R.drawable.ic_select_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_select_all));
-            tintMenuItem(selectAllMenuItem);
-        }
+        selectionActive = false;
+        updateQuarterMenuTrigger();
     }
 
     private void tintMenuItem(MenuItem item) {
@@ -941,9 +932,6 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
-
-        selectAllMenuItem = menu.findItem(R.id.action_select_all);
-        scanMenuItem = menu.findItem(R.id.action_scan);
 
         applyToolbarIconTint(menu);
 
@@ -968,22 +956,6 @@ public class MainActivity extends BaseActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        int itemId = item.getItemId();
-        if (itemId == R.id.action_select_all) {
-            boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
-            if (hasSelection) {
-                unselectAll();
-            } else {
-                selectAll();
-            }
-            return true;
-        } else if (itemId == R.id.action_sort) {
-            showSortDialog();
-            return true;
-        } else if (itemId == R.id.action_scan) {
-            showSystemScanDialog();
-            return true;
-        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -1078,13 +1050,132 @@ public class MainActivity extends BaseActivity {
             color = isLightAccent() ? Color.BLACK : Color.WHITE;
         }
 
-        int[] iconIds = {R.id.action_search, R.id.action_sort, R.id.action_select_all, R.id.action_scan};
-        for (int id : iconIds) {
-            MenuItem menuItem = menu.findItem(id);
-            if (menuItem != null && menuItem.getIcon() != null) {
-                menuItem.getIcon().setTint(color);
-            }
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        if (searchItem != null && searchItem.getIcon() != null) {
+            searchItem.getIcon().setTint(color);
         }
         binding.toolbar.setTitleTextColor(color);
     }
+    private void setupQuarterCircleMenu() {
+        float dp = getResources().getDisplayMetrics().density;
+        int menuSize = (int)(220 * dp);
+
+        quarterCircleOverlay = new View(this);
+        quarterCircleOverlay.setBackgroundColor(0x00000000);
+        quarterCircleOverlay.setVisibility(View.GONE);
+        quarterCircleOverlay.setOnClickListener(v -> hideQuarterMenu());
+
+        quarterCircleMenu = new QuarterCircleMenu(this);
+
+        int iconColor = isLightAccent() ? Color.BLACK : Color.WHITE;
+        int segColor  = resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            segColor  = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+            iconColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+        } else if (!sharedPreferences.getBoolean(KEY_AMOLED, false) && accent == ACCENT_SYSTEM) {
+            segColor = android.graphics.Color.parseColor("#0136FF");
+        }
+
+        quarterCircleMenu.setSegmentColor(segColor);
+        quarterCircleMenu.setIcon(0, ContextCompat.getDrawable(this, R.drawable.ic_sort));
+        quarterCircleMenu.setIcon(1, ContextCompat.getDrawable(this, R.drawable.ic_scan));
+        quarterCircleMenu.setIcon(2, ContextCompat.getDrawable(this, R.drawable.ic_select_all));
+        quarterCircleMenu.setIcon(3, ContextCompat.getDrawable(this, android.R.drawable.ic_menu_search));
+        for (int i = 0; i < 4; i++) quarterCircleMenu.setIconTint(i, iconColor);
+
+        quarterCircleMenu.setOnItemClickListener(index -> {
+            hideQuarterMenu();
+            switch (index) {
+                case 0: showSortDialog();       break;
+                case 1: showSystemScanDialog(); break;
+                case 2:
+                    boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
+                    if (hasSelection) unselectAll(); else selectAll();
+                    break;
+                case 3:
+                    android.view.MenuItem searchItem = binding.toolbar.getMenu() != null
+                            ? binding.toolbar.getMenu().findItem(R.id.action_search) : null;
+                    if (searchItem != null) searchItem.expandActionView();
+                    break;
+            }
+        });
+
+        android.view.ViewGroup decorView = (android.view.ViewGroup) getWindow().getDecorView();
+
+        android.widget.FrameLayout.LayoutParams overlayLp = new android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT);
+        decorView.addView(quarterCircleOverlay, overlayLp);
+
+        android.widget.FrameLayout.LayoutParams menuLp = new android.widget.FrameLayout.LayoutParams(
+                menuSize, menuSize);
+        menuLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        quarterCircleMenu.setVisibility(View.GONE);
+        decorView.addView(quarterCircleMenu, menuLp);
+
+        addTriggerButton();
+    }
+
+    private void addTriggerButton() {
+        android.widget.ImageButton trigger = new android.widget.ImageButton(this);
+        trigger.setId(R.id.action_quarter_trigger);
+        trigger.setImageResource(android.R.drawable.ic_menu_more);
+        trigger.setBackground(null);
+        trigger.setPadding(8, 8, 8, 8);
+        trigger.setContentDescription("Menu");
+
+        int iconColor = isLightAccent() ? Color.BLACK : Color.WHITE;
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            iconColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+        }
+        trigger.setColorFilter(iconColor);
+
+        trigger.setOnClickListener(v -> {
+            if (selectionActive) {
+                unselectAll();
+            } else {
+                if (quarterMenuOpen) hideQuarterMenu(); else showQuarterMenu();
+            }
+        });
+
+        binding.toolbar.addView(trigger);
+    }
+
+    private void showQuarterMenu() {
+        quarterMenuOpen = true;
+        quarterCircleOverlay.setVisibility(View.VISIBLE);
+        quarterCircleMenu.setVisibility(View.VISIBLE);
+    }
+
+    private void hideQuarterMenu() {
+        quarterMenuOpen = false;
+        quarterCircleOverlay.setVisibility(View.GONE);
+        quarterCircleMenu.setVisibility(View.GONE);
+    }
+
+    private void updateQuarterMenuTrigger() {
+        if (binding == null || binding.toolbar == null) return;
+        View trigger = binding.toolbar.findViewById(R.id.action_quarter_trigger);
+        if (!(trigger instanceof android.widget.ImageButton)) return;
+        android.widget.ImageButton btn = (android.widget.ImageButton) trigger;
+        if (selectionActive) {
+            btn.setImageResource(R.drawable.ic_unselect_all);
+        } else {
+            btn.setImageResource(android.R.drawable.ic_menu_more);
+        }
+        int iconColor = isLightAccent() ? Color.BLACK : Color.WHITE;
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            iconColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
+                    ? Color.BLACK : Color.WHITE;
+        }
+        btn.setColorFilter(iconColor);
+    }
+
+
 }
