@@ -935,5 +935,4 @@
     <string name="scansystem_cat_sensor">Holding sensors</string>
     <string name="scansystem_cat_location">Holding location</string>
     <string name="scansystem_wakelock_history">WakeLock History</string>
-    <string name="menu_open">Menu</string>
 </resources>
