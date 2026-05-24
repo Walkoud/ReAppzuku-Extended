@@ -17,7 +17,7 @@ public final class PreferenceKeys {
     public static final String KEY_WHITELISTED_APPS = "whitelisted_apps";
     public static final String KEY_BLACKLISTED_APPS = "blacklisted_apps";
     public static final String KEY_AUTOSTART_DISABLED_APPS = "autostart_disabled_apps";
-
+    public static final String KEY_MEDIUM_RESTRICTION_APPS = "medium_restriction_apps";
     public static final String KEY_HARD_RESTRICTION_APPS = "hard_restriction_apps";
     public static final String KEY_MANUAL_RESTRICTION_APPS = "manual_restriction_apps";
     public static final String KEY_MANUAL_OPS_PREFIX = "manual_ops_mask_";
