@@ -19,13 +19,6 @@
         <item name="colorControlActivated">@color/colorAccent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
-        <item name="actionButtonStyle">@style/Widget.App.CompactActionButton</item>
-    </style>
-
-    <style name="Widget.App.CompactActionButton" parent="Widget.AppCompat.ActionButton">
-        <item name="android:minWidth">32dp</item>
-        <item name="android:paddingStart">2dp</item>
-        <item name="android:paddingEnd">2dp</item>
     </style>
 
     <style name="AppTheme.Amoled" parent="Theme.Material3.Dark.NoActionBar">
