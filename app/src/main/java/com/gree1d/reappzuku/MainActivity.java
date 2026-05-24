@@ -1114,24 +1114,19 @@ public class MainActivity extends BaseActivity {
             }
         });
 
-        android.view.ViewGroup decorView = (android.view.ViewGroup) getWindow().getDecorView();
+        androidx.coordinatorlayout.widget.CoordinatorLayout coordinator = binding.coordinator;
 
-        android.widget.FrameLayout.LayoutParams overlayLp = new android.widget.FrameLayout.LayoutParams(
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT);
-        decorView.addView(quarterCircleOverlay, overlayLp);
+        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams overlayLp =
+                new androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
+                        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams.MATCH_PARENT,
+                        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams.MATCH_PARENT);
+        coordinator.addView(quarterCircleOverlay, overlayLp);
 
-        int statusBarHeight = 0;
-        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) statusBarHeight = getResources().getDimensionPixelSize(resourceId);
-        int toolbarHeight = (int)(64 * getResources().getDisplayMetrics().density);
-
-        android.widget.FrameLayout.LayoutParams menuLp = new android.widget.FrameLayout.LayoutParams(
-                menuSize, menuSize);
+        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams menuLp =
+                new androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(menuSize, menuSize);
         menuLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
-        menuLp.topMargin = statusBarHeight + toolbarHeight - menuSize / 6;
         quarterCircleMenu.setVisibility(View.GONE);
-        decorView.addView(quarterCircleMenu, menuLp);
+        coordinator.addView(quarterCircleMenu, menuLp);
 
     }
 
