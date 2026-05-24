@@ -1162,10 +1162,12 @@ public class MainActivity extends BaseActivity {
             });
             searchView.setOnCloseListener(() -> {
                 searchView.setVisibility(View.GONE);
-                binding.getRoot().findViewById(R.id.btn_search).setVisibility(View.VISIBLE);
-                binding.getRoot().findViewById(R.id.btn_menu_trigger).setVisibility(View.VISIBLE);
-                android.widget.TextView title = binding.getRoot().findViewById(R.id.toolbar_title);
-                if (title != null) title.setVisibility(View.VISIBLE);
+                android.widget.ImageButton bs = binding.getRoot().findViewById(R.id.btn_search);
+                android.widget.ImageButton bt = binding.getRoot().findViewById(R.id.btn_menu_trigger);
+                android.widget.TextView tt = binding.getRoot().findViewById(R.id.toolbar_title);
+                if (bs != null) bs.setVisibility(View.VISIBLE);
+                if (bt != null) bt.setVisibility(View.VISIBLE);
+                if (tt != null) tt.setVisibility(View.VISIBLE);
                 return false;
             });
         }
