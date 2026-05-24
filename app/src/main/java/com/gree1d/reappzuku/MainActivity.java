@@ -69,7 +69,6 @@ public class MainActivity extends BaseActivity {
     private final List<AppModel> fullAppsList = new ArrayList<>();
     private String currentSearchQuery = "";
     private int currentSortMode = AppConstants.SORT_MODE_DEFAULT;
-    private MenuItem quarterTriggerMenuItem;
     private QuarterCircleMenu quarterCircleMenu;
     private android.widget.FrameLayout quarterCircleContainer;
     private android.view.WindowManager.LayoutParams quarterWlp;
@@ -853,24 +852,9 @@ public class MainActivity extends BaseActivity {
 
     private void updateSelectAllMenuItem() {
         boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
-        if (quarterTriggerMenuItem != null) {
-            if (hasSelection) {
-                quarterTriggerMenuItem.setIcon(R.drawable.ic_unselect_all);
-                if (quarterMenuOpen) hideQuarterMenu();
-            } else {
-                quarterTriggerMenuItem.setIcon(android.R.drawable.ic_menu_more);
-            }
-            tintMenuItem(quarterTriggerMenuItem);
-        }
-        if (selectAllMenuItem == null) return;
-        if (hasSelection) {
-            selectAllMenuItem.setIcon(R.drawable.ic_unselect_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_deselect_all));
-        } else {
-            selectAllMenuItem.setIcon(R.drawable.ic_select_all);
-            selectAllMenuItem.setTitle(getString(R.string.menu_select_all));
-        }
-        tintMenuItem(selectAllMenuItem);
+        selectionActive = hasSelection;
+        if (quarterMenuOpen && hasSelection) hideQuarterMenu();
+        updateTriggerIcon();
     }
 
     @Override
