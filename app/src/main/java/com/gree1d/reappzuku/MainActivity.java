@@ -857,7 +857,7 @@ public class MainActivity extends BaseActivity {
                 quarterTriggerMenuItem.setIcon(R.drawable.ic_unselect_all);
                 if (quarterMenuOpen) hideQuarterMenu();
             } else {
-                quarterTriggerMenuItem.setIcon(R.drawable.ic_menu_more);
+                quarterTriggerMenuItem.setIcon(android.R.drawable.ic_menu_more);
             }
             tintMenuItem(quarterTriggerMenuItem);
         }
