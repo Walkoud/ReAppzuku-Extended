@@ -1110,31 +1110,24 @@ public class MainActivity extends BaseActivity {
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT);
         decorView.addView(quarterCircleOverlay, overlayLp);
 
+        int statusBarHeight = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+        int toolbarHeight = (int)(64 * getResources().getDisplayMetrics().density);
+
         android.widget.FrameLayout.LayoutParams menuLp = new android.widget.FrameLayout.LayoutParams(
                 menuSize, menuSize);
         menuLp.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        menuLp.topMargin = statusBarHeight + toolbarHeight - menuSize / 6;
         quarterCircleMenu.setVisibility(View.GONE);
         decorView.addView(quarterCircleMenu, menuLp);
 
-        addTriggerButton();
+        setupTriggerButton();
     }
 
-    private void addTriggerButton() {
-        android.widget.ImageButton trigger = new android.widget.ImageButton(this);
-        trigger.setId(R.id.action_quarter_trigger);
-        trigger.setImageResource(android.R.drawable.ic_menu_more);
-        trigger.setBackground(null);
-        trigger.setPadding(8, 8, 8, 8);
-        trigger.setContentDescription("Menu");
-
-        int iconColor = isLightAccent() ? Color.BLACK : Color.WHITE;
-        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        if (accent == ACCENT_CUSTOM) {
-            iconColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
-                    ? Color.BLACK : Color.WHITE;
-        }
-        trigger.setColorFilter(iconColor);
-
+    private void setupTriggerButton() {
+        android.widget.ImageButton trigger = binding.toolbar.findViewById(R.id.action_quarter_trigger);
+        if (trigger == null) return;
         trigger.setOnClickListener(v -> {
             if (selectionActive) {
                 unselectAll();
@@ -1142,8 +1135,7 @@ public class MainActivity extends BaseActivity {
                 if (quarterMenuOpen) hideQuarterMenu(); else showQuarterMenu();
             }
         });
-
-        binding.toolbar.addView(trigger);
+        updateQuarterMenuTrigger();
     }
 
     private void showQuarterMenu() {
