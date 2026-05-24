@@ -74,6 +74,7 @@ public class MainActivity extends BaseActivity {
     private MenuItem quarterTriggerMenuItem;
     private QuarterCircleMenu quarterCircleMenu;
     private android.widget.FrameLayout quarterCircleContainer;
+    private android.view.WindowManager.LayoutParams quarterWlp;
     private boolean quarterMenuOpen = false;
 
     private int appliedAccent;
@@ -1174,9 +1175,11 @@ public class MainActivity extends BaseActivity {
                 android.view.WindowManager.LayoutParams.TYPE_APPLICATION,
                 android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                        | android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                         | android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 android.graphics.PixelFormat.TRANSLUCENT);
         wlp.gravity = android.view.Gravity.TOP | android.view.Gravity.START;
+        quarterWlp = wlp;
         getWindowManager().addView(rootFrame, wlp);
         quarterCircleContainer = rootFrame;
     }
@@ -1184,6 +1187,8 @@ public class MainActivity extends BaseActivity {
     private void showQuarterMenu() {
         quarterMenuOpen = true;
         if (quarterCircleContainer != null) {
+            quarterWlp.flags &= ~android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            getWindowManager().updateViewLayout(quarterCircleContainer, quarterWlp);
             quarterCircleContainer.getChildAt(0).setVisibility(View.VISIBLE);
             quarterCircleMenu.setVisibility(View.VISIBLE);
         }
@@ -1194,6 +1199,8 @@ public class MainActivity extends BaseActivity {
         if (quarterCircleContainer != null) {
             quarterCircleContainer.getChildAt(0).setVisibility(View.GONE);
             quarterCircleMenu.setVisibility(View.GONE);
+            quarterWlp.flags |= android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            getWindowManager().updateViewLayout(quarterCircleContainer, quarterWlp);
         }
     }
 
