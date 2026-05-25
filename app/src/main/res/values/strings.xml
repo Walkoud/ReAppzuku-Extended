@@ -917,6 +917,12 @@
     <string name="triggers_status_active">Active</string>
     <string name="triggers_status_background">Background</string>
     <string name="triggers_status_cached">Cached</string>
+    <string name="app_status_hint_foreground">on screen</string>
+    <string name="app_status_hint_fgs">active service</string>
+    <string name="app_status_hint_cached_service">holds service</string>
+    <string name="app_status_hint_cached_recent">recently used</string>
+    <string name="app_status_hint_cached_idle">inactive</string>
+    <string name="app_status_hint_not_running">not running</string>
     <string name="triggers_aggression_label_prefix">Aggression score:</string>
     
     <!-- ══════════════════════════════════════════════
