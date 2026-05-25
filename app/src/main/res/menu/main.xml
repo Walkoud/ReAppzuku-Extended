@@ -4,27 +4,14 @@
 
     <item
         android:id="@+id/action_search"
-        android:icon="@drawable/ic_search"
-        android:title="@string/main_search_hint"
+        android:title="@string/menu_search"
         app:actionViewClass="androidx.appcompat.widget.SearchView"
-        app:showAsAction="always|collapseActionView" />
+        app:showAsAction="collapseActionView|never" />
 
     <item
-        android:id="@+id/action_sort"
-        android:icon="@drawable/ic_sort"
-        android:title="@string/sort_title"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_scan"
-        android:icon="@drawable/ic_scan"
-        android:title="@string/scansystem_menu_title"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/action_select_all"
-        android:icon="@drawable/ic_select_all"
-        android:title="@string/menu_select_all"
+        android:id="@+id/action_menu_trigger"
+        android:icon="@android:drawable/ic_menu_more"
+        android:title="@string/menu_open"
         app:showAsAction="always" />
 
 </menu>
