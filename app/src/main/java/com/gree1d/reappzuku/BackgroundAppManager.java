@@ -1089,9 +1089,6 @@ public class BackgroundAppManager {
             if (fail > 0 && opsCount.length > 2) {
                 detail.append(" failedOps=").append(opsMaskToNames(opsCount[2]));
             }
-            if (opsCount.length > 3) {
-                detail.append(" appliedOps=").append(opsMaskToNames(opsCount[3]));
-            }
         } else {
             detail.append("appops=").append(formatShellOutcome(appOpsResult));
         }

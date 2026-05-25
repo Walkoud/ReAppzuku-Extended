@@ -893,21 +893,50 @@ public class StatisticsActivity extends BaseActivity {
             if (hasOpsInfo) {
                 body.append("\n");
                 List<String> failedOps = extractOpsList(detail, "failedOps");
-                List<String> appliedOps = extractOpsList(detail, "appliedOps");
-                if (appliedOps.isEmpty()) {
-                    appliedOps = java.util.Arrays.asList(BackgroundAppManager.ALL_OPS);
-                }
                 boolean allOk     = detail.contains("appops=ok(");
                 boolean allFailed = detail.contains("appops=failed(0/");
+                boolean isManual  = "reapply-manual".equals(entry.action) || "restrict-manual".equals(entry.action);
                 body.append(getString(R.string.log_detail_appops)).append(":\n");
-                for (String op : appliedOps) {
-                    if (allOk) {
-                        body.append("  ✓ ").append(op).append("\n");
-                    } else if (allFailed) {
-                        body.append("  ✗ ").append(op).append("\n");
+                if (isManual) {
+                    int manualMask = appManager.getManualOpsMask(entry.packageName);
+                    if (manualMask != 0) {
+                        for (int i = 0; i < BackgroundAppManager.ALL_OPS.length; i++) {
+                            if ((manualMask & (1 << i)) == 0) continue;
+                            String op = BackgroundAppManager.ALL_OPS[i];
+                            boolean failed = failedOps.contains(op);
+                            if (allOk) {
+                                body.append("  ✓ ").append(op).append("\n");
+                            } else if (allFailed) {
+                                body.append("  ✗ ").append(op).append("\n");
+                            } else {
+                                body.append(failed ? "  ✗ " : "  ✓ ").append(op).append("\n");
+                            }
+                        }
                     } else {
-                        boolean failed = failedOps.contains(op);
-                        body.append(failed ? "  ✗ " : "  ✓ ").append(op).append("\n");
+                        for (String op : failedOps) body.append("  ✗ ").append(op).append("\n");
+                        String appopsRaw = extractDetailValue(detail, "appops");
+                        if (appopsRaw != null && !appopsRaw.isEmpty()) body.append("  ").append(appopsRaw).append("\n");
+                    }
+                } else {
+                    String[] opsForAction;
+                    switch (entry.action != null ? entry.action : "") {
+                        case "reapply-medium":
+                        case "restrict-medium":
+                            opsForAction = BackgroundAppManager.MEDIUM_OPS;
+                            break;
+                        default:
+                            opsForAction = BackgroundAppManager.ALL_OPS;
+                            break;
+                    }
+                    for (String op : opsForAction) {
+                        if (allOk) {
+                            body.append("  ✓ ").append(op).append("\n");
+                        } else if (allFailed) {
+                            body.append("  ✗ ").append(op).append("\n");
+                        } else {
+                            boolean failed = failedOps.contains(op);
+                            body.append(failed ? "  ✗ " : "  ✓ ").append(op).append("\n");
+                        }
                     }
                 }
             }
