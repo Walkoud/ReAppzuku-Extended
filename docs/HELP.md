@@ -706,20 +706,20 @@ Prevents app from interacting with other work profiles. Primarily relevant on en
 **Does not block:** app operating within single profile.
 
 - **Standby Bucket: Rare**\
-Marked by system as rarely used. Blocks app at system level:\
-Background network. Network available only during rare system maintenance windows.\
-JobScheduler. Regular jobs and Expedited Jobs limited to 10 minutes per day.\
-AlarmManager. Inexact alarms are deferred. Limit — 1 trigger per hour.\
-Push (FCM). High-Priority push quota is reduced. Exceeded pushes are delayed.
+Marked by system as rarely used. Blocks app at system level:
+  - Background network. Network available only during rare system maintenance windows.
+  - JobScheduler. Regular jobs and Expedited Jobs limited to 10 minutes per day.
+  - AlarmManager. Inexact alarms are deferred. Limit — 1 trigger per hour.
+  - Push (FCM). High-Priority push quota is reduced. Exceeded pushes are delayed.
 
 - **Standby Bucket: Restricted**\
-Marked by system as long-unused or anomalous app that consumed excessive CPU and battery. Includes all Rare restrictions, but enforces them more strictly. Additionally restricts at system level:\
-Charging exemption removed. When device is plugged in, restrictions for all buckets (including Rare) are fully lifted. However for Restricted, JobScheduler launch limits remain active even while charging.\
-Job frequency hard cap. Strictly limits scheduling granularity — app is allowed to launch background job exactly 1 time per day.\
-Boot behavior. Starting from Android 13, if app is in Restricted bucket, system completely blocks delivery of `BOOT_COMPLETED` and `LOCKED_BOOT_COMPLETED` broadcasts. App cannot start on OS boot until user opens it manually.\
-Forced termination of active services. If running app is moved by system into Restricted bucket while in background (e.g. due to detected abnormal power consumption), OS automatically removes and terminates all its active Foreground Services.\
-Network access during maintenance windows. During Doze Mode, system periodically opens maintenance windows. Apps with Restricted bucket are denied network access even during these system windows.\
-Expedited Jobs limit cut. Limit for Expedited Jobs is halved — down to 5 minutes per day.
+Marked by system as long-unused or anomalous app that consumed excessive CPU and battery. Includes all Rare restrictions, but enforces them more strictly. Additionally restricts at system level:
+  - Charging exemption removed. When device is plugged in, restrictions for all buckets (including Rare) are fully lifted. However for Restricted, JobScheduler launch limits remain active even while charging.
+  - Job frequency hard cap. Strictly limits scheduling granularity — app is allowed to launch background job exactly 1 time per day.
+  - Boot behavior. Starting from Android 13, if app is in Restricted bucket, system completely blocks delivery of `BOOT_COMPLETED` and `LOCKED_BOOT_COMPLETED` broadcasts. App cannot start on OS boot until user opens it manually.
+  - Forced termination of active services. If running app is moved by system into Restricted bucket while in background (e.g. due to detected abnormal power consumption), OS automatically removes and terminates all its active Foreground Services.
+  - Network access during maintenance windows. During Doze Mode, system periodically opens maintenance windows. Apps with Restricted bucket are denied network access even during these system windows.
+  - Expedited Jobs limit cut. Limit for Expedited Jobs is halved — down to 5 minutes per day.
 
 ---
 
