@@ -861,26 +861,40 @@ public class StatisticsActivity extends BaseActivity {
         message.append(getString(R.string.log_detail_outcome)).append(" ").append(humanizeLogOutcome(entry.outcome)).append("\n");
 
         boolean isWatchdog = "watchdog".equalsIgnoreCase(entry.action);
+        String detail = entry.detail != null ? entry.detail.trim() : "";
 
         if (isWatchdog) {
             message.append("\n");
             if ("skipped".equalsIgnoreCase(entry.outcome)) {
                 message.append(getString(R.string.log_detail_watchdog_skipped));
             } else {
-                int missing = 0, repaired = 0, total = 0;
-                if (entry.detail != null) {
-                    java.util.regex.Matcher mMissing =
-                            java.util.regex.Pattern.compile("missing=(\\d+)").matcher(entry.detail);
-                    java.util.regex.Matcher mRepaired =
-                            java.util.regex.Pattern.compile("repaired=(\\d+)/(\\d+)").matcher(entry.detail);
-                    if (mMissing.find())  missing  = Integer.parseInt(mMissing.group(1));
-                    if (mRepaired.find()) {
-                        repaired = Integer.parseInt(mRepaired.group(1));
-                        total    = Integer.parseInt(mRepaired.group(2));
-                    }
+                java.util.regex.Matcher mOps      = java.util.regex.Pattern.compile("ops=\\[([^]]*)]").matcher(detail);
+                java.util.regex.Matcher mRepaired = java.util.regex.Pattern.compile("repaired=(\\d+)/(\\d+)").matcher(detail);
+                java.util.regex.Matcher mFailed   = java.util.regex.Pattern.compile("failed=\\[([^]]*)]").matcher(detail);
+
+                String[] allDriftedOps = mOps.find() && !mOps.group(1).isEmpty()
+                        ? mOps.group(1).split(",") : new String[0];
+                int repaired = 0, total = 0;
+                if (mRepaired.find()) {
+                    repaired = Integer.parseInt(mRepaired.group(1));
+                    total    = Integer.parseInt(mRepaired.group(2));
                 }
-                message.append(getString(R.string.log_detail_watchdog_drifted, missing)).append("\n");
+                String[] failedOps = mFailed.find() && !mFailed.group(1).isEmpty()
+                        ? mFailed.group(1).split(",") : new String[0];
+
+                message.append(getString(R.string.log_detail_watchdog_drifted, total)).append("\n");
+                for (String op : allDriftedOps) {
+                    String trimmed = op.trim();
+                    boolean opFailed = false;
+                    for (String f : failedOps) { if (f.trim().equals(trimmed)) { opFailed = true; break; } }
+                    message.append(opFailed ? "  ✗ " : "  ✓ ").append(trimmed).append("\n");
+                }
                 message.append(getString(R.string.log_detail_watchdog_repaired, repaired, total)).append("\n");
+
+                if (detail.contains("battery-whitelist=removed")) {
+                    message.append(getString(R.string.log_detail_watchdog_battery_removed)).append("\n");
+                }
+
                 if ("ok".equalsIgnoreCase(entry.outcome)) {
                     message.append(getString(R.string.log_detail_watchdog_restored_ok));
                 } else if ("partial".equalsIgnoreCase(entry.outcome)) {
@@ -889,23 +903,31 @@ public class StatisticsActivity extends BaseActivity {
                     message.append(getString(R.string.log_detail_watchdog_restored_failed));
                 }
             }
-        } else if (entry.detail != null && !entry.detail.trim().isEmpty()) {
+        } else if (!detail.isEmpty()) {
             message.append("\n");
-            String detail = entry.detail.trim();
 
             java.util.regex.Matcher mAppOps =
                     java.util.regex.Pattern.compile("appops=(ok|failed|partial)\\((\\d+)/(\\d+)\\)").matcher(detail);
             if (mAppOps.find()) {
-                String status = mAppOps.group(1);
+                String status  = mAppOps.group(1);
                 int ok    = Integer.parseInt(mAppOps.group(2));
                 int total = Integer.parseInt(mAppOps.group(3));
                 int failed = total - ok;
                 message.append(getString(R.string.log_detail_appops_header)).append("\n");
                 if (ok > 0)     message.append("  ✓ ").append(getString(R.string.log_detail_appops_applied, ok)).append("\n");
-                if (failed > 0) message.append("  ✗ ").append(getString(R.string.log_detail_appops_failed, failed)).append("\n");
-                if ("ok".equals(status))      message.append("  → ").append(getString(R.string.log_detail_appops_result_ok));
+                if (failed > 0) {
+                    message.append("  ✗ ").append(getString(R.string.log_detail_appops_failed, failed)).append("\n");
+                    java.util.regex.Matcher mFailedOps =
+                            java.util.regex.Pattern.compile("failed=\\[([^]]+)]").matcher(detail);
+                    if (mFailedOps.find()) {
+                        for (String op : mFailedOps.group(1).split(",")) {
+                            message.append("      ").append(op.trim()).append("\n");
+                        }
+                    }
+                }
+                if ("ok".equals(status))           message.append("  → ").append(getString(R.string.log_detail_appops_result_ok));
                 else if ("partial".equals(status)) message.append("  → ").append(getString(R.string.log_detail_appops_result_partial));
-                else                          message.append("  → ").append(getString(R.string.log_detail_appops_result_failed));
+                else                               message.append("  → ").append(getString(R.string.log_detail_appops_result_failed));
                 message.append("\n");
             } else if (detail.startsWith("appops=")) {
                 String rawStatus = detail.replace("appops=", "").split("\\s")[0];

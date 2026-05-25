@@ -41,8 +41,7 @@ public class BackgroundAppManager {
     private static final String INTERACT_ACROSS_PROFILES_OP = "INTERACT_ACROSS_PROFILES";
     private static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+");
     private static final String FORCE_STOP_COMMAND_PREFIX = "am force-stop ";
-    private static final int STANDBY_BUCKET_RARE = 40;
-    private static final int STANDBY_BUCKET_RESTRICTED = 45;
+
 
     public static final String[] ALL_OPS = {
         BACKGROUND_RESTRICTION_OP,
@@ -55,14 +54,8 @@ public class BackgroundAppManager {
         INTERACT_ACROSS_PROFILES_OP
     };
 
-    public static final String[] MEDIUM_OPS = {
-        BACKGROUND_RESTRICTION_OP,
-        BG_RUN_RESTRICTION_OP,
-        ALARM_RESTRICTION_OP,
-        FGS_FROM_BG_RESTRICTION_OP
-    };
 
-    public enum RestrictionType { SOFT, MEDIUM, HARD, MANUAL }
+    public enum RestrictionType { SOFT, HARD, MANUAL }
 
     private final Context context;
     private final Handler handler;
@@ -104,7 +97,7 @@ public class BackgroundAppManager {
         executor.execute(() -> {
             List<AppModel> result = new ArrayList<>();
             PackageManager packageManager = context.getPackageManager();
-            Map<String, long[]> psAggregated = new HashMap<>();
+            Set<String> runningPackagesFromPs = new HashSet<>();
             Set<String> hiddenApps = getHiddenApps();
             Set<String> whitelistedApps = getWhitelistedApps();
             Set<String> desiredBackgroundRestrictedApps = getBackgroundRestrictedApps();
@@ -121,23 +114,13 @@ public class BackgroundAppManager {
                                 String[] parts = line.trim().split("\\s+");
                                 if (parts.length >= 3) {
                                     String packageName = parts[2].trim();
+                                    String appRam = parts[1].trim();
+                                    String pid = parts[0].trim();
                                     if (!packageName.isEmpty() && packageName.contains(".")
                                             && !packageName.startsWith("ERROR:")) {
                                         try {
                                             packageManager.getApplicationInfo(packageName, 0);
-                                            long rss = 0;
-                                            int pid = -1;
-                                            try { rss = Long.parseLong(parts[1].trim()); } catch (NumberFormatException ignored) {}
-                                            try { pid = Integer.parseInt(parts[0].trim()); } catch (NumberFormatException ignored) {}
-                                            long[] existing = psAggregated.get(packageName);
-                                            if (existing == null) {
-                                                psAggregated.put(packageName, new long[]{rss, pid});
-                                            } else {
-                                                existing[0] += rss;
-                                                if (pid != -1 && (existing[1] == -1 || pid < existing[1])) {
-                                                    existing[1] = pid;
-                                                }
-                                            }
+                                            runningPackagesFromPs.add(packageName + ":" + appRam + ":" + pid);
                                         } catch (PackageManager.NameNotFoundException ignored) {
                                         }
                                     }
@@ -155,10 +138,21 @@ public class BackgroundAppManager {
                 }
             }
 
-            for (Map.Entry<String, long[]> entry : psAggregated.entrySet()) {
-                String packageName = entry.getKey();
-                long ramUsage = entry.getValue()[0];
-                int pid = (int) entry.getValue()[1];
+            for (String packageEntry : runningPackagesFromPs) {
+                String[] parts = packageEntry.split(":");
+                String packageName = parts[0];
+                long ramUsage = 0;
+                int pid = -1;
+                try {
+                    ramUsage = parts.length > 1 ? Long.parseLong(parts[1]) : 0;
+                } catch (NumberFormatException e) {
+                    Log.w(TAG, "Failed to parse RAM value for " + packageName, e);
+                }
+                try {
+                    pid = parts.length > 2 ? Integer.parseInt(parts[2]) : -1;
+                } catch (NumberFormatException e) {
+                    Log.w(TAG, "Failed to parse PID for " + packageName, e);
+                }
 
                 try {
                     if (hiddenApps.contains(packageName)) {
@@ -418,12 +412,9 @@ public class BackgroundAppManager {
             Log.d(TAG, "[DBG] hardSet (existing) retained: " + existingHard.size() + " packages");
         }
 
-        Set<String> existingMedium = getMediumRestrictedApps();
-        existingMedium.retainAll(desiredPackages);
-        saveMediumRestrictedApps(existingMedium);
-
         Set<String> dbgManual = getManualRestrictedApps();
         Log.d(TAG, "[DBG] manualSet in prefs at call time: " + dbgManual.size() + " packages: " + dbgManual);
+
 
         if (!supportsBackgroundRestriction()) {
             BackgroundRestrictionLog.log(context, null, "apply", "skipped", "Android 11+ required");
@@ -443,6 +434,7 @@ public class BackgroundAppManager {
         }
 
         executor.execute(() -> {
+
             Set<String> currentPackages = getActualBackgroundRestrictedApps();
             Set<String> packagesToAllow = new HashSet<>(currentPackages);
             packagesToAllow.removeAll(desiredPackages);
@@ -453,53 +445,37 @@ public class BackgroundAppManager {
             boolean success = true;
             for (String packageName : packagesToAllow) {
                 int[] opsCount = applyAllHardOps(packageName, "allow");
-                resetBucket(packageName);
                 restoreBatteryWhitelist(packageName);
                 if (opsCount[0] == 0) success = false;
                 logRestrictionResult(packageName, "allow", null, null, opsCount);
             }
 
+
             Set<String> hardSet = getHardRestrictedApps();
-            Set<String> mediumSet = getMediumRestrictedApps();
             Set<String> manualSet = getManualRestrictedApps();
             Log.d(TAG, "[DBG] step2 start: desiredPackages=" + desiredPackages.size()
                     + " hardSet=" + hardSet.size()
-                    + " mediumSet=" + mediumSet.size()
                     + " manualSet=" + manualSet.size());
-
             for (String packageName : desiredPackages) {
                 Log.d(TAG, "[DBG] step2 pkg=" + packageName
                         + " type=" + (manualSet.contains(packageName) ? "MANUAL"
-                                    : hardSet.contains(packageName) ? "HARD"
-                                    : mediumSet.contains(packageName) ? "MEDIUM" : "SOFT"));
+                                    : hardSet.contains(packageName) ? "HARD" : "SOFT"));
                 applyAllHardOps(packageName, "allow");
-                resetBucket(packageName);
                 restoreBatteryWhitelist(packageName);
-
                 if (manualSet.contains(packageName)) {
                     int opsMask = getManualOpsMask(packageName);
                     int[] opsCount = applyManualOps(packageName, opsMask, "ignore");
-                    int manualBucket = getManualBucket(packageName);
-                    if (manualBucket != 0) applyBucket(packageName, manualBucket);
                     ShellManager.ShellResult forceStopResult = shellManager
                             .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
                     if (opsCount[0] == 0) success = false;
                     logRestrictionResult(packageName, "reapply-manual", null, forceStopResult, opsCount);
                 } else if (hardSet.contains(packageName)) {
                     int[] opsCount = applyAllHardOps(packageName, "ignore");
-                    applyBucket(packageName, STANDBY_BUCKET_RESTRICTED);
                     applyBatteryWhitelistRemoval(packageName);
                     ShellManager.ShellResult forceStopResult = shellManager
                             .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
                     if (opsCount[0] == 0) success = false;
                     logRestrictionResult(packageName, "reapply-hard", null, forceStopResult, opsCount);
-                } else if (mediumSet.contains(packageName)) {
-                    int[] opsCount = applyMediumOps(packageName, "ignore");
-                    applyBucket(packageName, STANDBY_BUCKET_RARE);
-                    ShellManager.ShellResult forceStopResult = shellManager
-                            .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
-                    if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-medium", null, forceStopResult, opsCount);
                 } else {
                     ShellManager.ShellResult restrictResult = shellManager
                             .runShellCommandForResult(buildBackgroundRestrictionCommand(packageName, "ignore"));
@@ -521,8 +497,7 @@ public class BackgroundAppManager {
             }
             for (String packageName : desiredPackages) {
                 String verifyAction = manualSet.contains(packageName) ? "reapply-manual"
-                        : hardSet.contains(packageName) ? "reapply-hard"
-                        : mediumSet.contains(packageName) ? "reapply-medium" : "reapply-soft";
+                        : hardSet.contains(packageName) ? "reapply-hard" : "reapply-soft";
                 logRestrictionVerification(packageName, verifyAction, actualState, true);
             }
 
@@ -542,7 +517,6 @@ public class BackgroundAppManager {
     public void reapplySavedBackgroundRestrictions(Runnable onComplete) {
         Set<String> desired = sanitizeBackgroundRestrictionTargets(getBackgroundRestrictedApps());
         Set<String> hard = getHardRestrictedApps();
-        Set<String> medium = getMediumRestrictedApps();
         Set<String> manual = getManualRestrictedApps();
 
         if (desired.isEmpty()) {
@@ -572,21 +546,13 @@ public class BackgroundAppManager {
                 if (manual.contains(packageName)) {
                     int opsMask = getManualOpsMask(packageName);
                     int[] opsCount = applyManualOps(packageName, opsMask, "ignore");
-                    int manualBucket = getManualBucket(packageName);
-                    if (manualBucket != 0) applyBucket(packageName, manualBucket);
                     if (opsCount[0] == 0) success = false;
                     logRestrictionResult(packageName, "reapply-manual", null, null, opsCount);
                 } else if (hard.contains(packageName)) {
                     int[] opsCount = applyAllHardOps(packageName, "ignore");
-                    applyBucket(packageName, STANDBY_BUCKET_RESTRICTED);
                     applyBatteryWhitelistRemoval(packageName);
                     if (opsCount[0] == 0) success = false;
                     logRestrictionResult(packageName, "reapply-hard", null, null, opsCount);
-                } else if (medium.contains(packageName)) {
-                    int[] opsCount = applyMediumOps(packageName, "ignore");
-                    applyBucket(packageName, STANDBY_BUCKET_RARE);
-                    if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-medium", null, null, opsCount);
                 } else {
                     ShellManager.ShellResult result = shellManager
                             .runShellCommandForResult(buildBackgroundRestrictionCommand(packageName, "ignore"));
@@ -596,8 +562,7 @@ public class BackgroundAppManager {
 
                 BackgroundRestrictionState actualState = getBackgroundRestrictionState();
                 String action = manual.contains(packageName) ? "reapply-manual"
-                        : hard.contains(packageName) ? "reapply-hard"
-                        : medium.contains(packageName) ? "reapply-medium" : "reapply-soft";
+                        : (hard.contains(packageName) ? "reapply-hard" : "reapply-soft");
                 logRestrictionVerification(packageName, action, actualState, true);
             }
 
@@ -614,19 +579,15 @@ public class BackgroundAppManager {
 
     public void setRestrictionType(String packageName, RestrictionType type) {
         Set<String> hardSet = getHardRestrictedApps();
-        Set<String> mediumSet = getMediumRestrictedApps();
         Set<String> manualSet = getManualRestrictedApps();
 
+
         hardSet.remove(packageName);
-        mediumSet.remove(packageName);
         manualSet.remove(packageName);
 
         switch (type) {
             case HARD:
                 hardSet.add(packageName);
-                break;
-            case MEDIUM:
-                mediumSet.add(packageName);
                 break;
             case MANUAL:
                 manualSet.add(packageName);
@@ -637,7 +598,6 @@ public class BackgroundAppManager {
         }
 
         saveHardRestrictedApps(hardSet);
-        saveMediumRestrictedApps(mediumSet);
         saveManualRestrictedApps(manualSet);
     }
 
@@ -649,7 +609,6 @@ public class BackgroundAppManager {
     public RestrictionType getRestrictionType(String packageName) {
         if (getManualRestrictedApps().contains(packageName)) return RestrictionType.MANUAL;
         if (getHardRestrictedApps().contains(packageName)) return RestrictionType.HARD;
-        if (getMediumRestrictedApps().contains(packageName)) return RestrictionType.MEDIUM;
         return RestrictionType.SOFT;
     }
 
@@ -666,58 +625,12 @@ public class BackgroundAppManager {
         return "cmd appops set --user current " + packageName + " " + BOOT_RESTRICTION_OP + " " + mode;
     }
 
-    private boolean applyBucket(String packageName, int bucket) {
-        boolean ok = shellManager.runShellCommandForResult(
-                "am set-standby-bucket " + packageName + " " + bucket)
-                .succeeded();
-        Log.d(TAG, "applyBucket " + packageName + " bucket=" + bucket + " ok=" + ok);
-        return ok;
-    }
-    
-    private boolean resetBucket(String packageName) {
-        boolean ok = shellManager.runShellCommandForResult(
-                "am set-standby-bucket " + packageName + " active")
-                .succeeded();
-        Log.d(TAG, "resetBucket " + packageName + " ok=" + ok);
-        return ok;
-    }
-
-    int[] applyMediumOps(String packageName, String mode) {
-        Log.d(TAG, "applyMediumOps → " + packageName + " mode=" + mode);
-        int ok = 0, fail = 0;
-        int succeededMask = 0;
-        for (int i = 0; i < ALL_OPS.length; i++) {
-            boolean isMediumOp = false;
-            for (String medOp : MEDIUM_OPS) {
-                if (ALL_OPS[i].equals(medOp)) { isMediumOp = true; break; }
-            }
-            if (!isMediumOp) continue;
-            boolean succeeded = shellManager.runShellCommandForResult(
-                    "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
-                    .succeeded();
-            if (succeeded) {
-                ok++;
-                succeededMask |= (1 << i);
-                Log.d(TAG, "  [OK  ] " + ALL_OPS[i]);
-            } else {
-                fail++;
-                Log.w(TAG, "  [FAIL] " + ALL_OPS[i]);
-            }
-        }
-        Log.d(TAG, "applyMediumOps result: ok=" + ok + " fail=" + fail + " pkg=" + packageName);
-        if ("ignore".equals(mode)) {
-            saveAppliedOpsMask(packageName, succeededMask);
-        } else {
-            clearAppliedOpsMask(packageName);
-        }
-        return new int[]{ok, fail};
-    }
 
     int[] applyAllHardOps(String packageName, String mode) {
         Log.d(TAG, "applyAllHardOps → " + packageName + " mode=" + mode
                 + " ops=" + Arrays.toString(ALL_OPS));
         int ok = 0, fail = 0;
-        int succeededMask = 0;
+        int succeededMask = 0, failedMask = 0;
         for (int i = 0; i < ALL_OPS.length; i++) {
             boolean succeeded = shellManager.runShellCommandForResult(
                     "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
@@ -728,6 +641,7 @@ public class BackgroundAppManager {
                 Log.d(TAG, "  [OK  ] " + ALL_OPS[i]);
             } else {
                 fail++;
+                failedMask |= (1 << i);
                 Log.w(TAG, "  [FAIL] " + ALL_OPS[i]);
             }
         }
@@ -737,7 +651,7 @@ public class BackgroundAppManager {
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail};
+        return new int[]{ok, fail, failedMask};
     }
 
 
@@ -748,7 +662,7 @@ public class BackgroundAppManager {
                 + " selectedOps=" + selectedCount + "/" + ALL_OPS.length);
 
         int ok = 0, fail = 0;
-        int succeededMask = 0;
+        int succeededMask = 0, failedMask = 0;
         for (int i = 0; i < ALL_OPS.length; i++) {
             if ((opsMask & (1 << i)) == 0) {
                 Log.d(TAG, "  [SKIP] " + ALL_OPS[i] + " (not selected)");
@@ -763,6 +677,7 @@ public class BackgroundAppManager {
                 Log.d(TAG, "  [OK  ] " + ALL_OPS[i]);
             } else {
                 fail++;
+                failedMask |= (1 << i);
                 Log.w(TAG, "  [FAIL] " + ALL_OPS[i]);
             }
         }
@@ -772,7 +687,7 @@ public class BackgroundAppManager {
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail};
+        return new int[]{ok, fail, failedMask};
     }
 
 
@@ -784,7 +699,6 @@ public class BackgroundAppManager {
 
     public String liftRestrictionsForScheduler(String packageName) {
         if (!getBackgroundRestrictedApps().contains(packageName)) return "skipped";
-        resetBucket(packageName);
         restoreBatteryWhitelist(packageName);
         int[] counts = applyAllHardOps(packageName, "allow");
         if (counts[0] == 0) return "error";
@@ -800,18 +714,11 @@ public class BackgroundAppManager {
         switch (type) {
             case HARD:
                 counts = applyAllHardOps(packageName, "ignore");
-                applyBucket(packageName, STANDBY_BUCKET_RESTRICTED);
                 applyBatteryWhitelistRemoval(packageName);
-                break;
-            case MEDIUM:
-                counts = applyMediumOps(packageName, "ignore");
-                applyBucket(packageName, STANDBY_BUCKET_RARE);
                 break;
             case MANUAL:
                 int opsMask = getManualOpsMask(packageName);
                 counts = applyManualOps(packageName, opsMask, "ignore");
-                int manualBucket = getManualBucket(packageName);
-                if (manualBucket != 0) applyBucket(packageName, manualBucket);
                 break;
             case SOFT:
             default:
@@ -959,6 +866,7 @@ public class BackgroundAppManager {
                 String pkg           = entry.getKey();
                 List<String> missing = entry.getValue();
 
+
                 if (scheduler != null
                         && scheduler.isProtected(pkg, RestrictionsScheduler.PROTECT_BG_RESTRICTIONS)) {
                     Log.d(TAG, "watchdog SKIP (scheduler active): " + pkg);
@@ -969,20 +877,34 @@ public class BackgroundAppManager {
 
                 Log.w(TAG, "watchdog: drift detected " + pkg + " missing=" + missing);
                 int ok = 0, fail = 0;
+                List<String> repairedOps = new ArrayList<>();
+                List<String> failedOps   = new ArrayList<>();
                 for (String op : missing) {
                     boolean succeeded = shellManager.runShellCommandForResult(
                             "cmd appops set --user current " + pkg + " " + op + " ignore")
                             .succeeded();
-                    if (succeeded) ok++; else fail++;
+                    if (succeeded) { ok++; repairedOps.add(op); }
+                    else           { fail++; failedOps.add(op); }
                 }
 
+                boolean batteryRestored = false;
                 if (hardSet.contains(pkg)) {
+                    boolean wasMissing = !isInBatteryWhitelist(pkg);
                     applyBatteryWhitelistRemoval(pkg);
+                    batteryRestored = !wasMissing && isInBatteryWhitelist(pkg);
                 }
 
                 String outcome = fail == 0 ? "ok" : (ok > 0 ? "partial" : "failed");
-                BackgroundRestrictionLog.log(context, pkg, "watchdog", outcome,
-                        "missing=" + missing.size() + " repaired=" + ok + "/" + (ok + fail));
+                StringBuilder wd = new StringBuilder();
+                wd.append("ops=[").append(String.join(",", missing)).append("]");
+                wd.append(" repaired=").append(ok).append("/").append(ok + fail);
+                if (!failedOps.isEmpty()) {
+                    wd.append(" failed=[").append(String.join(",", failedOps)).append("]");
+                }
+                if (batteryRestored) {
+                    wd.append(" battery-whitelist=removed");
+                }
+                BackgroundRestrictionLog.log(context, pkg, "watchdog", outcome, wd.toString());
                 if (ok > 0) repairedCount++;
             }
 
@@ -1037,6 +959,7 @@ public class BackgroundAppManager {
                 return ops;
             }
 
+
             if (hardSet.contains(pkg)) return Arrays.asList(ALL_OPS);
             int mask = getManualOpsMask(pkg);
             List<String> ops = new ArrayList<>();
@@ -1044,10 +967,6 @@ public class BackgroundAppManager {
                 if ((mask & (1 << i)) != 0) ops.add(ALL_OPS[i]);
             }
             return ops;
-        }
-
-        if (getMediumRestrictedApps().contains(pkg)) {
-            return Arrays.asList(MEDIUM_OPS);
         }
 
         return Collections.singletonList(BACKGROUND_RESTRICTION_OP);
@@ -1064,8 +983,8 @@ public class BackgroundAppManager {
             int[] opsCount) {
         StringBuilder detail = new StringBuilder();
         if (opsCount != null) {
-            int ok   = opsCount[0];
-            int fail = opsCount[1];
+            int ok    = opsCount[0];
+            int fail  = opsCount[1];
             int total = ok + fail;
             if (fail == 0) {
                 detail.append("appops=ok(").append(ok).append("/").append(total).append(")");
@@ -1073,6 +992,16 @@ public class BackgroundAppManager {
                 detail.append("appops=failed(0/").append(total).append(")");
             } else {
                 detail.append("appops=partial(").append(ok).append("/").append(total).append(")");
+            }
+            if (fail > 0 && opsCount.length > 2) {
+                int failedMask = opsCount[2];
+                List<String> failedNames = new ArrayList<>();
+                for (int i = 0; i < ALL_OPS.length; i++) {
+                    if ((failedMask & (1 << i)) != 0) failedNames.add(ALL_OPS[i]);
+                }
+                if (!failedNames.isEmpty()) {
+                    detail.append(" failed=[").append(String.join(",", failedNames)).append("]");
+                }
             }
         } else {
             detail.append("appops=").append(formatShellOutcome(appOpsResult));
@@ -1190,18 +1119,6 @@ public class BackgroundAppManager {
         return getHardRestrictedApps().contains(packageName);
     }
 
-    public Set<String> getMediumRestrictedApps() {
-        return new HashSet<>(sharedpreferences.getStringSet(KEY_MEDIUM_RESTRICTION_APPS, new HashSet<>()));
-    }
-
-    public void saveMediumRestrictedApps(Set<String> packageNames) {
-        sharedpreferences.edit().putStringSet(KEY_MEDIUM_RESTRICTION_APPS, new HashSet<>(packageNames)).apply();
-    }
-
-    public boolean isMediumRestricted(String packageName) {
-        return getMediumRestrictedApps().contains(packageName);
-    }
-
 
     public Set<String> getManualRestrictedApps() {
         return new HashSet<>(sharedpreferences.getStringSet(KEY_MANUAL_RESTRICTION_APPS, new HashSet<>()));
@@ -1220,14 +1137,6 @@ public class BackgroundAppManager {
         sharedpreferences.edit().putInt(KEY_MANUAL_OPS_PREFIX + packageName, mask).apply();
         Log.d(TAG, "saveManualOpsMask " + packageName + " mask=0x" + Integer.toHexString(mask)
                 + " ops=" + describeOpsMask(mask));
-    }
-
-    public int getManualBucket(String packageName) {
-        return sharedpreferences.getInt(KEY_MANUAL_BUCKET_PREFIX + packageName, 0);
-    }
-
-    public void saveManualBucket(String packageName, int bucket) {
-        sharedpreferences.edit().putInt(KEY_MANUAL_BUCKET_PREFIX + packageName, bucket).apply();
     }
 
 
