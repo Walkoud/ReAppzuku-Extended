@@ -1219,13 +1219,35 @@ public class StatisticsActivity extends BaseActivity {
                         : subtitle + " | " + humanizeLogAction(entry.action);
             }
             String detail = humanizeLogOutcome(entry.outcome);
-            if (entry.detail != null && !entry.detail.trim().isEmpty()) {
-                detail = detail.isEmpty() ? entry.detail : detail + "  |  " + entry.detail;
+            String extraDetail = buildRestrictionLogRowDetail(entry);
+            if (!extraDetail.isEmpty()) {
+                detail = detail.isEmpty() ? extraDetail : detail + "  |  " + extraDetail;
             }
             rows.add(new SettingsSurfaceRow("#" + (i + 1), title, subtitle, detail,
                     resolveRestrictionTypeBadge(entry.action), entry.packageName));
         }
         return rows;
+    }
+
+    private String buildRestrictionLogRowDetail(BackgroundRestrictionLog.LogEntry entry) {
+        String raw = entry.detail != null ? entry.detail : "";
+        if (raw.isEmpty()) return "";
+        String action = entry.action != null ? entry.action : "";
+        if ("watchdog".equals(action)) {
+            String repaired = extractDetailValue(raw, "repaired");
+            return repaired != null ? "repaired=" + repaired : "";
+        }
+        if ("watchdog-bucket".equals(action)) {
+            String was = extractDetailValue(raw, "was");
+            String set = extractDetailValue(raw, "set");
+            if (was != null && set != null) return "was=" + was + " → " + set;
+            return "";
+        }
+        if (raw.contains("appops=")) {
+            String forceStop = extractDetailValue(raw, "force-stop");
+            return forceStop != null ? "force-stop=" + forceStop : "";
+        }
+        return raw;
     }
 
     private List<SettingsSurfaceRow> buildSleepModeLogRows(List<SleepModeLogManager.LogEntry> logEntries) {
