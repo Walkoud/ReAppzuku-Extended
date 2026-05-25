@@ -960,4 +960,5 @@
     <string name="log_detail_bucket_was">Bucket was</string>
     <string name="log_detail_bucket_set">Bucket set</string>
     <string name="log_detail_bucket_restored">Bucket restored</string>
+    <string name="restriction_badge_medium">Medium</string>
 </resources>
