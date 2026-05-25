@@ -147,6 +147,7 @@ public class MainActivity extends BaseActivity {
 
         cpuMonitor.setAppsList(fullAppsList);
 
+        setupToolbarSearch();
         setupRadialMenu();
         setupKillButton();
         setupBottomNavigation();
@@ -161,6 +162,48 @@ public class MainActivity extends BaseActivity {
         ramMonitor.startMonitoring();
     }
 
+    private void setupToolbarSearch() {
+        toolbarSearchView = new SearchView(this);
+        toolbarSearchView.setVisibility(View.GONE);
+        toolbarSearchView.setQueryHint(getString(R.string.main_search_hint));
+        toolbarSearchView.setIconifiedByDefault(false);
+
+        android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+        binding.toolbar.addView(toolbarSearchView, lp);
+
+        toolbarSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                filterApps(query);
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                filterApps(newText);
+                return true;
+            }
+        });
+
+        toolbarSearchView.setOnCloseListener(() -> {
+            toolbarSearchView.setVisibility(View.GONE);
+            binding.toolbar.setTitle(R.string.app_name);
+            filterApps("");
+            return true;
+        });
+    }
+
+    private void openSearch() {
+        binding.toolbar.setTitle("");
+        toolbarSearchView.setVisibility(View.VISIBLE);
+        toolbarSearchView.requestFocus();
+        android.view.inputmethod.InputMethodManager imm =
+                (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        if (imm != null) imm.showSoftInput(toolbarSearchView, 0);
+    }
+
     private void setupRadialMenu() {
         binding.radialMenu.setItems(new int[]{
                 R.drawable.ic_search,
@@ -171,10 +214,7 @@ public class MainActivity extends BaseActivity {
         binding.radialMenu.setOnItemClickListener(index -> {
             switch (index) {
                 case MENU_INDEX_SEARCH:
-                    if (toolbarSearchView != null) {
-                        toolbarSearchView.setIconified(false);
-                        toolbarSearchView.requestFocus();
-                    }
+                    openSearch();
                     break;
                 case MENU_INDEX_SORT:
                     showSortDialog();
@@ -245,31 +285,12 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
-
         triggerMenuItem = menu.findItem(R.id.action_menu_trigger);
         tintTriggerMenuItem();
         triggerMenuItem.setOnMenuItemClickListener(item -> {
             openRadialMenu();
             return true;
         });
-
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        toolbarSearchView = (SearchView) searchItem.getActionView();
-        toolbarSearchView.setQueryHint(getString(R.string.main_search_hint));
-        toolbarSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                filterApps(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                filterApps(newText);
-                return true;
-            }
-        });
-
         return true;
     }
 
@@ -372,9 +393,7 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onAppClick(AppModel app, int position) {
-                if (app.isProtected() || app.isWhitelisted()) {
-                    return;
-                }
+                if (app.isProtected() || app.isWhitelisted()) return;
                 app.setSelected(!app.isSelected());
                 boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
                 if (!listAdapter.refreshSelectionMode(hasSelection)) {
@@ -500,9 +519,7 @@ public class MainActivity extends BaseActivity {
             }
         }
         item.setOnClickListener(v -> {
-            if (checkable) {
-                cb.setChecked(!cb.isChecked());
-            }
+            if (checkable) cb.setChecked(!cb.isChecked());
             action.run();
         });
         container.addView(item);
@@ -790,21 +807,13 @@ public class MainActivity extends BaseActivity {
                 break;
             }
         }
-        if (adapterPos >= 0) {
-            listAdapter.notifyItemChanged(adapterPos);
-        }
+        if (adapterPos >= 0) listAdapter.notifyItemChanged(adapterPos);
         Toast.makeText(this, wasInList ? removedMsg : addedMsg, Toast.LENGTH_SHORT).show();
     }
 
     private void toggleBackgroundRestriction(AppModel app) {
-        if (app.needsBackgroundRestrictionReapply()) {
-            showOutOfSyncRestrictionDialog(app);
-            return;
-        }
-        if (app.isBackgroundRestrictionExternal()) {
-            showExternalRestrictionDialog(app);
-            return;
-        }
+        if (app.needsBackgroundRestrictionReapply()) { showOutOfSyncRestrictionDialog(app); return; }
+        if (app.isBackgroundRestrictionExternal())   { showExternalRestrictionDialog(app);  return; }
         boolean enableRestriction = !app.isBackgroundRestrictionDesired();
         if (enableRestriction && app.isSystemApp()) {
             new AlertDialog.Builder(this)
@@ -902,9 +911,7 @@ public class MainActivity extends BaseActivity {
                 .collect(Collectors.toList());
         binding.killButton.setVisibility(View.GONE);
         binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
-        for (AppModel app : fullAppsList) {
-            app.setSelected(false);
-        }
+        for (AppModel app : fullAppsList) app.setSelected(false);
         listAdapter.submitList(new ArrayList<>(appsDataList));
         autoKillManager.killPackages(packagesToKill, this::loadBackgroundApps);
     }
@@ -941,18 +948,14 @@ public class MainActivity extends BaseActivity {
 
     private void selectAll() {
         for (AppModel app : fullAppsList) {
-            if (!app.isProtected() && !app.isWhitelisted()) {
-                app.setSelected(true);
-            }
+            if (!app.isProtected() && !app.isWhitelisted()) app.setSelected(true);
         }
         listAdapter.submitList(new ArrayList<>(appsDataList));
         updateSelectMenuVisibility();
     }
 
     private void unselectAll() {
-        for (AppModel app : fullAppsList) {
-            app.setSelected(false);
-        }
+        for (AppModel app : fullAppsList) app.setSelected(false);
         listAdapter.submitList(new ArrayList<>(appsDataList));
         updateSelectMenuVisibility();
     }
@@ -971,7 +974,6 @@ public class MainActivity extends BaseActivity {
             case AppConstants.SORT_MODE_NAME_DESC: selectedRadioId = R.id.sort_name_desc; break;
             case AppConstants.SORT_MODE_CPU_DESC:  selectedRadioId = R.id.sort_cpu_desc;  break;
             case AppConstants.SORT_MODE_CPU_ASC:   selectedRadioId = R.id.sort_cpu_asc;   break;
-            case AppConstants.SORT_MODE_DEFAULT:
             default:                               selectedRadioId = R.id.sort_default;   break;
         }
         radioGroup.check(selectedRadioId);
