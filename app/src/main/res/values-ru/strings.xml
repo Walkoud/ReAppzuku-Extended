@@ -413,8 +413,8 @@
     <string name="restriction_badge_retry">Повтор</string>
 
     <!-- Диалог типа ограничения -->
-    <string name="manual_bucket_rare">Bucket: Rare</string>
-    <string name="manual_bucket_restricted">Bucket: Restricted</string>
+    <string name="manual_bucket_rare">Standby Bucket: Rare</string>
+    <string name="manual_bucket_restricted">Standby Bucket: Restricted</string>
     <string name="filter_restriction_type_dialog_title">Тип ограничения</string>
     <string name="filter_restriction_soft_option">Мягкое (по умолчанию)</string>
     <string name="filter_restriction_medium_option">Среднее</string>
