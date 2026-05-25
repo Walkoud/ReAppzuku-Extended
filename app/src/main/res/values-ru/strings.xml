@@ -416,9 +416,9 @@
     <string name="manual_bucket_rare">Standby Bucket: Rare</string>
     <string name="manual_bucket_restricted">Standby Bucket: Restricted</string>
     <string name="filter_restriction_type_dialog_title">Тип ограничения</string>
-    <string name="filter_restriction_soft_option">Мягкое (по умолчанию)</string>
-    <string name="filter_restriction_medium_option">Среднее</string>
-    <string name="filter_restriction_hard_option">Жёсткое</string>
+    <string name="filter_restriction_soft_option">Мягкое (по умолчанию) — запрет автозапуска</string>
+    <string name="filter_restriction_medium_option">Среднее — запрет некоторой фоновой активности</string>
+    <string name="filter_restriction_hard_option">Жёсткое — запрет всей фоновой активности</string>
     <string name="filter_restriction_manual_option">Ручное</string>
     <string name="filter_manual_ops_dialog_title">Ограничения: %1$s</string>
 
