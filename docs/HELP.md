@@ -37,8 +37,10 @@
 
 ## Requirements
 
-- **Android** — 6.0 or higher. Background restrictions only available on Android 11+
-- **Root** or **Shizuku** — one of two is required
+| Requirement | Description |
+|---|---|
+| **Android** | 6.0 or higher. Background restrictions only available on Android 11+ |
+| **Root** or **Shizuku** | One of two is required |
 
 ### Root vs Shizuku
 
@@ -222,8 +224,10 @@ After setup:
 
 Added to notification shade:
 
-- **Kill App** — kills current foreground app
-- **Kill Background Apps** — runs Auto-Kill with your whitelist/blacklist settings
+| Tile | Action |
+|---|---|
+| **Kill App** | Kills current foreground app |
+| **Kill Background Apps** | Runs Auto-Kill with your whitelist/blacklist settings |
 
 ### Widget
 
@@ -479,6 +483,9 @@ App was recently active but not in foreground — sign of a hidden background wa
 - **AppOps**
   - **START_FOREGROUND (blocked)** — system has blocked right to launch Foreground Service. App is trying to operate in background but is restricted.
   - **MANAGE_MEDIA** — manages media sessions of other applications. Associated with `mediaProcessing` FGS type on Android 15.
+  
+- **Wakelocks History**
+Shows history of last 5 **WAKELOCK** held by app. If app holds wakelock too long, that's bad sign.
 
 <details>
 <summary>Android 14+ triggers</summary>
@@ -568,11 +575,14 @@ Main automation toggle. Starts persistent ReAppzuku background process. Required
 Automatically kills apps at set interval while background service runs.
 
 **Auto-Kill Interval:**
-- **10 seconds** — maximum aggressive cleanup
-- **18 seconds** — default
-- **30 seconds** — moderate cleanup
-- **1 minute** — light cleanup
-- **5 minutes** — minimal intervention
+
+| Interval | Description |
+|---|---|
+| 10 seconds | Maximum aggressive cleanup |
+| **18 seconds** | Default |
+| 30 seconds | Moderate cleanup |
+| 1 minute | Light cleanup |
+| 5 minutes | Minimal intervention |
 
 **Kill on Screen Off**\
 Runs Kill moment screen locks. Useful for cleaning up every time you put your phone down.
@@ -580,10 +590,12 @@ Runs Kill moment screen locks. Useful for cleaning up every time you put your ph
 **Kill at RAM Load**\
 Additional condition — Kill only fires **if** RAM exceeds selected threshold. Applies to both periodic Kill and screen-off Kill.
 
-- **75%** — early cleanup
-- **80%** — default
-- **85–95%** — cleanup only when memory is genuinely low
-- **100%** — critical situations only
+| Threshold | Description |
+|---|---|
+| 75% | Early cleanup |
+| **80%** | Default |
+| 85–95% | Cleanup only when memory is genuinely low |
+| 100% | Critical situations only |
 
 **Auto-Kill Type**\
 Only relevant if ReAppzuku conflicts with your firmware. If you notice unusual behavior in other apps, try switching to `am kill`.
@@ -620,13 +632,34 @@ Uses Android's `appops` to **block an app from running in background at OS level
 Blocks autostart at a stricter level than standard activity settings.\
 **How it works**: If you open app and switch away — it keeps running (while in recents). But on its own (overnight or in background) it won't wake up until you open it.
 
-- **Hard** (Soft restriction + START_FOREGROUND ignore + RECEIVE_BOOT_COMPLETED ignore + INTERACT_ACROSS_PROFILES ignore + removal from battery optimization whitelist)\
-Blocks any form of background life.\
-**How it works**: As soon as you switch away, system immediately kills it. Can't hold itself in memory for a second without your direct attention — even if it appears in recents. Use with caution — can fully strip an app of background operations (file downloads, media playback, long-running tasks).
+- **Medium**\
+Restricts some background activity.
+**How it works:**\
+Blocks service launches, job scheduler and alarms. App works normally while open, but enters standby as soon as you leave it (minimize).\
+**Commands used:**\
+`RUN_ANY_IN_BACKGROUND ignore`\
+`RUN_IN_BACKGROUND ignore`\
+`ALARM_WAKEUP ignore`\
+`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`Standby Bucket: Rare`
+
+- **Hard**\
+Blocks any background activity.\
+**How it works:**\
+Once app is minimized or switched away from — system kills it immediately. App cannot keep itself in memory without direct user interaction (even if visible in recents). Use Hard restriction with caution, as it may completely deprive app of background operations (file downloads, media playback, long-running internal tasks).\
+**Commands used:**\
+`RUN_ANY_IN_BACKGROUND ignore`\
+`START_FOREGROUND ignore`\
+`RECEIVE_BOOT_COMPLETED ignore`\
+`INTERACT_ACROSS_PROFILES ignore`\
+`Battery optimization whitelist removal`\
+`Standby Bucket: Restricted`
 
 - **Manual**\
 You choose which restrictions to apply.\
 **How it works**: ReAppzuku applies only restrictions you select.
+
+> 💡 App Standby Bucket resets upon user interaction with target app. System does not always restore it back. ReAppzuku will automatically restore app Bucket on next restriction integrity check cycle.
 
 ---
 
@@ -672,20 +705,37 @@ Prevents app from interacting with other work profiles. Primarily relevant on en
 **Blocks:** cross-profile calls and data transfer between primary and work profiles.\
 **Does not block:** app operating within single profile.
 
+- **Standby Bucket: Rare**\
+Marked by system as rarely used. Blocks app at system level:\
+Background network. Network available only during rare system maintenance windows.\
+JobScheduler. Regular jobs and Expedited Jobs limited to 10 minutes per day.\
+AlarmManager. Inexact alarms are deferred. Limit — 1 trigger per hour.\
+Push (FCM). High-Priority push quota is reduced. Exceeded pushes are delayed.
+
+- **Standby Bucket: Restricted**\
+Marked by system as long-unused or anomalous app that consumed excessive CPU and battery. Includes all Rare restrictions, but enforces them more strictly. Additionally restricts at system level:\
+Charging exemption removed. When device is plugged in, restrictions for all buckets (including Rare) are fully lifted. However for Restricted, JobScheduler launch limits remain active even while charging.\
+Job frequency hard cap. Strictly limits scheduling granularity — app is allowed to launch background job exactly 1 time per day.\
+Boot behavior. Starting from Android 13, if app is in Restricted bucket, system completely blocks delivery of `BOOT_COMPLETED` and `LOCKED_BOOT_COMPLETED` broadcasts. App cannot start on OS boot until user opens it manually.\
+Forced termination of active services. If running app is moved by system into Restricted bucket while in background (e.g. due to detected abnormal power consumption), OS automatically removes and terminates all its active Foreground Services.\
+Network access during maintenance windows. During Doze Mode, system periodically opens maintenance windows. Apps with Restricted bucket are denied network access even during these system windows.\
+Expedited Jobs limit cut. Limit for Expedited Jobs is halved — down to 5 minutes per day.
+
 ---
 
 ### Restriction types comparison
 
-| Restriction | Soft | Hard | Manual |
-|---|:---:|:---:|:---:|
-| RUN_ANY_IN_BACKGROUND | ✓ | ✓ | optional |
-| RUN_IN_BACKGROUND | — | ✓ | optional |
-| START_FOREGROUND | — | ✓ | optional |
-| START_FOREGROUND_SERVICES_FROM_BACKGROUND | — | ✓ | optional |
-| WAKE_LOCK | — | ✓ | optional |
-| ALARM_WAKEUP | — | ✓ | optional |
-| RECEIVE_BOOT_COMPLETED | — | ✓ | optional |
-| INTERACT_ACROSS_PROFILES | — | ✓ | optional |
+| Restriction | Soft | Medium | Hard | Manual |
+|---|:---:|:---:|:---:|:---:|
+| RUN_ANY_IN_BACKGROUND | ✓ | ✓ | ✓ | optional |
+| RUN_IN_BACKGROUND | — | ✓ | ✓ | optional |
+| START_FOREGROUND | — | — | ✓ | optional |
+| START_FOREGROUND_SERVICES_FROM_BACKGROUND | — | ✓ | ✓ | optional |
+| WAKE_LOCK | — | — | ✓ | optional |
+| ALARM_WAKEUP | — | ✓ | ✓ | optional |
+| RECEIVE_BOOT_COMPLETED | — | — | ✓ | optional |
+| INTERACT_ACROSS_PROFILES | — | — | ✓ | optional |
+| Standby Bucket | — | Rare | Restricted | optional |
 
 ---
 
@@ -694,7 +744,10 @@ List statuses:
 - **Saved in ReAppzuku, but not applied** — saved, but Android hasn't applied restriction
 - **Restricted, not by ReAppzuku** — restricted by Android or another app
 
-> 👀 ReAppzuku periodically checks that Background Restrictions are still in place. If system resets any — they're restored automatically.
+**Background Restrictions WatchDog**\
+ReAppzuku periodically checks integrity of Background Restrictions applied to apps. If system resets any restrictions — restores them.\
+For **Soft and Medium** (and Manual, if chosen restrictions are equivalent to Soft/Medium) — restrictions are restored only if app is not active on screen and does not hold `IMPORTANCE_FOREGROUND_SERVICE`.\
+In all other cases restrictions are restored only if app is not currently active on screen (not being used).
 
 **Re-apply Background Restrictions**\
 Manually re-applies all saved restrictions. After reboot this happens **automatically** when background service starts.
@@ -714,6 +767,9 @@ Select which restrictions app will be temporarily exempted from.
 **Time window**\
 Set start time (restrictions lifted) and end time (restrictions restored).
 App is force-stopped before restrictions are restored.
+
+**Set Bucket: Active**
+When you remove restrictions from an app, its App Standby Bucket gets forced to Active. This lets the app spin up its services on its own.
 
 **On activation**\
 Action to take when restrictions are lifted:
@@ -778,10 +834,12 @@ Top of screen shows **ReAppzuku's own resource usage** — RAM, CPU, and battery
 **Resource Usage Charts**\
 Interactive charts of RAM, CPU, and battery usage across tracked apps. Switch between chart types with **arrows**.
 
-- **2 hours** — last 2 hours
-- **6 hours** — last 6 hours
-- **12 hours** — last 12 hours
-- **24 hours** — last 24 hours
+| Period | Description |
+|---|---|
+| 2 hours | Last 2 hours |
+| 6 hours | Last 6 hours |
+| 12 hours | Last 12 hours |
+| 24 hours | Last 24 hours |
 
 > 💡 Tap an **app in chart legend** to open its **personal activity graph**
 
