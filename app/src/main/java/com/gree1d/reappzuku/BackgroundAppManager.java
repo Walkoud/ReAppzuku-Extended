@@ -687,12 +687,14 @@ public class BackgroundAppManager {
         int ok = 0, fail = 0;
         int succeededMask = 0;
         int failedMask = 0;
+        int appliedMask = 0;
         for (int i = 0; i < ALL_OPS.length; i++) {
             boolean isMediumOp = false;
             for (String medOp : MEDIUM_OPS) {
                 if (ALL_OPS[i].equals(medOp)) { isMediumOp = true; break; }
             }
             if (!isMediumOp) continue;
+            appliedMask |= (1 << i);
             boolean succeeded = shellManager.runShellCommandForResult(
                     "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
                     .succeeded();
@@ -712,7 +714,7 @@ public class BackgroundAppManager {
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail, failedMask};
+        return new int[]{ok, fail, failedMask, appliedMask};
     }
 
     int[] applyAllHardOps(String packageName, String mode) {
@@ -778,7 +780,7 @@ public class BackgroundAppManager {
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail, failedMask};
+        return new int[]{ok, fail, failedMask, opsMask};
     }
 
 
@@ -1086,6 +1088,9 @@ public class BackgroundAppManager {
             }
             if (fail > 0 && opsCount.length > 2) {
                 detail.append(" failedOps=").append(opsMaskToNames(opsCount[2]));
+            }
+            if (opsCount.length > 3) {
+                detail.append(" appliedOps=").append(opsMaskToNames(opsCount[3]));
             }
         } else {
             detail.append("appops=").append(formatShellOutcome(appOpsResult));

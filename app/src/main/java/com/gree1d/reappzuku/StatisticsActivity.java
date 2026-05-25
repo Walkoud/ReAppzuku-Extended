@@ -893,10 +893,14 @@ public class StatisticsActivity extends BaseActivity {
             if (hasOpsInfo) {
                 body.append("\n");
                 List<String> failedOps = extractOpsList(detail, "failedOps");
+                List<String> appliedOps = extractOpsList(detail, "appliedOps");
+                if (appliedOps.isEmpty()) {
+                    appliedOps = java.util.Arrays.asList(BackgroundAppManager.ALL_OPS);
+                }
                 boolean allOk     = detail.contains("appops=ok(");
                 boolean allFailed = detail.contains("appops=failed(0/");
                 body.append(getString(R.string.log_detail_appops)).append(":\n");
-                for (String op : BackgroundAppManager.ALL_OPS) {
+                for (String op : appliedOps) {
                     if (allOk) {
                         body.append("  ✓ ").append(op).append("\n");
                     } else if (allFailed) {
@@ -1309,6 +1313,7 @@ public class StatisticsActivity extends BaseActivity {
         if (action == null) return "";
         switch (action.trim().toLowerCase()) {
             case "restrict-hard": case "reapply-hard": return getString(R.string.restriction_badge_hard);
+            case "restrict-medium": case "reapply-medium": return getString(R.string.restriction_badge_medium);
             case "restrict-soft": case "reapply-soft": case "restrict": return getString(R.string.restriction_badge_soft);
             case "restrict-manual": case "reapply-manual": return getString(R.string.restriction_badge_manual);
             case "allow": return getString(R.string.restriction_badge_removed);
