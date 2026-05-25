@@ -956,5 +956,5 @@
     <string name="log_detail_bucket_was">Bucket был</string>
     <string name="log_detail_bucket_set">Bucket установлен</string>
     <string name="log_detail_bucket_restored">Bucket восстановлен</string>
-
+    <string name="restriction_badge_medium">Среднее</string>
 </resources>
