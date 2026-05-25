@@ -971,5 +971,5 @@
     <string name="log_detail_watchdog_restored_ok">Все ограничения восстановлены.</string>
     <string name="log_detail_watchdog_restored_partial">Восстановлено частично — часть операций не удалось применить.</string>
     <string name="log_detail_watchdog_restored_failed">Восстановить ограничения не удалось.</string>
-    
+    <string name="log_detail_watchdog_battery_removed">Battery whitelist: приложение удалено из whitelist deviceidle.</string>
 </resources>
