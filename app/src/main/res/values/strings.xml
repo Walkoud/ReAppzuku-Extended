@@ -947,4 +947,29 @@
     <string name="scansystem_cat_sensor">Holding sensors</string>
     <string name="scansystem_cat_location">Holding location</string>
     <string name="scansystem_wakelock_history">WakeLock History</string>
+
+    <!-- Background Restrictions Detail Log -->
+    <string name="log_detail_title">Подробности записи</string>
+    <string name="log_detail_package">Пакет:</string>
+    <string name="log_detail_time">Время:</string>
+    <string name="log_detail_action">Действие:</string>
+    <string name="log_detail_outcome">Результат:</string>
+    <string name="log_detail_open_app_info">Инфо о приложении</string>
+    <string name="log_detail_appops_header">AppOps:</string>
+    <string name="log_detail_appops_applied">применено: %d</string>
+    <string name="log_detail_appops_failed">не применено: %d</string>
+    <string name="log_detail_appops_result_ok">все операции применены</string>
+    <string name="log_detail_appops_result_partial">применены частично</string>
+    <string name="log_detail_appops_result_failed">не удалось применить</string>
+    <string name="log_detail_forcestop_ok">Force-stop: выполнен</string>
+    <string name="log_detail_forcestop_failed">Force-stop: не выполнен</string>
+    
+    <!-- Watchdog -->
+    <string name="log_detail_watchdog_skipped">Проверка пропущена — приложение защищено планировщиком.</string>
+    <string name="log_detail_watchdog_drifted">Слетело операций AppOps: %d</string>
+    <string name="log_detail_watchdog_repaired">Восстановлено: %d из %d</string>
+    <string name="log_detail_watchdog_restored_ok">Все ограничения восстановлены.</string>
+    <string name="log_detail_watchdog_restored_partial">Восстановлено частично — часть операций не удалось применить.</string>
+    <string name="log_detail_watchdog_restored_failed">Восстановить ограничения не удалось.</string>
+    
 </resources>
