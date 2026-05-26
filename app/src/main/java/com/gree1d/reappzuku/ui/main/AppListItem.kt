@@ -1,7 +1,5 @@
 package com.gree1d.reappzuku.ui.main
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,17 +10,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +28,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -39,6 +35,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.gree1d.reappzuku.AppModel
 import com.gree1d.reappzuku.R
+
+// Цвета бейджей как в оригинальном XML
+private val BadgeSystemText       = Color(0xFF1A5276)
+private val BadgeSystemBg         = Color(0xFFD6EAF8)
+private val BadgePersistentText   = Color(0xFF6C3483)
+private val BadgePersistentBg     = Color(0xFFF5EEF8)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -50,116 +52,170 @@ fun AppListItem(
     onOverflow: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val bgColor by animateColorAsState(
-        targetValue = when {
-            app.isSelected   -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-            app.isProtected  -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-            app.isWhitelisted -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f)
-            else              -> Color.Transparent
-        },
-        animationSpec = tween(160),
-        label = "itemBg",
-    )
+    // Фон строки как в list_item_background — выделение при selection
+    val bgColor = if (app.isSelected)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+    else
+        Color.Transparent
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(bgColor)
-            .combinedClickable(onClick = onClick, onLongClick = onClick)
+            .padding(bottom = 2.dp)   // android:layout_marginBottom="2dp"
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
+                .height(60.dp)         // android:layout_height="60dp"
+                .background(bgColor)
+                .combinedClickable(onClick = onClick, onLongClick = onClick)
+                .padding(horizontal = 8.dp), // paddingStart/End="8dp"
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Icon
+            // ── App icon 48×48 ────────────────────────────────────────────
             AppIcon(app = app)
-            Spacer(Modifier.width(10.dp))
 
-            // Name + RAM + tags
+            Spacer(Modifier.width(8.dp))  // layout_marginEnd="8dp"
+
+            // ── Text column (weight=1) ─────────────────────────────────────
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),  // layout_marginEnd="8dp"
                 verticalArrangement = Arrangement.Center,
             ) {
+                // Строка 1: имя + иконки protected/whitelist
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text       = app.appName ?: app.packageName,
-                        fontSize   = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color      = MaterialTheme.colorScheme.onSurface,
-                        maxLines   = 1,
-                        overflow   = TextOverflow.Ellipsis,
-                        modifier   = Modifier.weight(1f, fill = false),
+                        text      = app.appName ?: app.packageName,
+                        fontSize  = 16.sp,
+                        color     = MaterialTheme.colorScheme.onSurface,
+                        maxLines  = 1,
+                        overflow  = TextOverflow.Ellipsis,
+                        modifier  = Modifier.weight(1f, fill = false),
                     )
-                    if (app.isSystemApp)     TagChip(stringResource(R.string.filter_system))
-                    if (app.isPersistentApp) TagChip(stringResource(R.string.filter_running))
-                    if (app.isProtected)     TagChip(stringResource(R.string.settings_mode_whitelist), highlight = true)
+                    // protected_icon
+                    if (app.isProtected) {
+                        Icon(
+                            painter            = painterResource(R.drawable.ic_protected),
+                            contentDescription = null,
+                            tint               = MaterialTheme.colorScheme.primary,
+                            modifier           = Modifier
+                                .padding(start = 4.dp)
+                                .size(16.dp),
+                        )
+                    }
+                    // whitelist_icon
+                    if (app.isWhitelisted) {
+                        Icon(
+                            painter            = painterResource(R.drawable.ic_whitelist),
+                            contentDescription = null,
+                            tint               = MaterialTheme.colorScheme.primary,
+                            modifier           = Modifier
+                                .padding(start = 8.dp)
+                                .size(16.dp),
+                        )
+                    }
                 }
-                ResourceUsageRow(app = app)
+
+                // Строка 2: package name
+                Text(
+                    text     = app.packageName,
+                    fontSize = 12.sp,
+                    color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                // Строка 3: RAM + CPU + badge_system + badge_persistent
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    // RAM
+                    val ramText = app.appRam?.takeIf { it.isNotEmpty() }
+                    if (ramText != null) {
+                        Text(
+                            text     = ramText,
+                            fontSize = 12.sp,
+                            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                    // CPU
+                    val cpuText = app.cpuUsage?.takeIf { it.isNotEmpty() }
+                    if (cpuText != null) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text     = cpuText,
+                            fontSize = 12.sp,
+                            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                    // badge_system
+                    if (app.isSystemApp) {
+                        Spacer(Modifier.width(6.dp))
+                        Badge(text = "System", textColor = BadgeSystemText, bgColor = BadgeSystemBg)
+                    }
+                    // badge_persistent
+                    if (app.isPersistentApp) {
+                        Spacer(Modifier.width(6.dp))
+                        Badge(text = "Persistent", textColor = BadgePersistentText, bgColor = BadgePersistentBg)
+                    }
+                }
             }
 
-            Spacer(Modifier.width(2.dp))
-
-            // Action buttons
-            if (!app.isProtected) {
-                // Whitelist toggle
-                IconButton(onClick = onToggleWhitelist, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_whitelist),
-                        contentDescription = if (app.isWhitelisted)
-                            stringResource(R.string.main_removed_from_whitelist)
-                        else
-                            stringResource(R.string.main_added_to_whitelist),
-                        tint = if (app.isWhitelisted) MaterialTheme.colorScheme.primary
-                               else                   MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-                // Kill
-                IconButton(onClick = onKill, modifier = Modifier.size(36.dp)) {
-                    Icon(
-                        painter            = painterResource(R.drawable.ic_force_stop),
-                        contentDescription = stringResource(R.string.fab_kill_app),
-                        tint               = MaterialTheme.colorScheme.error,
-                        modifier           = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            // Overflow
-            IconButton(onClick = onOverflow, modifier = Modifier.size(36.dp)) {
+            // ── Overflow button 40×48 ─────────────────────────────────────
+            IconButton(
+                onClick  = onOverflow,
+                modifier = Modifier.size(width = 40.dp, height = 48.dp),
+            ) {
                 Icon(
                     painter            = painterResource(R.drawable.ic_more_vert),
                     contentDescription = null,
                     tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier           = Modifier.size(20.dp),
+                    modifier           = Modifier.size(24.dp),
                 )
             }
-        }
 
-        HorizontalDivider(
-            thickness = 0.5.dp,
-            color     = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        )
+            // ── Kill / action button 48×48 (hidden for protected/whitelisted) ──
+            if (!app.isProtected && !app.isWhitelisted) {
+                IconButton(
+                    onClick  = onKill,
+                    modifier = Modifier.size(48.dp),
+                ) {
+                    Icon(
+                        painter            = painterResource(R.drawable.ic_force_stop),
+                        contentDescription = null,
+                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier           = Modifier.size(28.dp),
+                    )
+                }
+            } else {
+                // Держим размер чтобы выравнивание не прыгало
+                Spacer(Modifier.size(48.dp))
+            }
+        }
     }
 }
 
+// ── App icon ──────────────────────────────────────────────────────────────────
+
 @Composable
-private fun AppIcon(app: AppModel, modifier: Modifier = Modifier) {
+private fun AppIcon(app: AppModel) {
     val drawable = app.appIcon
     if (drawable != null) {
-        val bitmap = remember(drawable) { drawable.toBitmap(96, 96) }
+        val bitmap = remember(drawable) { drawable.toBitmap(144, 144) }
         Image(
             painter            = BitmapPainter(bitmap.asImageBitmap()),
             contentDescription = app.appName,
-            modifier           = modifier.size(44.dp),
+            modifier           = Modifier.size(48.dp),
         )
     } else {
         Box(
-            modifier = modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(10.dp))
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
@@ -173,56 +229,18 @@ private fun AppIcon(app: AppModel, modifier: Modifier = Modifier) {
     }
 }
 
-@Composable
-private fun ResourceUsageRow(app: AppModel, modifier: Modifier = Modifier) {
-    // AppModel stores RAM as formatted string (appRam) and CPU as string (cpuUsage)
-    val ramText = app.appRam?.takeIf { it.isNotEmpty() } ?: "—"
-    val cpuText = app.cpuUsage?.takeIf { it.isNotEmpty() }
-
-    Row(modifier = modifier.padding(top = 1.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text  = ramText,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (cpuText != null) {
-            Text(
-                text     = "  ·  $cpuText",
-                fontSize = 12.sp,
-                color    = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        // Background restriction badge
-        if (app.isBackgroundRestricted) {
-            Text(
-                text       = "  ·  ${stringResource(R.string.restriction_badge_hard)}",
-                fontSize   = 10.sp,
-                color      = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-            )
-        }
-    }
-}
+// ── Badge chip (System / Persistent) ─────────────────────────────────────────
 
 @Composable
-private fun TagChip(
-    label: String,
-    highlight: Boolean = false,
-    modifier: Modifier = Modifier,
-) {
-    val bg = if (highlight) MaterialTheme.colorScheme.errorContainer
-             else           MaterialTheme.colorScheme.surfaceVariant
-    val fg = if (highlight) MaterialTheme.colorScheme.onErrorContainer
-             else           MaterialTheme.colorScheme.onSurfaceVariant
+private fun Badge(text: String, textColor: Color, bgColor: Color) {
     Text(
-        text       = label,
-        fontSize   = 9.sp,
-        fontWeight = FontWeight.Medium,
-        color      = fg,
-        modifier   = modifier
-            .padding(start = 4.dp)
+        text       = text,
+        fontSize   = 10.sp,
+        fontWeight = FontWeight.Bold,
+        color      = textColor,
+        modifier   = Modifier
             .clip(RoundedCornerShape(4.dp))
-            .background(bg)
-            .padding(horizontal = 4.dp, vertical = 1.dp),
+            .background(bgColor)
+            .padding(horizontal = 5.dp, vertical = 1.dp),
     )
 }
