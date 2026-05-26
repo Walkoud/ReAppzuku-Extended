@@ -947,6 +947,7 @@
     <string name="scansystem_cat_sensor">Holding sensors</string>
     <string name="scansystem_cat_location">Holding location</string>
     <string name="scansystem_wakelock_history">WakeLock History</string>
+    <string name="scan_button_label">Scan</string>
 
     <!-- Background Restrictions Detail Log -->
     <string name="settings_open_app_info">App Info</string>
