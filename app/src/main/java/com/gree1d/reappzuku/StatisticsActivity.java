@@ -881,9 +881,17 @@ public class StatisticsActivity extends BaseActivity {
             String repaired = extractDetailValue(detail, "repaired");
             if (missing != null) body.append(getString(R.string.log_detail_ops_missing)).append(": ").append(missing).append("\n");
             if (repaired != null) body.append(getString(R.string.log_detail_ops_repaired)).append(": ").append(repaired).append("\n");
+            List<String> repairedOps = extractOpsList(detail, "repairedOps");
+            if (!repairedOps.isEmpty()) {
+                body.append("\n");
+                for (String op : repairedOps) {
+                    body.append("  ✓ ").append(op).append("\n");
+                }
+            }
             List<String> failedOps = extractOpsList(detail, "failedOps");
             if (!failedOps.isEmpty()) {
-                body.append("\n").append(getString(R.string.log_detail_ops_failed)).append(":\n");
+                if (repairedOps.isEmpty()) body.append("\n");
+                body.append(getString(R.string.log_detail_ops_failed)).append(":\n");
                 for (String op : failedOps) {
                     body.append("  ✗ ").append(op).append("\n");
                 }

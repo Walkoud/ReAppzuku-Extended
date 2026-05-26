@@ -978,11 +978,12 @@ public class BackgroundAppManager {
                 Log.w(TAG, "watchdog: drift detected " + pkg + " missing=" + missing);
                 int ok = 0, fail = 0;
                 List<String> failedOps = new ArrayList<>();
+                List<String> repairedOps = new ArrayList<>();
                 for (String op : missing) {
                     boolean succeeded = shellManager.runShellCommandForResult(
                             "cmd appops set --user current " + pkg + " " + op + " ignore")
                             .succeeded();
-                    if (succeeded) ok++; else { fail++; failedOps.add(op); }
+                    if (succeeded) { ok++; repairedOps.add(op); } else { fail++; failedOps.add(op); }
                 }
 
                 if (hardSet.contains(pkg)) {
@@ -991,6 +992,9 @@ public class BackgroundAppManager {
 
                 String outcome = fail == 0 ? "ok" : (ok > 0 ? "partial" : "failed");
                 String detail = "missing=" + missing.size() + " repaired=" + ok + "/" + (ok + fail);
+                if (!repairedOps.isEmpty()) {
+                    detail += " repairedOps=" + repairedOps.toString().replace(", ", ",");
+                }
                 if (!failedOps.isEmpty()) {
                     detail += " failedOps=" + failedOps.toString().replace(", ", ",");
                 }
@@ -1059,6 +1063,14 @@ public class BackgroundAppManager {
         }
 
         if (getMediumRestrictedApps().contains(pkg)) {
+            int appliedMask = getAppliedOpsMask(pkg);
+            if (appliedMask != 0) {
+                List<String> ops = new ArrayList<>();
+                for (int i = 0; i < ALL_OPS.length; i++) {
+                    if ((appliedMask & (1 << i)) != 0) ops.add(ALL_OPS[i]);
+                }
+                return ops;
+            }
             return Arrays.asList(MEDIUM_OPS);
         }
 
