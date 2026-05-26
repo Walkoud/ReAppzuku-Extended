@@ -2,6 +2,7 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/coordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -69,7 +70,6 @@
                 android:indeterminate="false"
                 android:progressDrawable="@drawable/progress_bar"
                 style="?android:progressBarStyleHorizontal" />
-
         </LinearLayout>
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -113,12 +113,5 @@
         android:insetTop="0dp"
         android:insetBottom="0dp"
         style="@style/Widget.App.KillButton" />
-
-    <com.gree1d.reappzuku.RadialMenuView
-        android:id="@+id/radial_menu"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="gone"
-        android:elevation="8dp" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
