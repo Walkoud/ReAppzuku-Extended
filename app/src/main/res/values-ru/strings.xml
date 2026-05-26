@@ -942,7 +942,8 @@
     <string name="scansystem_cat_alarm">Будит устройство</string>
     <string name="scansystem_cat_sensor">Держит датчики</string>
     <string name="scansystem_cat_location">Держит геолокацию</string>
-    <string name="scansystem_wakelock_history">История WakeLock</string>
+    <string name="scansystem_wakelock_history">WakeLock History</string>
+    <string name="scan_button_label">Скан</string>
 
     <!-- Background Restrictions Log Detail -->
     <string name="settings_open_app_info">Инфо о приложении</string>
