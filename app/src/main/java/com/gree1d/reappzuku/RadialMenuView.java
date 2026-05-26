@@ -24,8 +24,8 @@ public class RadialMenuView extends View {
     private static final int   ICON_TINT        = Color.WHITE;
     private static final float START_ANGLE      = 90f;
     private static final float SWEEP            = 90f;
-    private static final float INNER_RADIUS_DP  = 28f;
     private static final float ICON_HALF_DP     = 14f;
+    private static final float CELL_PADDING_DP  = 5f;
     private static final float DIVIDER_WIDTH_DP = 2f;
 
     private final Paint sectorPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -36,7 +36,6 @@ public class RadialMenuView extends View {
 
     private float centerX;
     private float centerY;
-    private float innerRadius;
     private float outerRadius;
 
     public RadialMenuView(Context context) {
@@ -62,8 +61,6 @@ public class RadialMenuView extends View {
         dividerPaint.setColor(DIVIDER_COLOR);
         dividerPaint.setStyle(Paint.Style.STROKE);
         dividerPaint.setStrokeWidth(DIVIDER_WIDTH_DP * dp);
-
-        innerRadius = INNER_RADIUS_DP * dp;
     }
 
     public void setItems(int[] iconResIds) {
@@ -87,23 +84,31 @@ public class RadialMenuView extends View {
         super.onDraw(canvas);
         if (iconResIds.length == 0 || outerRadius == 0f) return;
 
+        float dp       = getResources().getDisplayMetrics().density;
+        float iconHalf = ICON_HALF_DP * dp;
+        float padding  = CELL_PADDING_DP * dp;
+        float cellHalf = iconHalf + padding;
+
         int n = iconResIds.length;
         float sectorAngle = SWEEP / n;
-        float dp = getResources().getDisplayMetrics().density;
-        float iconHalf = ICON_HALF_DP * dp;
 
         for (int i = 0; i < n; i++) {
-            float startAngle = START_ANGLE + i * sectorAngle;
-
-            Path path = buildSectorPath(startAngle, sectorAngle);
-            canvas.drawPath(path, sectorPaint);
-            canvas.drawPath(path, dividerPaint);
-
+            float startAngle  = START_ANGLE + i * sectorAngle;
             float midAngleDeg = startAngle + sectorAngle / 2f;
             float midAngleRad = (float) Math.toRadians(midAngleDeg);
-            float midRadius   = (outerRadius + innerRadius) / 2f;
+
+            float midRadius = outerRadius - cellHalf;
+
             float iconCx = centerX + (float) Math.cos(midAngleRad) * midRadius;
             float iconCy = centerY + (float) Math.sin(midAngleRad) * midRadius;
+
+            float inner = midRadius - cellHalf;
+            float outer = midRadius + cellHalf;
+            if (inner < 0) inner = 0;
+
+            Path path = buildSectorPath(startAngle, sectorAngle, inner, outer);
+            canvas.drawPath(path, sectorPaint);
+            canvas.drawPath(path, dividerPaint);
 
             Drawable drawable = ContextCompat.getDrawable(getContext(), iconResIds[i]);
             if (drawable != null) {
@@ -119,21 +124,22 @@ public class RadialMenuView extends View {
         }
     }
 
-    private Path buildSectorPath(float startAngleDeg, float sweepDeg) {
+    private Path buildSectorPath(float startAngleDeg, float sweepDeg,
+                                  float innerR, float outerR) {
         Path path = new Path();
         RectF outerRect = new RectF(
-                centerX - outerRadius, centerY - outerRadius,
-                centerX + outerRadius, centerY + outerRadius);
+                centerX - outerR, centerY - outerR,
+                centerX + outerR, centerY + outerR);
         RectF innerRect = new RectF(
-                centerX - innerRadius, centerY - innerRadius,
-                centerX + innerRadius, centerY + innerRadius);
+                centerX - innerR, centerY - innerR,
+                centerX + innerR, centerY + innerR);
 
         path.arcTo(outerRect, startAngleDeg, sweepDeg, false);
 
         float endRad = (float) Math.toRadians(startAngleDeg + sweepDeg);
         path.lineTo(
-                centerX + (float) Math.cos(endRad) * innerRadius,
-                centerY + (float) Math.sin(endRad) * innerRadius);
+                centerX + (float) Math.cos(endRad) * innerR,
+                centerY + (float) Math.sin(endRad) * innerR);
 
         path.arcTo(innerRect, startAngleDeg + sweepDeg, -sweepDeg, false);
         path.close();
@@ -149,13 +155,18 @@ public class RadialMenuView extends View {
         }
 
         if (action == MotionEvent.ACTION_UP) {
-            float x = event.getX();
-            float y = event.getY();
+            float x  = event.getX();
+            float y  = event.getY();
             float dx = x - centerX;
             float dy = y - centerY;
             float dist = (float) Math.sqrt(dx * dx + dy * dy);
 
-            if (dist < innerRadius || dist > outerRadius) {
+            float dp      = getResources().getDisplayMetrics().density;
+            float cellHalf = (ICON_HALF_DP + CELL_PADDING_DP) * dp;
+            float minDist  = outerRadius - cellHalf * 2f;
+            float maxDist  = outerRadius;
+
+            if (dist < minDist || dist > maxDist) {
                 setVisibility(View.GONE);
                 return true;
             }

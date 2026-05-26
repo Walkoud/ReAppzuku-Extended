@@ -235,13 +235,8 @@ public class MainActivity extends BaseActivity {
     }
 
     private void openRadialMenu() {
-        int[] rootLoc = new int[2];
-        binding.coordinator.getLocationOnScreen(rootLoc);
-        int[] toolbarLoc = new int[2];
-        binding.toolbar.getLocationOnScreen(toolbarLoc);
-
-        float cx = toolbarLoc[0] + binding.toolbar.getWidth() - rootLoc[0];
-        float cy = toolbarLoc[1] - rootLoc[1];
+        float cx = binding.toolbar.getWidth();
+        float cy = 0f;
         float outerRadius = binding.toolbar.getWidth();
 
         binding.radialMenu.setCenter(cx, cy, outerRadius);
