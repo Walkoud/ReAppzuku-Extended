@@ -16,12 +16,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/action_scan"
-        android:icon="@drawable/ic_scan"
-        android:title="@string/scansystem_menu_title"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/action_select_all"
         android:icon="@drawable/ic_select_all"
         android:title="@string/menu_select_all"
