@@ -12,12 +12,12 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
-    <application 
-        android:allowBackup="true" 
-        android:icon="@mipmap/ic_launcher" 
-        android:roundIcon="@mipmap/ic_launcher_round" 
-        android:label="@string/app_name" 
-        android:supportsRtl="true" 
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
             android:name=".AppResourceDetailActivity"
@@ -53,17 +53,17 @@
             android:exported="false"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoAnimation" />
+
         <service
-        android:name=".ShappkyService"
-        android:foregroundServiceType="specialUse"
-        android:exported="false">
-        
-            <property 
+            android:name=".ShappkyService"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false"
+            android:exported="false">
+            <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="System optimization tool for background process management via Shizuku" />
-            
         </service>
-        
+
         <service
             android:name=".ShappkyQuickTile"
             android:icon="@drawable/ic_force_stop"
@@ -76,7 +76,8 @@
             <meta-data
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
-        </service>        
+        </service>
+
         <service
             android:name=".ShappkyBackgroundKillTile"
             android:icon="@drawable/ic_force_stop"
@@ -100,13 +101,18 @@
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 
         <receiver
+            android:name=".ServiceRestartReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".RestrictionsScheduler$SchedulerReceiver"
             android:exported="false" />
-        
+
         <receiver
             android:name=".AppzukuWidgetReceiver"
             android:exported="true">
