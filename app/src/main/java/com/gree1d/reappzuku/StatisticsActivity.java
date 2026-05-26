@@ -889,7 +889,8 @@ public class StatisticsActivity extends BaseActivity {
                 }
             }
         } else {
-            boolean hasOpsInfo = detail.contains("appops=");
+            boolean isSoftAction = "reapply-soft".equals(entry.action) || "restrict-soft".equals(entry.action) || "restrict".equals(entry.action);
+            boolean hasOpsInfo = !isSoftAction && detail.contains("appops=");
             if (hasOpsInfo) {
                 body.append("\n");
                 List<String> failedOps = extractOpsList(detail, "failedOps");
@@ -941,8 +942,12 @@ public class StatisticsActivity extends BaseActivity {
                 }
             }
             String forceStop = extractDetailValue(detail, "force-stop");
+            String bucketVal = extractDetailValue(detail, "bucket");
+            if (bucketVal != null) {
+                body.append("\n").append(getString(R.string.log_detail_bucket_set)).append(": ").append(bucketBucketName(bucketVal)).append("\n");
+            }
             if (forceStop != null) {
-                body.append("\n").append(getString(R.string.log_detail_force_stop)).append(": ").append(forceStop).append("\n");
+                body.append(getString(R.string.log_detail_force_stop)).append(": ").append(forceStop).append("\n");
             }
         }
 

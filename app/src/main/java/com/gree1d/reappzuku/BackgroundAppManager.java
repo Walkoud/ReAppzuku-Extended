@@ -484,7 +484,7 @@ public class BackgroundAppManager {
                     ShellManager.ShellResult forceStopResult = shellManager
                             .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-manual", null, forceStopResult, opsCount);
+                    logRestrictionResult(packageName, "reapply-manual", null, forceStopResult, opsCount, manualBucket);
                 } else if (hardSet.contains(packageName)) {
                     int[] opsCount = applyAllHardOps(packageName, "ignore");
                     applyBucket(packageName, STANDBY_BUCKET_RESTRICTED);
@@ -492,14 +492,14 @@ public class BackgroundAppManager {
                     ShellManager.ShellResult forceStopResult = shellManager
                             .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-hard", null, forceStopResult, opsCount);
+                    logRestrictionResult(packageName, "reapply-hard", null, forceStopResult, opsCount, STANDBY_BUCKET_RESTRICTED);
                 } else if (mediumSet.contains(packageName)) {
                     int[] opsCount = applyMediumOps(packageName, "ignore");
                     applyBucket(packageName, STANDBY_BUCKET_RARE);
                     ShellManager.ShellResult forceStopResult = shellManager
                             .runShellCommandForResult(FORCE_STOP_COMMAND_PREFIX + packageName);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-medium", null, forceStopResult, opsCount);
+                    logRestrictionResult(packageName, "reapply-medium", null, forceStopResult, opsCount, STANDBY_BUCKET_RARE);
                 } else {
                     ShellManager.ShellResult restrictResult = shellManager
                             .runShellCommandForResult(buildBackgroundRestrictionCommand(packageName, "ignore"));
@@ -575,18 +575,18 @@ public class BackgroundAppManager {
                     int manualBucket = getManualBucket(packageName);
                     if (manualBucket != 0) applyBucket(packageName, manualBucket);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-manual", null, null, opsCount);
+                    logRestrictionResult(packageName, "reapply-manual", null, null, opsCount, manualBucket);
                 } else if (hard.contains(packageName)) {
                     int[] opsCount = applyAllHardOps(packageName, "ignore");
                     applyBucket(packageName, STANDBY_BUCKET_RESTRICTED);
                     applyBatteryWhitelistRemoval(packageName);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-hard", null, null, opsCount);
+                    logRestrictionResult(packageName, "reapply-hard", null, null, opsCount, STANDBY_BUCKET_RESTRICTED);
                 } else if (medium.contains(packageName)) {
                     int[] opsCount = applyMediumOps(packageName, "ignore");
                     applyBucket(packageName, STANDBY_BUCKET_RARE);
                     if (opsCount[0] == 0) success = false;
-                    logRestrictionResult(packageName, "reapply-medium", null, null, opsCount);
+                    logRestrictionResult(packageName, "reapply-medium", null, null, opsCount, STANDBY_BUCKET_RARE);
                 } else {
                     ShellManager.ShellResult result = shellManager
                             .runShellCommandForResult(buildBackgroundRestrictionCommand(packageName, "ignore"));
@@ -1068,12 +1068,18 @@ public class BackgroundAppManager {
 
     private void logRestrictionResult(String packageName, String action,
             ShellManager.ShellResult appOpsResult, ShellManager.ShellResult forceStopResult) {
-        logRestrictionResult(packageName, action, appOpsResult, forceStopResult, null);
+        logRestrictionResult(packageName, action, appOpsResult, forceStopResult, null, 0);
     }
 
     private void logRestrictionResult(String packageName, String action,
             ShellManager.ShellResult appOpsResult, ShellManager.ShellResult forceStopResult,
             int[] opsCount) {
+        logRestrictionResult(packageName, action, appOpsResult, forceStopResult, opsCount, 0);
+    }
+
+    private void logRestrictionResult(String packageName, String action,
+            ShellManager.ShellResult appOpsResult, ShellManager.ShellResult forceStopResult,
+            int[] opsCount, int bucket) {
         StringBuilder detail = new StringBuilder();
         if (opsCount != null) {
             int ok    = opsCount[0];
@@ -1091,6 +1097,9 @@ public class BackgroundAppManager {
             }
         } else {
             detail.append("appops=").append(formatShellOutcome(appOpsResult));
+        }
+        if (bucket != 0) {
+            detail.append(" bucket=").append(bucket);
         }
         if (forceStopResult != null) {
             detail.append(" force-stop=").append(formatShellOutcome(forceStopResult));
