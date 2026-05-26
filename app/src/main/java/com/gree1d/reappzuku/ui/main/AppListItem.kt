@@ -3,6 +3,7 @@ package com.gree1d.reappzuku.ui.main
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,10 +65,7 @@ fun AppListItem(
         modifier = modifier
             .fillMaxWidth()
             .background(bgColor)
-            .combinedClickable(
-                onClick      = onClick,
-                onLongClick  = onClick,
-            )
+            .combinedClickable(onClick = onClick, onLongClick = onClick)
     ) {
         Row(
             modifier = Modifier
@@ -75,7 +74,6 @@ fun AppListItem(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             AppIcon(app = app)
-
             Spacer(Modifier.width(10.dp))
 
             Column(
@@ -92,15 +90,9 @@ fun AppListItem(
                         overflow   = TextOverflow.Ellipsis,
                         modifier   = Modifier.weight(1f, fill = false),
                     )
-                    if (app.isSystemApp) {
-                        TagChip(stringResource(R.string.tag_system))
-                    }
-                    if (app.isPersistentApp) {
-                        TagChip(stringResource(R.string.tag_persistent))
-                    }
-                    if (app.isProtected) {
-                        TagChip(stringResource(R.string.tag_protected), highlight = true)
-                    }
+                    if (app.isSystemApp)     TagChip(stringResource(R.string.filter_system))
+                    if (app.isPersistentApp) TagChip(stringResource(R.string.filter_running))
+                    if (app.isProtected)     TagChip(stringResource(R.string.settings_mode_whitelist), highlight = true)
                 }
                 ResourceUsageRow(app = app)
             }
@@ -108,44 +100,33 @@ fun AppListItem(
             Spacer(Modifier.width(2.dp))
 
             if (!app.isProtected) {
-                IconButton(
-                    onClick  = onToggleWhitelist,
-                    modifier = Modifier.size(36.dp),
-                ) {
+                IconButton(onClick = onToggleWhitelist, modifier = Modifier.size(36.dp)) {
                     Icon(
                         painter = painterResource(
-                            if (app.isWhitelisted) R.drawable.ic_whitelist_on
-                            else                   R.drawable.ic_whitelist_off
+                            if (app.isWhitelisted) R.drawable.ic_star_filled
+                            else                   R.drawable.ic_star_outline
                         ),
-                        contentDescription = stringResource(
-                            if (app.isWhitelisted) R.string.main_remove_from_whitelist_hint
-                            else                   R.string.main_add_to_whitelist_hint
-                        ),
-                        tint = if (app.isWhitelisted)
-                            MaterialTheme.colorScheme.primary
+                        contentDescription = if (app.isWhitelisted)
+                            stringResource(R.string.main_removed_from_whitelist)
                         else
-                            MaterialTheme.colorScheme.onSurfaceVariant,
+                            stringResource(R.string.main_added_to_whitelist),
+                        tint = if (app.isWhitelisted) MaterialTheme.colorScheme.primary
+                               else                   MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
                 }
-
-                IconButton(
-                    onClick  = onKill,
-                    modifier = Modifier.size(36.dp),
-                ) {
+                // Kill
+                IconButton(onClick = onKill, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        painter            = painterResource(R.drawable.ic_kill),
-                        contentDescription = stringResource(R.string.main_kill_hint),
+                        painter            = painterResource(R.drawable.ic_close),
+                        contentDescription = stringResource(R.string.fab_kill_app),
                         tint               = MaterialTheme.colorScheme.error,
                         modifier           = Modifier.size(20.dp),
                     )
                 }
             }
 
-            IconButton(
-                onClick  = onOverflow,
-                modifier = Modifier.size(36.dp),
-            ) {
+            IconButton(onClick = onOverflow, modifier = Modifier.size(36.dp)) {
                 Icon(
                     painter            = painterResource(R.drawable.ic_more_vert),
                     contentDescription = null,
@@ -162,13 +143,12 @@ fun AppListItem(
     }
 }
 
-
 @Composable
 private fun AppIcon(app: AppModel, modifier: Modifier = Modifier) {
-    val iconDrawable = app.appIcon
-    if (iconDrawable != null) {
-        val bitmap = iconDrawable.toBitmap(width = 96, height = 96)
-        androidx.compose.foundation.Image(
+    val drawable = app.appIcon
+    if (drawable != null) {
+        val bitmap = remember(drawable) { drawable.toBitmap(96, 96) }
+        Image(
             painter            = BitmapPainter(bitmap.asImageBitmap()),
             contentDescription = app.appName,
             modifier           = modifier.size(44.dp),
@@ -182,72 +162,43 @@ private fun AppIcon(app: AppModel, modifier: Modifier = Modifier) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text      = (app.appName?.firstOrNull() ?: '?').uppercaseChar().toString(),
-                fontSize  = 20.sp,
+                text       = (app.appName?.firstOrNull() ?: '?').uppercaseChar().toString(),
+                fontSize   = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color     = MaterialTheme.colorScheme.onSecondaryContainer,
+                color      = MaterialTheme.colorScheme.onSecondaryContainer,
             )
         }
     }
 }
 
-
 @Composable
 private fun ResourceUsageRow(app: AppModel, modifier: Modifier = Modifier) {
-    val ramText = when {
-        app.memoryUsageMb > 0 -> "${app.memoryUsageMb} MB"
-        else                  -> "—"
-    }
-    val cpuText = when {
-        app.cpuUsage > 0f -> "${"%.1f".format(app.cpuUsage)}%"
-        else              -> null
-    }
+    val ramText = app.appRam?.takeIf { it.isNotEmpty() } ?: "—"
+    val cpuText = app.cpuUsage?.takeIf { it.isNotEmpty() }
 
-    Row(
-        modifier          = modifier.padding(top = 1.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter            = painterResource(R.drawable.ic_ram),
-            contentDescription = null,
-            modifier           = Modifier.size(12.dp),
-            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.width(2.dp))
+    Row(modifier = modifier.padding(top = 1.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
-            text     = ramText,
+            text  = ramText,
             fontSize = 12.sp,
-            color    = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-
         if (cpuText != null) {
-            Spacer(Modifier.width(8.dp))
-            Icon(
-                painter            = painterResource(R.drawable.ic_cpu),
-                contentDescription = null,
-                modifier           = Modifier.size(12.dp),
-                tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.width(2.dp))
             Text(
-                text     = cpuText,
+                text     = "  ·  $cpuText",
                 fontSize = 12.sp,
                 color    = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-
-        if (app.isBlacklisted) {
-            Spacer(Modifier.width(6.dp))
+        if (app.isBackgroundRestricted) {
             Text(
-                text      = stringResource(R.string.tag_blacklisted),
-                fontSize  = 10.sp,
-                color     = MaterialTheme.colorScheme.error,
+                text       = "  ·  ${stringResource(R.string.restriction_badge_hard)}",
+                fontSize   = 10.sp,
+                color      = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Medium,
             )
         }
     }
 }
-
 
 @Composable
 private fun TagChip(
@@ -255,11 +206,10 @@ private fun TagChip(
     highlight: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val bg   = if (highlight) MaterialTheme.colorScheme.errorContainer
-               else           MaterialTheme.colorScheme.surfaceVariant
-    val fg   = if (highlight) MaterialTheme.colorScheme.onErrorContainer
-               else           MaterialTheme.colorScheme.onSurfaceVariant
-
+    val bg = if (highlight) MaterialTheme.colorScheme.errorContainer
+             else           MaterialTheme.colorScheme.surfaceVariant
+    val fg = if (highlight) MaterialTheme.colorScheme.onErrorContainer
+             else           MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text       = label,
         fontSize   = 9.sp,

@@ -4,16 +4,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -39,14 +37,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import com.gree1d.reappzuku.AppModel
 import com.gree1d.reappzuku.R
-
 
 data class AppOptionsState(
     val app: AppModel,
@@ -57,7 +57,6 @@ data class AppOptionsState(
     val backgroundRestrictionDesired: Boolean,
     val backgroundRestrictionMenuTitle: String,
 )
-
 
 data class AppOptionsCallbacks(
     val onAppInfo: () -> Unit,
@@ -70,7 +69,6 @@ data class AppOptionsCallbacks(
     val onDismiss: () -> Unit,
 )
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppOptionsBottomSheet(
@@ -79,10 +77,9 @@ fun AppOptionsBottomSheet(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
 ) {
     ModalBottomSheet(
-        onDismissRequest  = callbacks.onDismiss,
-        sheetState        = sheetState,
-        windowInsets      = WindowInsets.navigationBars,
-        containerColor    = MaterialTheme.colorScheme.surface,
+        onDismissRequest = callbacks.onDismiss,
+        sheetState       = sheetState,
+        containerColor   = MaterialTheme.colorScheme.surface,
     ) {
         Column(
             modifier = Modifier
@@ -91,94 +88,63 @@ fun AppOptionsBottomSheet(
                 .padding(bottom = 24.dp),
         ) {
             SheetHeader(app = state.app)
-
             HorizontalDivider(Modifier.padding(vertical = 4.dp))
 
             if (state.app.isProtected) {
                 CheckableItem(
                     title   = stringResource(R.string.menu_hidden),
                     checked = state.isHidden,
-                    onClick = {
-                        callbacks.onToggleHidden()
-                        callbacks.onDismiss()
-                    },
+                    onClick = { callbacks.onToggleHidden(); callbacks.onDismiss() },
                 )
             } else {
                 PlainItem(
-                    title    = stringResource(R.string.menu_app_info),
-                    iconRes  = R.drawable.ic_info,
-                    onClick  = {
-                        callbacks.onAppInfo()
-                        callbacks.onDismiss()
-                    },
+                    title   = stringResource(R.string.menu_app_info),
+                    iconRes = android.R.drawable.ic_menu_info_details,
+                    onClick = { callbacks.onAppInfo(); callbacks.onDismiss() },
                 )
-
                 PlainItem(
                     title   = stringResource(R.string.menu_app_triggers),
-                    iconRes = R.drawable.ic_triggers,
-                    onClick = {
-                        callbacks.onAppTriggers()
-                        callbacks.onDismiss()
-                    },
+                    iconRes = android.R.drawable.ic_menu_search,
+                    onClick = { callbacks.onAppTriggers(); callbacks.onDismiss() },
                 )
-
                 if (!state.app.isSystemApp) {
                     PlainItem(
                         title       = stringResource(R.string.menu_uninstall),
-                        iconRes     = R.drawable.ic_uninstall,
-                        onClick     = {
-                            callbacks.onUninstall()
-                            callbacks.onDismiss()
-                        },
+                        iconRes     = android.R.drawable.ic_menu_delete,
+                        onClick     = { callbacks.onUninstall(); callbacks.onDismiss() },
                         destructive = true,
                     )
                 }
-
                 HorizontalDivider(Modifier.padding(vertical = 4.dp))
-
                 ExpandableGroup(title = stringResource(R.string.menu_add_to)) {
                     CheckableItem(
                         title   = stringResource(R.string.settings_mode_whitelist),
                         checked = state.isWhitelisted,
-                        onClick = {
-                            callbacks.onToggleWhitelist()
-                            callbacks.onDismiss()
-                        },
+                        onClick = { callbacks.onToggleWhitelist(); callbacks.onDismiss() },
                     )
                     CheckableItem(
                         title   = stringResource(R.string.settings_mode_blacklist),
                         checked = state.isBlacklisted,
-                        onClick = {
-                            callbacks.onToggleBlacklist()
-                            callbacks.onDismiss()
-                        },
+                        onClick = { callbacks.onToggleBlacklist(); callbacks.onDismiss() },
                     )
                     CheckableItem(
                         title   = stringResource(R.string.menu_hidden),
                         checked = state.isHidden,
-                        onClick = {
-                            callbacks.onToggleHidden()
-                            callbacks.onDismiss()
-                        },
+                        onClick = { callbacks.onToggleHidden(); callbacks.onDismiss() },
                     )
                     if (state.supportsBackgroundRestriction) {
                         CheckableItem(
                             title   = state.backgroundRestrictionMenuTitle,
                             checked = state.backgroundRestrictionDesired,
-                            onClick = {
-                                callbacks.onToggleBackgroundRestriction()
-                                callbacks.onDismiss()
-                            },
+                            onClick = { callbacks.onToggleBackgroundRestriction(); callbacks.onDismiss() },
                         )
                     }
                 }
             }
-
             Spacer(Modifier.height(8.dp))
         }
     }
 }
-
 
 @Composable
 private fun SheetHeader(app: AppModel) {
@@ -188,21 +154,16 @@ private fun SheetHeader(app: AppModel) {
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val iconDrawable = app.appIcon
-        if (iconDrawable != null) {
-            val bitmap = iconDrawable.toBitmapOrNull()
-            if (bitmap != null) {
-                androidx.compose.foundation.Image(
-                    painter            = androidx.compose.ui.graphics.painter.BitmapPainter(
-                        bitmap.asImageBitmap()
-                    ),
-                    contentDescription = null,
-                    modifier           = Modifier.size(40.dp),
-                )
-                Spacer(Modifier.width(12.dp))
-            }
+        val drawable = app.appIcon
+        if (drawable != null) {
+            val bitmap = remember(drawable) { drawable.toBitmap(96, 96) }
+            Image(
+                painter            = BitmapPainter(bitmap.asImageBitmap()),
+                contentDescription = null,
+                modifier           = Modifier.size(40.dp),
+            )
+            Spacer(Modifier.width(12.dp))
         }
-
         Column {
             Text(
                 text       = app.appName ?: app.packageName,
@@ -219,29 +180,17 @@ private fun SheetHeader(app: AppModel) {
     }
 }
 
-private fun android.graphics.drawable.Drawable.toBitmapOrNull(): android.graphics.Bitmap? =
-    try { androidx.core.graphics.drawable.DrawableCompat
-            .wrap(this)
-            .let { androidx.core.graphics.drawable.toBitmap(it, 96, 96) }
-    } catch (_: Exception) { null }
-
-private fun android.graphics.Bitmap.asImageBitmap() =
-    androidx.compose.ui.graphics.asImageBitmap()
-
-
 @Composable
 private fun PlainItem(
     title: String,
     iconRes: Int,
     onClick: () -> Unit,
     destructive: Boolean = false,
-    modifier: Modifier = Modifier,
 ) {
     val color = if (destructive) MaterialTheme.colorScheme.error
                 else             MaterialTheme.colorScheme.onSurface
-
     Row(
-        modifier = modifier
+        modifier          = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 14.dp),
@@ -254,11 +203,7 @@ private fun PlainItem(
             tint               = color,
         )
         Spacer(Modifier.width(14.dp))
-        Text(
-            text     = title,
-            fontSize = 15.sp,
-            color    = color,
-        )
+        Text(text = title, fontSize = 15.sp, color = color)
     }
 }
 
@@ -268,15 +213,13 @@ private fun CheckableItem(
     title: String,
     checked: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
+        modifier          = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(start = 20.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment     = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text     = title,
@@ -295,29 +238,26 @@ private fun CheckableItem(
     }
 }
 
-
 @Composable
 private fun ExpandableGroup(
     title: String,
-    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier
+            modifier          = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = !expanded }
                 .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text       = title,
                 fontSize   = 15.sp,
                 fontWeight = FontWeight.Medium,
                 color      = MaterialTheme.colorScheme.primary,
+                modifier   = Modifier.weight(1f),
             )
             Icon(
                 imageVector        = if (expanded) Icons.Outlined.KeyboardArrowUp
@@ -327,7 +267,6 @@ private fun ExpandableGroup(
                 modifier           = Modifier.size(20.dp),
             )
         }
-
         AnimatedVisibility(
             visible = expanded,
             enter   = expandVertically(tween(200)),
@@ -338,9 +277,7 @@ private fun ExpandableGroup(
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                     .padding(start = 16.dp),
-            ) {
-                content()
-            }
+            ) { content() }
         }
     }
 }
