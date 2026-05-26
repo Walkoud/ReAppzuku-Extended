@@ -8,11 +8,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -24,15 +22,12 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.SelectAll
-import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,17 +45,12 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,20 +58,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gree1d.reappzuku.AppModel
 import com.gree1d.reappzuku.R
-import com.gree1d.reappzuku.ui.theme.LocalIsLightAccent
 import com.gree1d.reappzuku.ui.theme.LocalOnAccentColor
-
 
 enum class NavDestination { MAIN, SETTINGS, STATISTICS }
 
 data class MainScreenState(
-    val apps: List<AppModel>         = emptyList(),
-    val isRefreshing: Boolean        = false,
-    val ramPercent: Float            = 0f,       // 0..1
-    val ramLabel: String             = "",        // e.g. "3.2 / 8 GB"
-    val selectedCount: Int           = 0,
-    val searchQuery: String          = "",
-    val isSearchActive: Boolean      = false,
+    val apps: List<AppModel>    = emptyList(),
+    val isRefreshing: Boolean   = false,
+    val ramPercent: Float       = 0f,
+    val ramLabel: String        = "",
+    val selectedCount: Int      = 0,
+    val searchQuery: String     = "",
+    val isSearchActive: Boolean = false,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,20 +92,19 @@ fun MainScreen(
     modifier: Modifier = Modifier,
 ) {
     val onAccent     = LocalOnAccentColor.current
-    val isLightAccent = LocalIsLightAccent.current
     val primary      = MaterialTheme.colorScheme.primary
     val hasSelection = state.selectedCount > 0
     val pullState    = rememberPullToRefreshState()
     val listState    = rememberLazyListState()
 
     Scaffold(
-        modifier = modifier,
-        topBar = {
+        modifier  = modifier,
+        topBar    = {
             MainTopBar(
-                title           = stringResource(R.string.app_name),
-                isSearchActive  = state.isSearchActive,
-                searchQuery     = state.searchQuery,
-                hasSelection    = hasSelection,
+                title                = stringResource(R.string.app_name),
+                isSearchActive       = state.isSearchActive,
+                searchQuery          = state.searchQuery,
+                hasSelection         = hasSelection,
                 onSearchQueryChange  = onSearchQueryChange,
                 onSearchActiveChange = onSearchActiveChange,
                 onSelectAllToggle    = if (hasSelection) onDeselectAll else onSelectAll,
@@ -132,54 +119,36 @@ fun MainScreen(
                 enter   = slideInVertically(tween(200)) { it } + fadeIn(tween(200)),
                 exit    = slideOutVertically(tween(200)) { it } + fadeOut(tween(200)),
             ) {
-                AppNavigationBar(
-                    current    = NavDestination.MAIN,
-                    onNavigate = onNavigate,
-                )
+                AppNavigationBar(current = NavDestination.MAIN, onNavigate = onNavigate)
             }
         },
-        floatingActionButton = {},
     ) { innerPadding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-
-                RamBar(
-                    percent = state.ramPercent,
-                    label   = state.ramLabel,
-                )
-
-                AppCountRow(
-                    count       = state.apps.size,
-                    onScanClick = onScanClick,
-                )
+                RamBar(percent = state.ramPercent, label = state.ramLabel)
+                AppCountRow(count = state.apps.size, onScanClick = onScanClick)
 
                 PullToRefreshBox(
-                    state       = pullState,
+                    state        = pullState,
                     isRefreshing = state.isRefreshing,
-                    onRefresh   = onRefresh,
-                    modifier    = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
+                    onRefresh    = onRefresh,
+                    modifier     = Modifier.weight(1f).fillMaxWidth(),
                 ) {
-                    LazyColumn(
-                        state    = listState,
-                        modifier = Modifier.fillMaxSize(),
-                    ) {
+                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                         itemsIndexed(
                             items = state.apps,
                             key   = { _, app -> app.packageName }
-                        ) { index, app ->
+                        ) { _, app ->
                             AppListItem(
-                                app             = app,
-                                onKill          = { onKillApp(app) },
+                                app               = app,
+                                onKill            = { onKillApp(app) },
                                 onToggleWhitelist = { onToggleWhitelist(app) },
-                                onClick         = { onAppClick(app) },
-                                onOverflow      = { onAppOverflow(app) },
+                                onClick           = { onAppClick(app) },
+                                onOverflow        = { onAppOverflow(app) },
                             )
                         }
                     }
@@ -192,15 +161,13 @@ fun MainScreen(
                 exit     = slideOutVertically(tween(180)) { it } + fadeOut(tween(180)),
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                KillButton(
-                    count   = state.selectedCount,
-                    onClick = onKillSelected,
-                )
+                KillButton(count = state.selectedCount, onClick = onKillSelected)
             }
         }
     }
 }
 
+// ── TopAppBar ─────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -220,12 +187,12 @@ private fun MainTopBar(
         SearchBar(
             inputField = {
                 SearchBarDefaults.InputField(
-                    query          = searchQuery,
-                    onQueryChange  = onSearchQueryChange,
-                    onSearch       = {},
-                    expanded       = true,
+                    query            = searchQuery,
+                    onQueryChange    = onSearchQueryChange,
+                    onSearch         = {},
+                    expanded         = true,
                     onExpandedChange = onSearchActiveChange,
-                    placeholder    = { Text(stringResource(R.string.main_search_hint)) },
+                    placeholder      = { Text(stringResource(R.string.main_search_hint)) },
                 )
             },
             expanded         = true,
@@ -236,13 +203,10 @@ private fun MainTopBar(
     } else {
         TopAppBar(
             title = {
-                Text(
-                    text       = title,
-                    fontWeight = FontWeight.SemiBold,
-                    color      = contentColor,
-                )
+                Text(text = title, fontWeight = FontWeight.SemiBold, color = contentColor)
             },
             actions = {
+                // Search
                 IconButton(onClick = { onSearchActiveChange(true) }) {
                     Icon(
                         imageVector        = Icons.Default.Search,
@@ -250,40 +214,43 @@ private fun MainTopBar(
                         tint               = contentColor,
                     )
                 }
+                // Sort — using drawable resource, no material-icons-extended needed
                 IconButton(onClick = onSortClick) {
                     Icon(
-                        imageVector        = Icons.Outlined.Sort,
-                        contentDescription = null,
+                        painter            = painterResource(R.drawable.ic_sort),
+                        contentDescription = stringResource(R.string.sort_title),
                         tint               = contentColor,
+                        modifier           = Modifier.size(22.dp),
                     )
                 }
+                // Select all / deselect all
                 IconButton(onClick = onSelectAllToggle) {
                     Icon(
-                        imageVector        = Icons.Outlined.SelectAll,
+                        painter = painterResource(
+                            if (hasSelection) R.drawable.ic_unselect_all
+                            else              R.drawable.ic_select_all
+                        ),
                         contentDescription = if (hasSelection)
                             stringResource(R.string.menu_deselect_all)
                         else
                             stringResource(R.string.menu_select_all),
-                        tint = contentColor,
+                        tint     = contentColor,
+                        modifier = Modifier.size(22.dp),
                     )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor    = backgroundColor,
+                containerColor         = backgroundColor,
                 scrolledContainerColor = backgroundColor,
             ),
-            windowInsets = TopAppBarDefaults.windowInsets,
         )
     }
 }
 
+// ── RAM bar ───────────────────────────────────────────────────────────────────
 
 @Composable
-private fun RamBar(
-    percent: Float,
-    label: String,
-    modifier: Modifier = Modifier,
-) {
+private fun RamBar(percent: Float, label: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -292,32 +259,26 @@ private fun RamBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text      = label,
-            fontSize  = 12.sp,
+            text       = label,
+            fontSize   = 12.sp,
             fontWeight = FontWeight.Bold,
-            color     = MaterialTheme.colorScheme.onSurface,
-            modifier  = Modifier.padding(end = 6.dp),
+            color      = MaterialTheme.colorScheme.onSurface,
+            modifier   = Modifier.padding(end = 6.dp),
         )
         LinearProgressIndicator(
-            progress        = { percent },
-            modifier        = Modifier
-                .weight(1f)
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp)),
-            strokeCap       = StrokeCap.Round,
-            color           = MaterialTheme.colorScheme.primary,
-            trackColor      = MaterialTheme.colorScheme.surfaceVariant,
+            progress   = { percent },
+            modifier   = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
+            strokeCap  = StrokeCap.Round,
+            color      = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
         )
     }
 }
 
+// ── App count + Scan row ──────────────────────────────────────────────────────
 
 @Composable
-private fun AppCountRow(
-    count: Int,
-    onScanClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun AppCountRow(count: Int, onScanClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -331,20 +292,15 @@ private fun AppCountRow(
             fontSize = 18.sp,
             color    = MaterialTheme.colorScheme.onSurface,
         )
-
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication        = androidx.compose.material.ripple.rememberRipple(bounded = true),
-                    onClick           = onScanClick,
-                )
+                .clickable(onClick = onScanClick)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter           = painterResource(R.drawable.ic_scan),
+                painter            = painterResource(R.drawable.ic_scan),
                 contentDescription = null,
                 modifier           = Modifier.size(20.dp),
                 tint               = MaterialTheme.colorScheme.onSurface,
@@ -359,20 +315,16 @@ private fun AppCountRow(
     }
 }
 
+// ── Kill button ───────────────────────────────────────────────────────────────
 
 @Composable
-private fun KillButton(
-    count: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val onAccent = LocalOnAccentColor.current
-    val label = if (count >= 2)
-        stringResource(R.string.fab_kill_apps) + " ($count)"
-    else
-        stringResource(R.string.fab_kill_app) + " ($count)"
-
+private fun KillButton(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val onAccent      = LocalOnAccentColor.current
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val label = if (count >= 2)
+        "${stringResource(R.string.fab_kill_apps)} ($count)"
+    else
+        "${stringResource(R.string.fab_kill_app)} ($count)"
 
     Box(
         modifier = modifier
@@ -383,15 +335,11 @@ private fun KillButton(
             .height(64.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text       = label,
-            color      = onAccent,
-            fontSize   = 16.sp,
-            fontWeight = FontWeight.Bold,
-        )
+        Text(text = label, color = onAccent, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 
+// ── Bottom nav bar ────────────────────────────────────────────────────────────
 
 @Composable
 private fun AppNavigationBar(
@@ -400,50 +348,35 @@ private fun AppNavigationBar(
     modifier: Modifier = Modifier,
 ) {
     NavigationBar(modifier = modifier) {
-        NavBarEntry(
-            labelRes   = R.string.nav_main,
-            iconRes    = R.drawable.ic_main,
-            selected   = current == NavDestination.MAIN,
-            onClick    = { onNavigate(NavDestination.MAIN) },
+        NavigationBarItem(
+            selected = current == NavDestination.MAIN,
+            onClick  = { onNavigate(NavDestination.MAIN) },
+            icon     = { Icon(painterResource(R.drawable.ic_main), contentDescription = null) },
+            label    = { Text(stringResource(R.string.nav_main)) },
+            colors   = navItemColors(),
         )
-        NavBarEntry(
-            labelRes   = R.string.nav_settings,
-            iconRes    = R.drawable.ic_settings,
-            selected   = current == NavDestination.SETTINGS,
-            onClick    = { onNavigate(NavDestination.SETTINGS) },
+        NavigationBarItem(
+            selected = current == NavDestination.SETTINGS,
+            onClick  = { onNavigate(NavDestination.SETTINGS) },
+            icon     = { Icon(painterResource(R.drawable.ic_settings), contentDescription = null) },
+            label    = { Text(stringResource(R.string.nav_settings)) },
+            colors   = navItemColors(),
         )
-        NavBarEntry(
-            labelRes   = R.string.nav_statistics,
-            iconRes    = R.drawable.ic_stats,
-            selected   = current == NavDestination.STATISTICS,
-            onClick    = { onNavigate(NavDestination.STATISTICS) },
+        NavigationBarItem(
+            selected = current == NavDestination.STATISTICS,
+            onClick  = { onNavigate(NavDestination.STATISTICS) },
+            icon     = { Icon(painterResource(R.drawable.ic_stats), contentDescription = null) },
+            label    = { Text(stringResource(R.string.nav_statistics)) },
+            colors   = navItemColors(),
         )
     }
 }
 
 @Composable
-private fun NavBarEntry(
-    labelRes: Int,
-    iconRes: Int,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    NavigationBarItem(
-        selected = selected,
-        onClick  = onClick,
-        icon = {
-            Icon(
-                painter           = painterResource(iconRes),
-                contentDescription = null,
-            )
-        },
-        label = { Text(stringResource(labelRes)) },
-        colors = NavigationBarItemDefaults.colors(
-            selectedIconColor       = MaterialTheme.colorScheme.primary,
-            selectedTextColor       = MaterialTheme.colorScheme.primary,
-            indicatorColor          = MaterialTheme.colorScheme.primaryContainer,
-            unselectedIconColor     = MaterialTheme.colorScheme.onSurfaceVariant,
-            unselectedTextColor     = MaterialTheme.colorScheme.onSurfaceVariant,
-        ),
-    )
-}
+private fun navItemColors() = NavigationBarItemDefaults.colors(
+    selectedIconColor   = MaterialTheme.colorScheme.primary,
+    selectedTextColor   = MaterialTheme.colorScheme.primary,
+    indicatorColor      = MaterialTheme.colorScheme.primaryContainer,
+    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+)

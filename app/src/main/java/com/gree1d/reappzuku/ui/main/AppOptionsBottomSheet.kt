@@ -48,6 +48,10 @@ import androidx.core.graphics.drawable.toBitmap
 import com.gree1d.reappzuku.AppModel
 import com.gree1d.reappzuku.R
 
+// ─────────────────────────────────────────────────────────────────────────────
+// State + Callbacks
+// ─────────────────────────────────────────────────────────────────────────────
+
 data class AppOptionsState(
     val app: AppModel,
     val isWhitelisted: Boolean,
@@ -68,6 +72,10 @@ data class AppOptionsCallbacks(
     val onToggleBackgroundRestriction: () -> Unit,
     val onDismiss: () -> Unit,
 )
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sheet
+// ─────────────────────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,18 +107,18 @@ fun AppOptionsBottomSheet(
             } else {
                 PlainItem(
                     title   = stringResource(R.string.menu_app_info),
-                    iconRes = android.R.drawable.ic_menu_info_details,
+                    iconRes = R.drawable.ic_info,
                     onClick = { callbacks.onAppInfo(); callbacks.onDismiss() },
                 )
                 PlainItem(
                     title   = stringResource(R.string.menu_app_triggers),
-                    iconRes = android.R.drawable.ic_menu_search,
+                    iconRes = R.drawable.ic_search,
                     onClick = { callbacks.onAppTriggers(); callbacks.onDismiss() },
                 )
                 if (!state.app.isSystemApp) {
                     PlainItem(
                         title       = stringResource(R.string.menu_uninstall),
-                        iconRes     = android.R.drawable.ic_menu_delete,
+                        iconRes     = R.drawable.ic_force_stop,
                         onClick     = { callbacks.onUninstall(); callbacks.onDismiss() },
                         destructive = true,
                     )
@@ -146,6 +154,10 @@ fun AppOptionsBottomSheet(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Header
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 private fun SheetHeader(app: AppModel) {
     Row(
@@ -180,6 +192,10 @@ private fun SheetHeader(app: AppModel) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Plain item
+// ─────────────────────────────────────────────────────────────────────────────
+
 @Composable
 private fun PlainItem(
     title: String,
@@ -207,6 +223,9 @@ private fun PlainItem(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Checkable item
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun CheckableItem(
@@ -237,6 +256,10 @@ private fun CheckableItem(
         )
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Expandable group
+// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun ExpandableGroup(

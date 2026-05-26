@@ -73,9 +73,11 @@ fun AppListItem(
                 .padding(start = 12.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Icon
             AppIcon(app = app)
             Spacer(Modifier.width(10.dp))
 
+            // Name + RAM + tags
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center,
@@ -99,13 +101,12 @@ fun AppListItem(
 
             Spacer(Modifier.width(2.dp))
 
+            // Action buttons
             if (!app.isProtected) {
+                // Whitelist toggle
                 IconButton(onClick = onToggleWhitelist, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        painter = painterResource(
-                            if (app.isWhitelisted) R.drawable.ic_star_filled
-                            else                   R.drawable.ic_star_outline
-                        ),
+                        painter = painterResource(R.drawable.ic_whitelist),
                         contentDescription = if (app.isWhitelisted)
                             stringResource(R.string.main_removed_from_whitelist)
                         else
@@ -118,7 +119,7 @@ fun AppListItem(
                 // Kill
                 IconButton(onClick = onKill, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        painter            = painterResource(R.drawable.ic_close),
+                        painter            = painterResource(R.drawable.ic_force_stop),
                         contentDescription = stringResource(R.string.fab_kill_app),
                         tint               = MaterialTheme.colorScheme.error,
                         modifier           = Modifier.size(20.dp),
@@ -126,6 +127,7 @@ fun AppListItem(
                 }
             }
 
+            // Overflow
             IconButton(onClick = onOverflow, modifier = Modifier.size(36.dp)) {
                 Icon(
                     painter            = painterResource(R.drawable.ic_more_vert),
@@ -173,6 +175,7 @@ private fun AppIcon(app: AppModel, modifier: Modifier = Modifier) {
 
 @Composable
 private fun ResourceUsageRow(app: AppModel, modifier: Modifier = Modifier) {
+    // AppModel stores RAM as formatted string (appRam) and CPU as string (cpuUsage)
     val ramText = app.appRam?.takeIf { it.isNotEmpty() } ?: "—"
     val cpuText = app.cpuUsage?.takeIf { it.isNotEmpty() }
 
@@ -189,6 +192,7 @@ private fun ResourceUsageRow(app: AppModel, modifier: Modifier = Modifier) {
                 color    = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // Background restriction badge
         if (app.isBackgroundRestricted) {
             Text(
                 text       = "  ·  ${stringResource(R.string.restriction_badge_hard)}",
