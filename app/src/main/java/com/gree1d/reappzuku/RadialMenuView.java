@@ -19,22 +19,19 @@ public class RadialMenuView extends View {
         void onItemClick(int index);
     }
 
-    private static final int SECTOR_COLOR  = 0xFF3A3A3A;
-    private static final int DIVIDER_COLOR = Color.BLACK;
-    private static final int ICON_TINT     = Color.WHITE;
-
-    private static final float START_ANGLE  = 90f;
-    private static final float SWEEP        = 90f;
-
-    private static final float INNER_RADIUS_DP = 28f;
-    private static final float RING_WIDTH_DP   = 56f;
-    private static final float ICON_HALF_DP    = 12f;
+    private static final int   SECTOR_COLOR     = 0xCC3A3A3A;
+    private static final int   DIVIDER_COLOR    = Color.BLACK;
+    private static final int   ICON_TINT        = Color.WHITE;
+    private static final float START_ANGLE      = 90f;
+    private static final float SWEEP            = 90f;
+    private static final float INNER_RADIUS_DP  = 28f;
+    private static final float ICON_HALF_DP     = 14f;
     private static final float DIVIDER_WIDTH_DP = 2f;
 
     private final Paint sectorPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    private int[]              iconResIds = new int[0];
+    private int[] iconResIds = new int[0];
     private OnItemClickListener listener;
 
     private float centerX;
@@ -66,9 +63,7 @@ public class RadialMenuView extends View {
         dividerPaint.setStyle(Paint.Style.STROKE);
         dividerPaint.setStrokeWidth(DIVIDER_WIDTH_DP * dp);
 
-        float dp2 = getResources().getDisplayMetrics().density;
-        innerRadius = INNER_RADIUS_DP * dp2;
-        outerRadius = innerRadius + RING_WIDTH_DP * dp2;
+        innerRadius = INNER_RADIUS_DP * dp;
     }
 
     public void setItems(int[] iconResIds) {
@@ -79,6 +74,9 @@ public class RadialMenuView extends View {
     public void setCenter(float x, float y) {
         centerX = x;
         centerY = y;
+        float distRight  = getWidth() - centerX;
+        float distBottom = getHeight() - centerY;
+        outerRadius = (float) Math.sqrt(distRight * distRight + distBottom * distBottom);
         invalidate();
     }
 
@@ -89,7 +87,7 @@ public class RadialMenuView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (iconResIds.length == 0) return;
+        if (iconResIds.length == 0 || outerRadius == 0f) return;
 
         int n = iconResIds.length;
         float sectorAngle = SWEEP / n;
