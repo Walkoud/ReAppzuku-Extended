@@ -454,7 +454,6 @@
 
     <style name="AppBottomSheetDialogTheme" parent="Theme.Material3.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
-        <item name="enableDragHandle">false</item>
     </style>
 
     <style name="AppBottomSheetStyle" parent="Widget.Material3.BottomSheet.Modal">
