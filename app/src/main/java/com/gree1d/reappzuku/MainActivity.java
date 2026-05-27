@@ -278,20 +278,26 @@ public class MainActivity extends BaseActivity {
     private void showAppOptionsMenu(AppModel app, View anchor) {
             String packageName = app.getPackageName();
     
+            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            int accentColor = accent == ACCENT_CUSTOM
+                    ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                    : resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
+    
             AppOptionsBottomSheet sheet = AppOptionsBottomSheet.newInstance(
                     app,
                     appManager.getWhitelistedApps().contains(packageName),
                     autoKillManager.getBlacklistedApps().contains(packageName),
                     appManager.getHiddenApps().contains(packageName),
                     appManager.supportsBackgroundRestriction(),
-                    getBackgroundRestrictionMenuTitle(app)
+                    getBackgroundRestrictionMenuTitle(app),
+                    accentColor
             );
     
             try {
                 android.graphics.drawable.Drawable icon = getPackageManager()
                         .getApplicationIcon(packageName);
                 sheet.setAppIcon(icon);
-            } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
+            } catch (PackageManager.NameNotFoundException ignored) {}
     
             sheet.setListener(new AppOptionsBottomSheet.Listener() {
                 @Override

@@ -1,7 +1,6 @@
 package com.gree1d.reappzuku;
 
 import android.content.res.ColorStateList;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,9 +15,6 @@ import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-import static com.gree1d.reappzuku.PreferenceKeys.*;
-import static com.gree1d.reappzuku.AppConstants.*;
-
 public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
 
     public interface Listener {
@@ -32,17 +28,17 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         void onToggleBackgroundRestriction(boolean nowChecked);
     }
 
-    private static final String ARG_APP_NAME      = "app_name";
-    private static final String ARG_PACKAGE        = "package";
-    private static final String ARG_IS_PROTECTED   = "is_protected";
-    private static final String ARG_IS_SYSTEM      = "is_system";
-    private static final String ARG_IN_WHITELIST   = "in_whitelist";
-    private static final String ARG_IN_BLACKLIST   = "in_blacklist";
-    private static final String ARG_IN_HIDDEN      = "in_hidden";
-    private static final String ARG_IN_HIDDEN_SGL  = "in_hidden_single";
-    private static final String ARG_BG_RESTRICTION = "bg_restriction";
+    private static final String ARG_APP_NAME             = "app_name";
+    private static final String ARG_PACKAGE              = "package";
+    private static final String ARG_IS_PROTECTED         = "is_protected";
+    private static final String ARG_IS_SYSTEM            = "is_system";
+    private static final String ARG_IN_WHITELIST         = "in_whitelist";
+    private static final String ARG_IN_BLACKLIST         = "in_blacklist";
+    private static final String ARG_IN_HIDDEN            = "in_hidden";
+    private static final String ARG_BG_RESTRICTION       = "bg_restriction";
     private static final String ARG_BG_RESTRICT_SUPPORTED = "bg_restrict_supported";
-    private static final String ARG_BG_RESTRICT_LABEL = "bg_restrict_label";
+    private static final String ARG_BG_RESTRICT_LABEL    = "bg_restrict_label";
+    private static final String ARG_ACCENT_COLOR         = "accent_color";
 
     private Listener listener;
     private android.graphics.drawable.Drawable appIcon;
@@ -53,7 +49,8 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             boolean inBlacklist,
             boolean inHidden,
             boolean supportsBackgroundRestriction,
-            String backgroundRestrictionLabel) {
+            String backgroundRestrictionLabel,
+            int accentColor) {
 
         AppOptionsBottomSheet sheet = new AppOptionsBottomSheet();
         Bundle args = new Bundle();
@@ -64,10 +61,10 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         args.putBoolean(ARG_IN_WHITELIST, inWhitelist);
         args.putBoolean(ARG_IN_BLACKLIST, inBlacklist);
         args.putBoolean(ARG_IN_HIDDEN, inHidden);
-        args.putBoolean(ARG_IN_HIDDEN_SGL, inHidden);
         args.putBoolean(ARG_BG_RESTRICTION, app.isBackgroundRestrictionDesired());
         args.putBoolean(ARG_BG_RESTRICT_SUPPORTED, supportsBackgroundRestriction);
         args.putString(ARG_BG_RESTRICT_LABEL, backgroundRestrictionLabel);
+        args.putInt(ARG_ACCENT_COLOR, accentColor);
         sheet.setArguments(args);
         return sheet;
     }
@@ -78,6 +75,12 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
 
     public void setListener(Listener listener) {
         this.listener = listener;
+    }
+
+
+    @Override
+    public int getTheme() {
+        return R.style.AppBottomSheetDialogTheme;
     }
 
     @Nullable
@@ -93,16 +96,19 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         super.onViewCreated(view, savedInstanceState);
 
         Bundle args = requireArguments();
-        String appName    = args.getString(ARG_APP_NAME, "");
-        String pkg        = args.getString(ARG_PACKAGE, "");
-        boolean isProtected = args.getBoolean(ARG_IS_PROTECTED, false);
-        boolean isSystem  = args.getBoolean(ARG_IS_SYSTEM, false);
-        boolean inWhitelist = args.getBoolean(ARG_IN_WHITELIST, false);
-        boolean inBlacklist = args.getBoolean(ARG_IN_BLACKLIST, false);
-        boolean inHidden  = args.getBoolean(ARG_IN_HIDDEN, false);
+        String appName       = args.getString(ARG_APP_NAME, "");
+        String pkg           = args.getString(ARG_PACKAGE, "");
+        boolean isProtected  = args.getBoolean(ARG_IS_PROTECTED, false);
+        boolean isSystem     = args.getBoolean(ARG_IS_SYSTEM, false);
+        boolean inWhitelist  = args.getBoolean(ARG_IN_WHITELIST, false);
+        boolean inBlacklist  = args.getBoolean(ARG_IN_BLACKLIST, false);
+        boolean inHidden     = args.getBoolean(ARG_IN_HIDDEN, false);
         boolean bgRestriction = args.getBoolean(ARG_BG_RESTRICTION, false);
-        boolean bgSupported = args.getBoolean(ARG_BG_RESTRICT_SUPPORTED, false);
-        String bgLabel = args.getString(ARG_BG_RESTRICT_LABEL, "");
+        boolean bgSupported  = args.getBoolean(ARG_BG_RESTRICT_SUPPORTED, false);
+        String bgLabel       = args.getString(ARG_BG_RESTRICT_LABEL, "");
+        int accentColor      = args.getInt(ARG_ACCENT_COLOR);
+
+        ColorStateList accentTint = buildCheckboxTint(accentColor);
 
         ImageView iconView = view.findViewById(R.id.sheet_app_icon);
         TextView nameView  = view.findViewById(R.id.sheet_app_name);
@@ -112,46 +118,32 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         nameView.setText(appName);
         pkgView.setText(pkg);
 
-        android.content.SharedPreferences prefs =
-                requireContext().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE);
-        int accent = prefs.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        ColorStateList accentTint;
-        if (accent == ACCENT_CUSTOM) {
-            accentTint = ColorStateList.valueOf(
-                    prefs.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
-        } else {
-            android.util.TypedValue tv = new android.util.TypedValue();
-            requireContext().getTheme().resolveAttribute(
-                    androidx.appcompat.R.attr.colorPrimary, tv, true);
-            accentTint = ColorStateList.valueOf(tv.data);
-        }
-
-        TextView btnInfo     = view.findViewById(R.id.sheet_btn_app_info);
-        TextView btnTriggers = view.findViewById(R.id.sheet_btn_app_triggers);
-        TextView btnUninstall = view.findViewById(R.id.sheet_btn_uninstall);
+        TextView btnInfo        = view.findViewById(R.id.sheet_btn_app_info);
+        TextView btnTriggers    = view.findViewById(R.id.sheet_btn_app_triggers);
+        TextView btnUninstall   = view.findViewById(R.id.sheet_btn_uninstall);
         TextView btnHiddenSingle = view.findViewById(R.id.sheet_btn_hidden_single);
 
-        View dividerAddTo        = view.findViewById(R.id.sheet_divider_add_to);
-        LinearLayout addToHeader = view.findViewById(R.id.sheet_add_to_header);
+        View dividerAddTo           = view.findViewById(R.id.sheet_divider_add_to);
+        LinearLayout addToHeader    = view.findViewById(R.id.sheet_add_to_header);
         LinearLayout addToContainer = view.findViewById(R.id.sheet_add_to_container);
-        ImageView addToArrow     = view.findViewById(R.id.sheet_add_to_arrow);
-        TextView addToTitle      = view.findViewById(R.id.sheet_add_to_title);
+        ImageView addToArrow        = view.findViewById(R.id.sheet_add_to_arrow);
+        TextView addToTitle         = view.findViewById(R.id.sheet_add_to_title);
 
-        LinearLayout itemWhitelist = view.findViewById(R.id.sheet_item_whitelist);
-        LinearLayout itemBlacklist = view.findViewById(R.id.sheet_item_blacklist);
-        LinearLayout itemHidden    = view.findViewById(R.id.sheet_item_hidden);
+        LinearLayout itemWhitelist  = view.findViewById(R.id.sheet_item_whitelist);
+        LinearLayout itemBlacklist  = view.findViewById(R.id.sheet_item_blacklist);
+        LinearLayout itemHidden     = view.findViewById(R.id.sheet_item_hidden);
         LinearLayout itemBgRestrict = view.findViewById(R.id.sheet_item_bg_restriction);
-        TextView bgRestrictLabel   = view.findViewById(R.id.sheet_bg_restriction_label);
+        TextView bgRestrictLabel    = view.findViewById(R.id.sheet_bg_restriction_label);
 
-        CheckBox checkWhitelist   = view.findViewById(R.id.sheet_check_whitelist);
-        CheckBox checkBlacklist   = view.findViewById(R.id.sheet_check_blacklist);
-        CheckBox checkHidden      = view.findViewById(R.id.sheet_check_hidden);
-        CheckBox checkBgRestrict  = view.findViewById(R.id.sheet_check_bg_restriction);
+        CheckBox checkWhitelist  = view.findViewById(R.id.sheet_check_whitelist);
+        CheckBox checkBlacklist  = view.findViewById(R.id.sheet_check_blacklist);
+        CheckBox checkHidden     = view.findViewById(R.id.sheet_check_hidden);
+        CheckBox checkBgRestrict = view.findViewById(R.id.sheet_check_bg_restriction);
 
-        applyCheckboxTint(checkWhitelist, accentTint);
-        applyCheckboxTint(checkBlacklist, accentTint);
-        applyCheckboxTint(checkHidden, accentTint);
-        applyCheckboxTint(checkBgRestrict, accentTint);
+        checkWhitelist.setButtonTintList(accentTint);
+        checkBlacklist.setButtonTintList(accentTint);
+        checkHidden.setButtonTintList(accentTint);
+        checkBgRestrict.setButtonTintList(accentTint);
 
         btnInfo.setOnClickListener(v -> {
             dismiss();
@@ -173,8 +165,8 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         } else {
             dividerAddTo.setVisibility(View.VISIBLE);
             addToHeader.setVisibility(View.VISIBLE);
-            addToTitle.setTextColor(accentTint);
-            addToArrow.setImageTintList(accentTint);
+            addToTitle.setTextColor(accentColor);
+            addToArrow.setImageTintList(ColorStateList.valueOf(accentColor));
 
             if (!isSystem) {
                 btnUninstall.setVisibility(View.VISIBLE);
@@ -226,7 +218,12 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         }
     }
 
-    private void applyCheckboxTint(CheckBox cb, ColorStateList tint) {
-        cb.setButtonTintList(tint);
+    private ColorStateList buildCheckboxTint(int color) {
+        int[][] states = new int[][] {
+            new int[] { android.R.attr.state_checked },
+            new int[] { -android.R.attr.state_checked }
+        };
+        int[] colors = new int[] { color, color };
+        return new ColorStateList(states, colors);
     }
 }
