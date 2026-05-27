@@ -135,6 +135,7 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         LinearLayout addToHeader = view.findViewById(R.id.sheet_add_to_header);
         LinearLayout addToContainer = view.findViewById(R.id.sheet_add_to_container);
         ImageView addToArrow     = view.findViewById(R.id.sheet_add_to_arrow);
+        TextView addToTitle      = view.findViewById(R.id.sheet_add_to_title);
 
         LinearLayout itemWhitelist = view.findViewById(R.id.sheet_item_whitelist);
         LinearLayout itemBlacklist = view.findViewById(R.id.sheet_item_blacklist);
@@ -172,6 +173,8 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         } else {
             dividerAddTo.setVisibility(View.VISIBLE);
             addToHeader.setVisibility(View.VISIBLE);
+            addToTitle.setTextColor(accentTint);
+            addToArrow.setImageTintList(accentTint);
 
             if (!isSystem) {
                 btnUninstall.setVisibility(View.VISIBLE);
@@ -194,7 +197,7 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             addToHeader.setOnClickListener(v -> {
                 boolean expanded = addToContainer.getVisibility() == View.VISIBLE;
                 addToContainer.setVisibility(expanded ? View.GONE : View.VISIBLE);
-                addToArrow.setRotation(expanded ? 180f : 0f);
+                addToArrow.setRotation(expanded ? 0f : 180f);
             });
 
             itemWhitelist.setOnClickListener(v -> {
