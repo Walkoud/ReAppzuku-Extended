@@ -2,5 +2,6 @@
 <resources>
     <style name="AppBottomSheetDialogTheme" parent="Theme.Material3.Dark.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
+        <item name="enableDragHandle">false</item>
     </style>
 </resources>
