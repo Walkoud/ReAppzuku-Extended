@@ -5,6 +5,14 @@
     android:layout_height="wrap_content"
     android:orientation="vertical">
 
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_sheet_handle" />
+
     <LinearLayout
         android:id="@+id/sheet_app_header"
         android:layout_width="match_parent"
@@ -28,6 +36,14 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:orientation="vertical">
+
+    <View
+        android:layout_width="36dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="4dp"
+        android:background="@drawable/bg_sheet_handle" />
 
             <TextView
                 android:id="@+id/sheet_app_name"
