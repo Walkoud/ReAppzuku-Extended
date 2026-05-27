@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,11 +22,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,89 +37,120 @@ import androidx.core.graphics.drawable.toBitmap
 import com.gree1d.reappzuku.AppModel
 import com.gree1d.reappzuku.R
 
-// Цвета бейджей как в оригинальном XML
-private val BadgeSystemText       = Color(0xFF1A5276)
-private val BadgeSystemBg         = Color(0xFFD6EAF8)
-private val BadgePersistentText   = Color(0xFF6C3483)
-private val BadgePersistentBg     = Color(0xFFF5EEF8)
+private val BadgeSystemText     = Color(0xFF1A5276)
+private val BadgeSystemBg       = Color(0xFFD6EAF8)
+private val BadgePersistentText = Color(0xFF6C3483)
+private val BadgePersistentBg   = Color(0xFFF5EEF8)
+
+private const val ALPHA_PROTECTED   = 0.4f
+private const val ALPHA_WHITELISTED = 0.85f
+private const val ALPHA_NORMAL      = 1.0f
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppListItem(
     app: AppModel,
-    onKill: () -> Unit,
-    onToggleWhitelist: () -> Unit,
-    onClick: () -> Unit,
-    onOverflow: () -> Unit,
+    selectionMode: Boolean,
+    onKillApp: () -> Unit,
+    onAppClick: () -> Unit,
+    onOverflowClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Фон строки как в list_item_background — выделение при selection
-    val bgColor = if (app.isSelected)
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-    else
-        Color.Transparent
+    val contentAlpha = when {
+        app.isProtected   -> ALPHA_PROTECTED
+        app.isWhitelisted -> ALPHA_WHITELISTED
+        else              -> ALPHA_NORMAL
+    }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = 2.dp)   // android:layout_marginBottom="2dp"
+            .padding(bottom = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)         // android:layout_height="60dp"
-                .background(bgColor)
-                .combinedClickable(onClick = onClick, onLongClick = onClick)
-                .padding(horizontal = 8.dp), // paddingStart/End="8dp"
+                .height(60.dp)
+                .combinedClickable(
+                    onClick = {
+                        if (selectionMode) {
+                            if (!app.isProtected && !app.isWhitelisted) onAppClick()
+                        } else {
+                            onOverflowClick()
+                        }
+                    },
+                    onLongClick = {
+                        if (!selectionMode && !app.isProtected && !app.isWhitelisted) onAppClick()
+                    }
+                )
+                .padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // ── App icon 48×48 ────────────────────────────────────────────
-            AppIcon(app = app)
+            // ── Иконка ────────────────────────────────────────────────────
+            val drawable = app.appIcon
+            if (drawable != null) {
+                val bitmap = remember(drawable) { drawable.toBitmap(144, 144) }
+                Image(
+                    painter            = BitmapPainter(bitmap.asImageBitmap()),
+                    contentDescription = app.appName,
+                    modifier           = Modifier.size(48.dp).alpha(contentAlpha),
+                )
+            } else {
+                Box(
+                    modifier         = Modifier
+                        .size(48.dp)
+                        .alpha(contentAlpha)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.secondaryContainer),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text       = (app.appName?.firstOrNull() ?: '?').uppercaseChar().toString(),
+                        fontSize   = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color      = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
 
-            Spacer(Modifier.width(8.dp))  // layout_marginEnd="8dp"
+            Spacer(Modifier.width(8.dp))
 
-            // ── Text column (weight=1) ─────────────────────────────────────
+            // ── Текст ─────────────────────────────────────────────────────
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(end = 8.dp),  // layout_marginEnd="8dp"
-                verticalArrangement = Arrangement.Center,
+                    .padding(end = 8.dp)
+                    .alpha(contentAlpha),
             ) {
-                // Строка 1: имя + иконки protected/whitelist
+                // Строка 1: имя + иконки
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text      = app.appName ?: app.packageName,
-                        fontSize  = 16.sp,
-                        color     = MaterialTheme.colorScheme.onSurface,
-                        maxLines  = 1,
-                        overflow  = TextOverflow.Ellipsis,
-                        modifier  = Modifier.weight(1f, fill = false),
+                        text     = app.appName ?: app.packageName,
+                        fontSize = 16.sp,
+                        color    = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
-                    // protected_icon
                     if (app.isProtected) {
                         Icon(
                             painter            = painterResource(R.drawable.ic_protected),
                             contentDescription = null,
-                            tint               = MaterialTheme.colorScheme.primary,
-                            modifier           = Modifier
-                                .padding(start = 4.dp)
-                                .size(16.dp),
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier           = Modifier.padding(start = 4.dp).size(16.dp),
                         )
                     }
-                    // whitelist_icon
                     if (app.isWhitelisted) {
                         Icon(
                             painter            = painterResource(R.drawable.ic_whitelist),
                             contentDescription = null,
-                            tint               = MaterialTheme.colorScheme.primary,
-                            modifier           = Modifier
-                                .padding(start = 8.dp)
-                                .size(16.dp),
+                            tint               = Color(0xFF4CAF50),
+                            modifier           = Modifier.padding(start = 8.dp).size(16.dp),
                         )
                     }
                 }
 
-                // Строка 2: package name
+                // Строка 2: package
                 Text(
                     text     = app.packageName,
                     fontSize = 12.sp,
@@ -127,21 +159,16 @@ fun AppListItem(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                // Строка 3: RAM + CPU + badge_system + badge_persistent
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    // RAM
+                // Строка 3: ОЗУ + CPU + badges
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     val ramText = app.appRam?.takeIf { it.isNotEmpty() }
                     if (ramText != null) {
                         Text(
-                            text     = ramText,
+                            text     = stringResource(R.string.app_ram_label, ramText),
                             fontSize = 12.sp,
                             color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
                         )
                     }
-                    // CPU
                     val cpuText = app.cpuUsage?.takeIf { it.isNotEmpty() }
                     if (cpuText != null) {
                         Spacer(Modifier.width(8.dp))
@@ -149,90 +176,57 @@ fun AppListItem(
                             text     = cpuText,
                             fontSize = 12.sp,
                             color    = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
                         )
                     }
-                    // badge_system
-                    if (app.isSystemApp) {
-                        Spacer(Modifier.width(6.dp))
-                        Badge(text = "System", textColor = BadgeSystemText, bgColor = BadgeSystemBg)
-                    }
-                    // badge_persistent
-                    if (app.isPersistentApp) {
-                        Spacer(Modifier.width(6.dp))
-                        Badge(text = "Persistent", textColor = BadgePersistentText, bgColor = BadgePersistentBg)
+                    // persistent приоритетнее system — точно как в адаптере
+                    when {
+                        app.isPersistentApp ->
+                            Badge("Persistent", BadgePersistentText, BadgePersistentBg)
+                        app.isSystemApp ->
+                            Badge("System", BadgeSystemText, BadgeSystemBg)
                     }
                 }
             }
 
-            // ── Overflow button 40×48 ─────────────────────────────────────
-            IconButton(
-                onClick  = onOverflow,
-                modifier = Modifier.size(width = 40.dp, height = 48.dp),
-            ) {
-                Icon(
-                    painter            = painterResource(R.drawable.ic_more_vert),
-                    contentDescription = null,
-                    tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier           = Modifier.size(24.dp),
-                )
-            }
-
-            // ── Kill / action button 48×48 (hidden for protected/whitelisted) ──
-            if (!app.isProtected && !app.isWhitelisted) {
-                IconButton(
-                    onClick  = onKill,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        painter            = painterResource(R.drawable.ic_force_stop),
-                        contentDescription = null,
-                        tint               = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier           = Modifier.size(28.dp),
-                    )
+            // ── Кнопка действия ───────────────────────────────────────────
+            when {
+                app.isProtected || app.isWhitelisted -> {
+                    // скрыта, но место занимаем чтобы текст не растягивался
+                    Spacer(Modifier.size(48.dp))
                 }
-            } else {
-                // Держим размер чтобы выравнивание не прыгало
-                Spacer(Modifier.size(48.dp))
+                selectionMode -> {
+                    IconButton(onClick = onAppClick, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            painter = painterResource(
+                                if (app.isSelected) R.drawable.ic_checkbox_checked
+                                else                R.drawable.ic_checkbox_unchecked
+                            ),
+                            contentDescription = null,
+                            // красный чекбокс для выбранных
+                            tint = if (app.isSelected) MaterialTheme.colorScheme.error
+                                   else                MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+                else -> {
+                    IconButton(onClick = onKillApp, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            painter            = painterResource(R.drawable.ic_force_stop),
+                            contentDescription = null,
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier           = Modifier.size(28.dp),
+                        )
+                    }
+                }
             }
         }
     }
 }
-
-// ── App icon ──────────────────────────────────────────────────────────────────
-
-@Composable
-private fun AppIcon(app: AppModel) {
-    val drawable = app.appIcon
-    if (drawable != null) {
-        val bitmap = remember(drawable) { drawable.toBitmap(144, 144) }
-        Image(
-            painter            = BitmapPainter(bitmap.asImageBitmap()),
-            contentDescription = app.appName,
-            modifier           = Modifier.size(48.dp),
-        )
-    } else {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text       = (app.appName?.firstOrNull() ?: '?').uppercaseChar().toString(),
-                fontSize   = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color      = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-        }
-    }
-}
-
-// ── Badge chip (System / Persistent) ─────────────────────────────────────────
 
 @Composable
 private fun Badge(text: String, textColor: Color, bgColor: Color) {
+    Spacer(Modifier.width(6.dp))
     Text(
         text       = text,
         fontSize   = 10.sp,

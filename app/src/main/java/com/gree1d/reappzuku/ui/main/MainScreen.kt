@@ -86,7 +86,6 @@ fun MainScreen(
     onKillSelected: () -> Unit,
     onNavigate: (NavDestination) -> Unit,
     onKillApp: (AppModel) -> Unit,
-    onToggleWhitelist: (AppModel) -> Unit,
     onAppClick: (AppModel) -> Unit,
     onAppOverflow: (AppModel) -> Unit,
     modifier: Modifier = Modifier,
@@ -144,11 +143,11 @@ fun MainScreen(
                             key   = { _, app -> app.packageName }
                         ) { _, app ->
                             AppListItem(
-                                app               = app,
-                                onKill            = { onKillApp(app) },
-                                onToggleWhitelist = { onToggleWhitelist(app) },
-                                onClick           = { onAppClick(app) },
-                                onOverflow        = { onAppOverflow(app) },
+                                app           = app,
+                                selectionMode = state.selectedCount > 0,
+                                onKillApp     = { onKillApp(app) },
+                                onAppClick    = { onAppClick(app) },
+                                onOverflowClick = { onAppOverflow(app) },
                             )
                         }
                     }
@@ -347,7 +346,9 @@ private fun AppNavigationBar(
     onNavigate: (NavDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    NavigationBar(modifier = modifier) {
+    NavigationBar(
+        modifier = modifier.height(64.dp),
+    ) {
         NavigationBarItem(
             selected = current == NavDestination.MAIN,
             onClick  = { onNavigate(NavDestination.MAIN) },
