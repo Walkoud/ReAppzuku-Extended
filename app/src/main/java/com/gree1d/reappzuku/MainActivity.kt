@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
         viewModel.loadBackgroundApps()
 
         setContent {
-            val themeConfig = appliedThemeConfig
+            val themeConfig = appliedThemeConfig 
 
             AppTheme(config = themeConfig) {
 
@@ -109,14 +109,6 @@ class MainActivity : ComponentActivity() {
                     onKillSelected       = viewModel::killSelected,
                     onNavigate           = ::handleNavigation,
                     onKillApp            = viewModel::killApp,
-                    onToggleWhitelist    = { app ->
-                        val isNow = viewModel.toggleWhitelist(app)
-                        val msg = if (isNow)
-                            getString(R.string.main_added_to_whitelist)
-                        else
-                            getString(R.string.main_removed_from_whitelist)
-                        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-                    },
                     onAppClick           = viewModel::onAppClick,
                     onAppOverflow        = { app -> sheetApp = app },
                 )
@@ -192,7 +184,6 @@ class MainActivity : ComponentActivity() {
             NavDestination.STATISTICS -> startActivity(Intent(this, StatisticsActivity::class.java))
         }
     }
-
 
 
     private fun showSortDialog() {
