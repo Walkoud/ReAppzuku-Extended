@@ -41,6 +41,7 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 import android.net.Uri;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import android.widget.PopupWindow;
 import android.widget.ImageView;
@@ -356,7 +357,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showUninstallConfirmation(AppModel app) {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_uninstall_title, app.getAppName()))
                 .setMessage(getString(R.string.main_uninstall_message))
                 .setPositiveButton(getString(R.string.main_uninstall_confirm), (dialog, which) -> {
@@ -662,7 +663,7 @@ public class MainActivity extends BaseActivity {
         }
         boolean enableRestriction = !app.isBackgroundRestrictionDesired();
         if (enableRestriction && app.isSystemApp()) {
-            new AlertDialog.Builder(this)
+            new MaterialAlertDialogBuilder(this)
                     .setTitle(getString(R.string.main_system_app_warning_title))
                     .setMessage(getString(R.string.main_system_app_restriction_warning))
                     .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> applyBackgroundRestriction(app, true))
@@ -674,7 +675,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showOutOfSyncRestrictionDialog(AppModel app) {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_restriction_out_of_sync_title))
                 .setMessage(getString(R.string.main_restriction_out_of_sync_message, app.getAppName()))
                 .setPositiveButton(getString(R.string.main_restriction_resume), (dialog, which) -> applyBackgroundRestriction(app, true))
@@ -684,7 +685,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showExternalRestrictionDialog(AppModel app) {
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_restriction_external_title))
                 .setMessage(getString(R.string.main_restriction_external_message, app.getAppName()))
                 .setPositiveButton(getString(R.string.main_restriction_add_to_reappzuku), (dialog, which) -> applyBackgroundRestriction(app, true))
@@ -966,7 +967,7 @@ public class MainActivity extends BaseActivity {
         checkboxSystem.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked && !sharedPreferences.getBoolean("system_apps_warning_shown", false)) {
                 buttonView.setChecked(false);
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.settings_system_apps_warning_title))
                         .setMessage(getString(R.string.settings_system_apps_warning_message))
                         .setPositiveButton(getString(R.string.settings_system_apps_i_understand), (d, w) -> {
@@ -980,7 +981,7 @@ public class MainActivity extends BaseActivity {
             }
         });
 
-        AlertDialog sortDialog = new AlertDialog.Builder(this)
+        AlertDialog sortDialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> {
                     int checkedId = radioGroup.getCheckedRadioButtonId();
