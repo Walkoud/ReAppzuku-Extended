@@ -81,7 +81,7 @@ public class AutoKillManager {
             }
 
             String psOutput = shellManager.runShellCommandAndGetFullOutput(
-                    "ps -A -o user,pid,ppid,rss,name | grep '\\.'");
+                    "ps -A -o rss,name | grep '\\.'");
             Log.d(TAG, "ps output length: " + (psOutput == null ? "null" : psOutput.trim().length()));
             if (psOutput == null || psOutput.trim().isEmpty()) {
                 Log.w(TAG, "ps returned null/empty — aborting kill");
@@ -92,33 +92,21 @@ public class AutoKillManager {
 
             Set<String> runningPackages = new HashSet<>();
             Map<String, Long> psRssMap = new HashMap<>();
-            Map<String, String> appProcessPids = new HashMap<>();
-            Map<String, List<String>> orphanCandidatePids = new HashMap<>();
             PackageManager pm = context.getPackageManager();
             try (BufferedReader reader = new BufferedReader(new StringReader(psOutput))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    String[] parts = line.trim().split("\\s+");
-                    if (parts.length < 5) continue;
-                    String user = parts[0].trim();
-                    String pid = parts[1].trim();
-                    String ppid = parts[2].trim();
-                    String rssStr = parts[3].trim();
-                    String fullName = parts[4].trim();
+                    String[] parts = line.trim().split("\\s+", 2);
+                    if (parts.length < 2) continue;
+                    String rssStr = parts[0].trim();
+                    String fullName = parts[1].trim();
                     String packageName = fullName.contains(":")
                             ? fullName.substring(0, fullName.indexOf(":"))
                             : fullName;
                     if (packageName.isEmpty() || !packageName.contains(".")) continue;
-                    if (user.equals("shell") && ppid.equals("1") && fullName.contains(":")) {
-                        orphanCandidatePids.computeIfAbsent(packageName, k -> new ArrayList<>()).add(pid);
-                        continue;
-                    }
                     try {
                         pm.getApplicationInfo(packageName, 0);
                         runningPackages.add(packageName);
-                        if (!user.equals("shell")) {
-                            appProcessPids.put(packageName, pid);
-                        }
                         try {
                             long rssKb = Long.parseLong(rssStr);
                             psRssMap.put(packageName, rssKb);
@@ -130,19 +118,7 @@ public class AutoKillManager {
             } catch (IOException ignored) {
             }
 
-            List<String> orphanPidsToKill = new ArrayList<>();
-            for (Map.Entry<String, List<String>> entry : orphanCandidatePids.entrySet()) {
-                String pkg = entry.getKey();
-                if (!appProcessPids.containsKey(pkg)) {
-                    orphanPidsToKill.addAll(entry.getValue());
-                    Log.d(TAG, "Orphan shell PIDs for " + pkg + ": " + entry.getValue());
-                }
-            }
-            if (!orphanPidsToKill.isEmpty()) {
-                String killOrphans = "kill -9 " + String.join(" ", orphanPidsToKill);
-                shellManager.runShellCommandAndGetFullOutput(killOrphans);
-                Log.d(TAG, "Killed orphan shell PIDs: " + orphanPidsToKill);
-            }
+            killOrphanShellProcesses(null);
 
             List<String> toKill = runningPackages.stream()
                     .filter(pkg -> {
@@ -297,7 +273,10 @@ public class AutoKillManager {
         final List<String> packagesToLog = new ArrayList<>(packageNames);
         final Map<String, Long> recoveredToLog = new HashMap<>(recoveredKbByPackage);
         shellManager.runShellCommand(command, () -> {
-            executor.execute(() -> recordSuccessfulKills(packagesToLog, recoveredToLog));
+            executor.execute(() -> {
+                recordSuccessfulKills(packagesToLog, recoveredToLog);
+                killOrphanShellProcesses(new HashSet<>(packagesToLog));
+            });
             Toast.makeText(context, context.getString(R.string.toast_free_up, formatMemorySize(finalTotalKb)), Toast.LENGTH_LONG).show();
             if (onComplete != null) {
                 onComplete.run();
@@ -338,7 +317,10 @@ public class AutoKillManager {
         }
         final long finalAppRamBytes = appRamBytes;
         shellManager.runShellCommand(buildKillCommand(packageToKill), () -> {
-            executor.execute(() -> recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage));
+            executor.execute(() -> {
+                recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage);
+                killOrphanShellProcesses(Collections.singleton(packageToKill));
+            });
             if (finalAppRamBytes > 0) {
                 Toast.makeText(context, context.getString(R.string.toast_free_up, formatMemorySize(finalAppRamBytes)), Toast.LENGTH_LONG).show();
             }
@@ -463,6 +445,50 @@ public class AutoKillManager {
         } catch (PackageManager.NameNotFoundException ignored) {
         }
         return null;
+    }
+
+    private void killOrphanShellProcesses(Set<String> targetPackages) {
+        String psOutput = shellManager.runShellCommandAndGetFullOutput(
+                "ps -A -o user,pid,ppid,name | grep '\\.'");
+        if (psOutput == null || psOutput.trim().isEmpty()) return;
+
+        Map<String, String> appProcessPids = new HashMap<>();
+        Map<String, List<String>> orphanCandidatePids = new HashMap<>();
+
+        try (BufferedReader reader = new BufferedReader(new StringReader(psOutput))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length < 4) continue;
+                String user = parts[0].trim();
+                String pid = parts[1].trim();
+                String ppid = parts[2].trim();
+                String fullName = parts[3].trim();
+                String packageName = fullName.contains(":")
+                        ? fullName.substring(0, fullName.indexOf(":"))
+                        : fullName;
+                if (packageName.isEmpty() || !packageName.contains(".")) continue;
+                if (targetPackages != null && !targetPackages.contains(packageName)) continue;
+                if (user.equals("shell") && ppid.equals("1") && fullName.contains(":")) {
+                    orphanCandidatePids.computeIfAbsent(packageName, k -> new ArrayList<>()).add(pid);
+                } else if (!user.equals("shell")) {
+                    appProcessPids.put(packageName, pid);
+                }
+            }
+        } catch (IOException ignored) {
+        }
+
+        List<String> toKill = new ArrayList<>();
+        for (Map.Entry<String, List<String>> entry : orphanCandidatePids.entrySet()) {
+            if (!appProcessPids.containsKey(entry.getKey())) {
+                toKill.addAll(entry.getValue());
+                Log.d(TAG, "Orphan shell PIDs for " + entry.getKey() + ": " + entry.getValue());
+            }
+        }
+        if (!toKill.isEmpty()) {
+            shellManager.runShellCommandAndGetFullOutput("kill -9 " + String.join(" ", toKill));
+            Log.d(TAG, "Killed orphan shell PIDs: " + toKill);
+        }
     }
 
     private static boolean containsPackage(String output, String packageName) {
