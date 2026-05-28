@@ -19,7 +19,6 @@
         <item name="colorControlActivated">@color/colorAccent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.AlertDialog</item>
     </style>
 
     <style name="AppTheme.Amoled" parent="Theme.Material3.Dark.NoActionBar">
@@ -35,7 +34,6 @@
         <item name="android:colorControlActivated">@color/colorAccent</item>
         <item name="colorControlActivated">@color/colorAccent</item>
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
-        <item name="materialAlertDialogTheme">@style/ThemeOverlay.App.AlertDialog</item>
     </style>
 
     
@@ -469,25 +467,6 @@
         <item name="cornerSizeTopRight">16dp</item>
         <item name="cornerSizeBottomLeft">0dp</item>
         <item name="cornerSizeBottomRight">0dp</item>
-    </style>
-    <style name="Widget.App.ScanButton" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
-        <item name="android:paddingTop">4dp</item>
-        <item name="android:paddingBottom">4dp</item>
-        <item name="android:insetTop">0dp</item>
-        <item name="android:insetBottom">0dp</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.ScanButton</item>
-        <item name="strokeWidth">1dp</item>
-        <item name="backgroundTint">@android:color/transparent</item>
-    </style>
-
-    <style name="ShapeAppearance.App.ScanButton" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">8dp</item>
-    </style>
-
-    <style name="ThemeOverlay.App.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
     </style>
 
 </resources>
