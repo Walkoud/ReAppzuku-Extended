@@ -477,7 +477,7 @@
         <item name="android:paddingBottom">4dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.App.ScanButton</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.ScanButton</item>
         <item name="strokeWidth">1dp</item>
     </style>
 
@@ -487,10 +487,8 @@
     </style>
 
     <style name="ThemeOverlay.App.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="backgroundInsetStart">5dp</item>
-        <item name="backgroundInsetEnd">5dp</item>
-        <item name="backgroundInsetTop">5dp</item>
-        <item name="backgroundInsetBottom">5dp</item>
+        <item name="android:windowMinWidthMajor">98%</item>
+        <item name="android:windowMinWidthMinor">98%</item>
     </style>
 
 </resources>
