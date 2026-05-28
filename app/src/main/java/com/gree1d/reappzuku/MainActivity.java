@@ -47,8 +47,6 @@ import android.widget.PopupWindow;
 import android.widget.ImageView;
 import android.view.LayoutInflater;
 import android.widget.CheckBox;
-import android.view.Window;
-import android.view.WindowManager;
 
 import rikka.shizuku.Shizuku;
 
@@ -551,12 +549,6 @@ public class MainActivity extends BaseActivity {
                 .create();
         triggersDialog.show();
         tintDialogButtons(triggersDialog);
-        Window triggersWindow = triggersDialog.getWindow();
-        if (triggersWindow != null) {
-            triggersWindow.setLayout(
-                    (int) (getResources().getDisplayMetrics().widthPixels * 0.93),
-                    WindowManager.LayoutParams.WRAP_CONTENT);
-        }
     }
 
     private void addSectionHeader(LinearLayout container, String title) {
