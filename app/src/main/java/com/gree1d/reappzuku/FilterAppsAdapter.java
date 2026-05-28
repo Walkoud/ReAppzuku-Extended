@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -387,9 +388,8 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
         container.addView(radioGroup);
 
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(context.getString(R.string.filter_restriction_type_dialog_title))
-                .setView(container)
                 .setNegativeButton(context.getString(R.string.dialog_cancel), null)
                 .setPositiveButton(context.getString(R.string.dialog_apply), (dialog, which) -> {
                     BackgroundAppManager.RestrictionType chosen;
@@ -515,7 +515,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
         scrollView.addView(listLayout);
 
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(context.getString(R.string.filter_manual_ops_dialog_title,
                         app.getAppName()))
                 .setView(scrollView)

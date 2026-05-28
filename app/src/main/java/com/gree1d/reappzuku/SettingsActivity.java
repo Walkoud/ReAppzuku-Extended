@@ -44,6 +44,7 @@ import android.widget.Toast;
 import android.os.Looper;
 
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.core.content.ContextCompat;
 
 import com.gree1d.reappzuku.databinding.ActivitySettingsBinding;
@@ -354,7 +355,7 @@ public class SettingsActivity extends BaseActivity {
                 return;
             }
             if (isChecked) {
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.settings_sleep_mode_title))
                         .setMessage(getString(R.string.settings_sleep_mode_restart_message))
                         .setPositiveButton(getString(R.string.dialog_ok), (dialog, which) -> {
@@ -520,7 +521,7 @@ public class SettingsActivity extends BaseActivity {
         }
         group.check(1000 + autoKillManager.getAutoKillType());
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setCustomTitle(titleView)
                 .setView(bodyView)
                 .create();
@@ -537,7 +538,7 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void showAutoKillTypeHelpDialog(Runnable onBack) {
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_auto_kill_type_help_title))
                 .setMessage(getString(R.string.settings_auto_kill_type_help_message))
                 .setPositiveButton(getString(R.string.dialog_ok_got_it), (d, w) -> {
@@ -561,7 +562,7 @@ public class SettingsActivity extends BaseActivity {
                         boolean autoKillEnabled = sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
                         Set<String> whitelistedApps = sharedPreferences.getStringSet(KEY_WHITELISTED_APPS, new HashSet<>());
                         if (autoKillEnabled && whitelistedApps.isEmpty()) {
-                            new AlertDialog.Builder(this)
+                            new MaterialAlertDialogBuilder(this)
                                     .setTitle(R.string.dialog_unsafe_whitelist_title)
                                     .setMessage(R.string.dialog_unsafe_whitelist_message)
                                     .setPositiveButton(R.string.dialog_unsafe_whitelist_ok, (d, w) -> d.dismiss())
@@ -580,12 +581,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_blacklist_dialog_title))
                 .setView(dialogView)
                 .create();
-        dialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
         searchBox.setVisibility(View.GONE);
@@ -630,12 +629,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog whitelistDialog = new AlertDialog.Builder(this)
+        AlertDialog whitelistDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_whitelist_dialog_title))
                 .setView(dialogView)
                 .create();
-        whitelistDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         whitelistDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         whitelistDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -685,12 +682,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog filterDialog = new AlertDialog.Builder(this)
+        AlertDialog filterDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_hidden_apps_dialog_title))
                 .setView(dialogView)
                 .create();
-        filterDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         filterDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         filterDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -742,12 +737,10 @@ public class SettingsActivity extends BaseActivity {
         View titleView = inflater.inflate(R.layout.dialog_backgroundrest_help, null);
         ((TextView) titleView.findViewById(R.id.dialog_title)).setText(R.string.settings_background_restriction_title);
 
-        AlertDialog restrictionDialog = new AlertDialog.Builder(this)
+        AlertDialog restrictionDialog = new MaterialAlertDialogBuilder(this)
                 .setCustomTitle(titleView)
                 .setView(dialogView)
                 .create();
-        restrictionDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         restrictionDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         restrictionDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -838,7 +831,7 @@ public class SettingsActivity extends BaseActivity {
                 }
 
                 if (systemAppCount > 0) {
-                    new AlertDialog.Builder(SettingsActivity.this)
+                    new MaterialAlertDialogBuilder(SettingsActivity.this)
                             .setTitle(getString(R.string.settings_restriction_system_apps_title))
                             .setMessage(getString(R.string.settings_restriction_system_apps_message, systemAppCount))
                             .setPositiveButton(getString(R.string.settings_restriction_system_apps_confirm), (d2, w2) ->
@@ -846,7 +839,7 @@ public class SettingsActivity extends BaseActivity {
                             .setNegativeButton(getString(R.string.dialog_cancel), null)
                             .show();
                 } else if (!packagesToRestrict.isEmpty()) {
-                    new AlertDialog.Builder(SettingsActivity.this)
+                    new MaterialAlertDialogBuilder(SettingsActivity.this)
                             .setTitle(getString(R.string.settings_restriction_warning_title))
                             .setMessage(getString(R.string.settings_restriction_warning_message))
                             .setPositiveButton(getString(R.string.dialog_apply), (d2, w2) ->
@@ -898,7 +891,7 @@ public class SettingsActivity extends BaseActivity {
         sb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), start, sb.length(), 0);
         sb.append("\n").append(getString(R.string.bgrest_help_manual_body));
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.dialog_backgroundrest_title))
                 .setMessage(sb)
                 .setPositiveButton(getString(R.string.dialog_ok_got_it), (d, w) -> {
@@ -940,11 +933,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_sleep_mode_apps_dialog_title))
                 .setView(dialogView)
                 .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
 
@@ -1137,7 +1129,7 @@ public class SettingsActivity extends BaseActivity {
         }
         group.check(1000 + selectedIndex);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(view)
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
                 .create();
@@ -1318,13 +1310,11 @@ public class SettingsActivity extends BaseActivity {
         android.widget.LinearLayout listContainer =
                 dialogView.findViewById(R.id.scheduler_list_container);
 
-        AlertDialog mainDialog = new AlertDialog.Builder(this)
+        AlertDialog mainDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_restrictions_scheduler_title))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_ok), (d, w) -> d.dismiss())
                 .create();
-        mainDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         mainDialog.show();
 
         for (SchedulerAppItem item : items) {
@@ -1440,7 +1430,7 @@ public class SettingsActivity extends BaseActivity {
                 showComponentPickerDialog(item.packageName, selectedComponent, selectedCompType,
                         onActivateAction, btnComponent));
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(item.appName)
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_save), null)
@@ -1450,8 +1440,6 @@ public class SettingsActivity extends BaseActivity {
         }
 
         AlertDialog entryDialog = builder.create();
-        entryDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         entryDialog.show();
 
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
@@ -1588,7 +1576,7 @@ public class SettingsActivity extends BaseActivity {
                         .map(i -> i[0])
                         .toArray(String[]::new);
 
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.scheduler_component_picker_title))
                         .setItems(labels, (d, which) -> {
                             String[] chosen = items.get(which);
@@ -1669,7 +1657,7 @@ public class SettingsActivity extends BaseActivity {
                 getString(R.string.settings_backup_option_save),
                 getString(R.string.settings_backup_option_restore)
         };
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_backup_restore_title))
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) createBackupLauncher.launch("appzuku_backup.json");
@@ -1768,7 +1756,7 @@ public class SettingsActivity extends BaseActivity {
         }
         group.check(1000 + selected);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(view)
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
                 .create();
@@ -1808,7 +1796,7 @@ public class SettingsActivity extends BaseActivity {
             if (killMode == 0 && whitelistedApps.isEmpty()) {
                 sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, false).apply();
                 if (binding.switchAutoKill != null) binding.switchAutoKill.setChecked(false);
-                new AlertDialog.Builder(this)
+                new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.dialog_unsafe_whitelist_title)
                         .setMessage(R.string.dialog_unsafe_whitelist_message)
                         .setPositiveButton(R.string.dialog_unsafe_whitelist_ok, (dialog, which) -> dialog.dismiss())
@@ -1852,7 +1840,7 @@ public class SettingsActivity extends BaseActivity {
         textView.setLayoutParams(tvParams);
         layout.addView(textView);
 
-        new AlertDialog.Builder(this)
+        new MaterialAlertDialogBuilder(this)
                 .setView(layout)
                 .setPositiveButton(getString(R.string.dialog_ok), null)
                 .show();
