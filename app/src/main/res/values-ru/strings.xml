@@ -292,7 +292,7 @@
     <!-- ── Дополнительные инструменты ── -->
     <string name="settings_section_advanced_tools">Дополнительные инструменты</string>
     <string name="settings_background_restriction_title">Фоновые ограничения</string>
-    <string name="settings_background_restriction_subtitle">Оставляйте выбранные приложения в спящем режиме</string>
+    <string name="settings_background_restriction_subtitle">Ограничение фоновой активности выбранных приложений</string>
     <string name="settings_reapply_restrictions_title">Повторно применить настройки фоновых ограничений</string>
     <string name="settings_reapply_restrictions_subtitle">Восстановить сохраненные ограничения</string>
     <string name="settings_sleep_mode_title">Режим сна</string>
