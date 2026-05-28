@@ -33,13 +33,10 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/filter_sort_button"
             android:textColor="@color/colorAccent"
             android:textStyle="bold"
             android:padding="8dp"
             android:gravity="center_vertical"
-            android:drawableEnd="@android:drawable/arrow_down_float"
-            android:drawablePadding="4dp"
             android:foreground="?attr/selectableItemBackground" />
 
         <TextView
