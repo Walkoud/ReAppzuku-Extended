@@ -401,7 +401,7 @@ public class StatisticsActivity extends BaseActivity {
 
         PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setColors(colors);
-        dataSet.setSliceSpace(2f);
+        dataSet.setSliceSpace(0f);
         dataSet.setSelectionShift(0f);
         dataSet.setValueTextSize(0f);
 
