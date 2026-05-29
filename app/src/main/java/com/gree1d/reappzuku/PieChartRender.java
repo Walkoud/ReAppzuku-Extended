@@ -20,14 +20,14 @@ import java.util.List;
 
 public class PieChartRender extends PieChartRenderer {
 
-    // Radial gradient: how dark at inner edge (0=no change, 1=black)
-    private static final float INNER_DARK    = 0.50f;
-    // Inner depth strip: width as fraction of slice width
-    private static final float DEPTH_STRIP_F = 0.14f;
-    // Inner depth strip: opacity 0..255
-    private static final int   DEPTH_ALPHA   = 120;
-    // Divider line: opacity 0..255
-    private static final int   LINE_ALPHA    = 210;
+    // How dark at the inner edge (0=no change, 1=black)
+    private static final float INNER_DARK  = 0.52f;
+    // Inner depth strip width as fraction of slice width
+    private static final float DEPTH_F     = 0.14f;
+    // Inner depth strip opacity 0..255
+    private static final int   DEPTH_ALPHA = 120;
+    // Divider line opacity 0..255
+    private static final int   LINE_ALPHA  = 210;
 
     private final Path  mPath       = new Path();
     private final Paint mFillPaint  = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -39,12 +39,10 @@ public class PieChartRender extends PieChartRenderer {
 
         mFillPaint.setStyle(Paint.Style.FILL);
 
-        // Semi-transparent black arc at inner edge — depth illusion
         mDepthPaint.setStyle(Paint.Style.STROKE);
         mDepthPaint.setColor(Color.BLACK);
         mDepthPaint.setAlpha(DEPTH_ALPHA);
 
-        // Divider line between segments
         mLinePaint.setStyle(Paint.Style.STROKE);
         mLinePaint.setColor(Color.BLACK);
         mLinePaint.setAlpha(LINE_ALPHA);
@@ -64,7 +62,7 @@ public class PieChartRender extends PieChartRenderer {
         final float    cy      = center.y;
 
         final float sliceW      = radius - holeRad;
-        final float depthStripW = sliceW * DEPTH_STRIP_F;
+        final float depthStripW = sliceW * DEPTH_F;
         final float lineStrokeW = Math.max(2f, sliceW * 0.035f);
 
         mDepthPaint.setStrokeWidth(depthStripW);
@@ -77,7 +75,6 @@ public class PieChartRender extends PieChartRenderer {
         final RectF outerRect = new RectF(cx - radius,  cy - radius,  cx + radius,  cy + radius);
         final RectF innerRect = new RectF(cx - holeRad, cy - holeRad, cx + holeRad, cy + holeRad);
 
-        // Depth strip arc sits just outside the inner edge
         final float depthR = holeRad + depthStripW / 2f;
         final RectF depthRect = new RectF(cx - depthR, cy - depthR, cx + depthR, cy + depthR);
 
@@ -118,32 +115,30 @@ public class PieChartRender extends PieChartRenderer {
             mPath.arcTo(innerRect, endAngle, -arcSweep, false);
             mPath.close();
 
-            // ── 2. Radial gradient: dark at inner edge → full colour outer ─
-            // Three stops: inner edge dark, just past depth strip = full colour, outer = full colour
-            float innerStop = holeRad / radius;
-            float brightStop = (holeRad + depthStripW * 2f) / radius;
-            brightStop = Math.min(brightStop, 0.65f);
-
+            // ── 2. Smooth radial gradient across entire slice width ───────
+            // inner edge = dark, outer edge = full colour, transition is linear
+            // Gradient center at cx,cy, radius = full chart radius
+            // Stop at holeRad/radius = darkened colour
+            // Stop at 1.0 = full colour
+            // Everything inside holeRad is irrelevant (hidden by hole)
             RadialGradient rg = new RadialGradient(
                     cx, cy, radius,
                     new int[]{
-                        darken(color, INNER_DARK),  // at center (maps to inner edge via stop)
-                        darken(color, INNER_DARK),  // still dark at inner edge
-                        color,                       // full colour shortly past inner edge
-                        color                        // full colour at outer rim
+                        darken(color, INNER_DARK), // at holeRad position: dark
+                        darken(color, INNER_DARK), // hold dark until inner edge
+                        color                      // full colour at outer rim
                     },
                     new float[]{
                         0f,
-                        innerStop,
-                        brightStop,
-                        1f
+                        holeRad / radius,          // inner edge of ring
+                        1f                         // outer edge of ring
                     },
                     Shader.TileMode.CLAMP
             );
             mFillPaint.setShader(rg);
             c.drawPath(mPath, mFillPaint);
 
-            // ── 3. Inner depth strip (semi-transparent black arc) ─────────
+            // ── 3. Inner depth strip ──────────────────────────────────────
             c.drawArc(depthRect, startAngle + 0.5f, arcSweep - 1f, false, mDepthPaint);
 
             // ── 4. Divider line at start edge ─────────────────────────────
