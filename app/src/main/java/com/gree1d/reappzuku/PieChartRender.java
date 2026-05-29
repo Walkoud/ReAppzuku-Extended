@@ -21,11 +21,11 @@ import java.util.List;
 public class PieChartRender extends PieChartRenderer {
 
     // How dark at the inner edge (0=no change, 1=black)
-    private static final float INNER_DARK  = 0.52f;
+    private static final float INNER_DARK  = 0.30f;
     // Inner depth strip width as fraction of slice width
     private static final float DEPTH_F     = 0.14f;
     // Inner depth strip opacity 0..255
-    private static final int   DEPTH_ALPHA = 120;
+    private static final int   DEPTH_ALPHA = 70;
     // Divider line opacity 0..255
     private static final int   LINE_ALPHA  = 210;
 
