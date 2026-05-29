@@ -403,6 +403,7 @@ public class StatisticsActivity extends BaseActivity {
 
         PieData data = new PieData(dataSet);
         chart.setData(data);
+        chart.setRenderer(new PieChartRender(chart, chart.getAnimator(), chart.getViewPortHandler()));
         chart.setDrawHoleEnabled(true);
         chart.setHoleColor(Color.TRANSPARENT);
         chart.setHoleRadius(48f);
@@ -564,11 +565,11 @@ public class StatisticsActivity extends BaseActivity {
             sb.append(String.format(Locale.US, "• %s  %.1f%%\n",
                     s.appName, metricValue(s, metric) / total * 100));
         }
-        new MaterialAlertDialogBuilder(this)
+        applyCustomAccentToDialogButtons(new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.chart_others_dialog_title))
                 .setMessage(sb.toString().trim())
                 .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .show());
     }
 
     private void openAppDetail(String packageName, String appName) {
@@ -683,6 +684,7 @@ public class StatisticsActivity extends BaseActivity {
                         content.rootView);
                 dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
                 dialog.show();
+                applyCustomAccentToDialogButtons(dialog);
             });
         });
     }
@@ -716,6 +718,9 @@ public class StatisticsActivity extends BaseActivity {
                 content.rootView);
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
+
+        loadTopOffenders(0, offendersAdapter, summaryText, loading, listView, emptyView);
 
         content.filterSpinner.setOnItemClickListener((parent, view, position, id) -> {
             content.filterSpinner.setText(topOffenderFilterLabels[position], false);
@@ -823,6 +828,7 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<BackgroundRestrictionLog.LogEntry> entries = BackgroundRestrictionLog.readEntries(this);
@@ -975,7 +981,7 @@ public class StatisticsActivity extends BaseActivity {
             builder.setPositiveButton(getString(R.string.settings_open_app_info), (d, w) -> openAppInfo(entry.packageName));
         }
 
-        builder.show();
+        applyCustomAccentToDialogButtons(builder.show());
     }
 
     private String extractDetailValue(String detail, String key) {
@@ -1041,6 +1047,7 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSleepModeLogRows(SleepModeLogManager.readEntries(this));
@@ -1085,6 +1092,7 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSchedulerLogRows(RestrictionsScheduler.SchedulerLog.readEntries(this));
@@ -1399,6 +1407,16 @@ public class StatisticsActivity extends BaseActivity {
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, getString(R.string.settings_open_app_info_error), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void applyCustomAccentToDialogButtons(AlertDialog dialog) {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent != ACCENT_CUSTOM) return;
+        int color = isNightTheme() ? Color.WHITE : Color.BLACK;
+        for (int which : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL}) {
+            android.widget.Button btn = dialog.getButton(which);
+            if (btn != null) btn.setTextColor(color);
         }
     }
 
