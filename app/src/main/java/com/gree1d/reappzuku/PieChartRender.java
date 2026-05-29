@@ -20,12 +20,12 @@ import java.util.List;
 
 public class PieChartRender extends PieChartRenderer {
 
-    // How dark at the inner edge (0=no change, 1=black)
-    private static final float INNER_DARK  = 0.30f;
+    // How much to lighten at the outer rim (0=no change, 1=white)
+    private static final float OUTER_LIGHT = 0.22f;
     // Inner depth strip width as fraction of slice width
     private static final float DEPTH_F     = 0.14f;
     // Inner depth strip opacity 0..255
-    private static final int   DEPTH_ALPHA = 70;
+    private static final int   DEPTH_ALPHA = 40;
     // Divider line opacity 0..255
     private static final int   LINE_ALPHA  = 210;
 
@@ -75,7 +75,7 @@ public class PieChartRender extends PieChartRenderer {
         final RectF outerRect = new RectF(cx - radius,  cy - radius,  cx + radius,  cy + radius);
         final RectF innerRect = new RectF(cx - holeRad, cy - holeRad, cx + holeRad, cy + holeRad);
 
-        final float depthR = holeRad + depthStripW / 2f;
+        final float depthR    = holeRad + depthStripW / 2f;
         final RectF depthRect = new RectF(cx - depthR, cy - depthR, cx + depthR, cy + depthR);
 
         float angle = 0f;
@@ -115,23 +115,18 @@ public class PieChartRender extends PieChartRenderer {
             mPath.arcTo(innerRect, endAngle, -arcSweep, false);
             mPath.close();
 
-            // ── 2. Smooth radial gradient across entire slice width ───────
-            // inner edge = dark, outer edge = full colour, transition is linear
-            // Gradient center at cx,cy, radius = full chart radius
-            // Stop at holeRad/radius = darkened colour
-            // Stop at 1.0 = full colour
-            // Everything inside holeRad is irrelevant (hidden by hole)
+            // ── 2. Radial gradient: full colour at inner → light at outer ─
             RadialGradient rg = new RadialGradient(
                     cx, cy, radius,
                     new int[]{
-                        darken(color, INNER_DARK), // at holeRad position: dark
-                        darken(color, INNER_DARK), // hold dark until inner edge
-                        color                      // full colour at outer rim
+                        color,                    // full colour at centre / inner edge
+                        color,                    // stay full through most of slice
+                        lighten(color, OUTER_LIGHT) // slightly lighter at outer rim
                     },
                     new float[]{
                         0f,
-                        holeRad / radius,          // inner edge of ring
-                        1f                         // outer edge of ring
+                        holeRad / radius,         // inner edge of ring
+                        1f                        // outer edge of ring
                     },
                     Shader.TileMode.CLAMP
             );
@@ -156,10 +151,11 @@ public class PieChartRender extends PieChartRenderer {
         MPPointF.recycleInstance(center);
     }
 
-    private static int darken(int color, float fraction) {
-        final int r = (int)(Color.red(color)   * (1f - fraction));
-        final int g = (int)(Color.green(color) * (1f - fraction));
-        final int b = (int)(Color.blue(color)  * (1f - fraction));
+    // Blend colour toward white by fraction
+    private static int lighten(int color, float fraction) {
+        final int r = (int)(Color.red(color)   + (255 - Color.red(color))   * fraction);
+        final int g = (int)(Color.green(color) + (255 - Color.green(color)) * fraction);
+        final int b = (int)(Color.blue(color)  + (255 - Color.blue(color))  * fraction);
         return Color.argb(Color.alpha(color), r, g, b);
     }
 }
