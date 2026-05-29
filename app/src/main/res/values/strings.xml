@@ -536,7 +536,7 @@
 
     <!-- Stats info tiles -->
     <string name="stats_battery_trace">&lt; 0.1%</string>
-    <string name="stats_chart_total_battery">Total %.1f mAh</string>
+    <string name="stats_chart_total_battery">%.1f mAh</string>
     <string name="stats_chart_total_ram">Avg. %s</string>
     <string name="stats_self_overhead_label">ReAppzuku overhead:</string>
     <string name="stats_self_overhead">ReAppzuku overhead: %1$s · %2$s · %3$s</string>
