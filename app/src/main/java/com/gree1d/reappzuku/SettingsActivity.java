@@ -25,6 +25,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import android.widget.PopupMenu;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
@@ -165,7 +166,7 @@ public class SettingsActivity extends BaseActivity {
         };
 
         for (int id : switchIds) {
-            com.google.android.material.switchmaterial.SwitchMaterial sw = findViewById(id);
+            MaterialSwitch sw = findViewById(id);
             if (sw == null) continue;
 
             android.content.res.ColorStateList thumbTint = new android.content.res.ColorStateList(
