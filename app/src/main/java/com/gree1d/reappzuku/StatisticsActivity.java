@@ -1189,12 +1189,28 @@ public class StatisticsActivity extends BaseActivity {
             bindOptionalText((TextView) view.findViewById(R.id.offender_score), item.badge);
 
             int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            TextView rank  = view.findViewById(R.id.offender_rank);
+            TextView score = view.findViewById(R.id.offender_score);
             if (accent == ACCENT_CUSTOM) {
                 int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-                TextView rank  = view.findViewById(R.id.offender_rank);
-                TextView score = view.findViewById(R.id.offender_score);
                 if (rank  != null) rank.setTextColor(color);
                 if (score != null) score.setTextColor(color);
+            }
+            if (score != null) {
+                if (item.badge != null && !item.badge.trim().isEmpty()) {
+                    int badgeColor = accent == ACCENT_CUSTOM
+                            ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                            : com.google.android.material.color.MaterialColors.getColor(score, com.google.android.material.R.attr.colorSecondary);
+                    android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+                    bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                    bg.setCornerRadius(6 * score.getResources().getDisplayMetrics().density);
+                    bg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 40));
+                    bg.setStroke(Math.round(score.getResources().getDisplayMetrics().density),
+                            androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 80));
+                    score.setBackground(bg);
+                } else {
+                    score.setBackground(null);
+                }
             }
 
             return view;
