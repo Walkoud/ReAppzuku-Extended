@@ -1,21 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<!--
+    Изменения:
+    1. Корневой LinearLayout → MaterialCardView (Filled, MD3)
+    2. badge_system / badge_persistent (TextView) → Chip
+    3. Все android:id сохранены без изменений
+    4. Все иконки (@drawable/ic_protected, ic_whitelist, ic_more_vert, ic_force_stop) — без изменений
+-->
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.Material3.CardView.Filled"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="2dp"
-    android:orientation="vertical"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="3dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp"
     android:descendantFocusability="blocksDescendants">
 
+    <!-- Внутренний LinearLayout повторяет оригинальный linear1 -->
     <LinearLayout
         android:id="@+id/linear1"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="wrap_content"
+        android:minHeight="60dp"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
-        android:background="@drawable/list_item_background"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -98,7 +112,7 @@
                 android:textSize="12sp"
                 android:focusable="false" />
 
-            <!-- Строка 3: ОЗУ + бейджи System / Persistent -->
+            <!-- Строка 3: ОЗУ + CPU + бейджи -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -125,44 +139,48 @@
                     android:textSize="12sp"
                     android:focusable="false" />
 
-                <TextView
+                <!--
+                    Бейдж System: Chip вместо TextView с @drawable/badge_system.
+                    android:id сохранён — адаптер не требует правок.
+                -->
+                <com.google.android.material.chip.Chip
                     android:id="@+id/badge_system"
+                    style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="24dp"
                     android:layout_marginStart="6dp"
-                    android:background="@drawable/badge_system"
-                    android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
-                    android:paddingTop="1dp"
-                    android:paddingBottom="1dp"
                     android:text="System"
-                    android:textColor="#1A5276"
                     android:textSize="10sp"
-                    android:textStyle="bold"
                     android:visibility="gone"
-                    android:focusable="false" />
+                    android:focusable="false"
+                    app:chipMinHeight="20dp"
+                    app:chipStartPadding="6dp"
+                    app:chipEndPadding="6dp"
+                    app:ensureMinTouchTargetSize="false" />
 
-                <TextView
+                <!--
+                    Бейдж Persistent: аналогично.
+                -->
+                <com.google.android.material.chip.Chip
                     android:id="@+id/badge_persistent"
+                    style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="@drawable/badge_persistent"
-                    android:paddingStart="5dp"
-                    android:paddingEnd="5dp"
-                    android:paddingTop="1dp"
-                    android:paddingBottom="1dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="4dp"
                     android:text="Persistent"
-                    android:textColor="#6C3483"
                     android:textSize="10sp"
-                    android:textStyle="bold"
                     android:visibility="gone"
-                    android:focusable="false" />
+                    android:focusable="false"
+                    app:chipMinHeight="20dp"
+                    app:chipStartPadding="6dp"
+                    app:chipEndPadding="6dp"
+                    app:ensureMinTouchTargetSize="false" />
 
             </LinearLayout>
 
         </LinearLayout>
 
+        <!-- Overflow — без изменений -->
         <LinearLayout
             android:id="@+id/linear_overflow"
             android:layout_width="40dp"
@@ -182,6 +200,7 @@
 
         </LinearLayout>
 
+        <!-- Kill/action button — без изменений -->
         <LinearLayout
             android:id="@+id/linear3"
             android:layout_width="48dp"
@@ -203,4 +222,4 @@
 
     </LinearLayout>
 
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

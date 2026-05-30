@@ -7,20 +7,20 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- 1. TopAppBar: MaterialToolbar внутри AppBarLayout -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true">
+        android:fitsSystemWindows="true"
+        app:liftOnScroll="true"
+        app:liftOnScrollTargetViewId="@id/recycler_view">
 
-        <androidx.appcompat.widget.Toolbar
+        <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:minHeight="64dp"
+            android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
-            android:elevation="4dp"
-            android:theme="@style/AppTheme.AppBarOverlay"
             app:titleTextColor="@android:color/white"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
 
@@ -71,12 +71,14 @@
 
         </RelativeLayout>
 
+        <!-- 2. RAM: LinearProgressIndicator вместо ProgressBar -->
         <LinearLayout
             android:id="@+id/linear1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?android:attr/colorBackground"
-            android:paddingBottom="6dp"
+            android:paddingBottom="8dp"
+            android:paddingTop="2dp"
             android:orientation="horizontal">
 
             <TextView
@@ -84,21 +86,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
-                android:paddingLeft="5dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="6dp"
                 android:textColor="@color/text_primary"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <ProgressBar
+            <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/ram_usage"
-                android:layout_width="match_parent"
-                android:layout_height="6dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:layout_gravity="center_vertical"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="7dp"
+                android:layout_marginEnd="8dp"
                 android:indeterminate="false"
-                android:progressDrawable="@drawable/progress_bar"
-                style="?android:progressBarStyleHorizontal" />
+                app:trackCornerRadius="4dp"
+                app:indicatorColor="?attr/colorPrimary"
+                app:trackColor="?attr/colorSurfaceVariant"
+                app:trackThickness="8dp" />
+
         </LinearLayout>
 
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -114,7 +120,7 @@
                 android:layout_height="match_parent"
                 android:scrollbars="vertical"
                 android:clipToPadding="false"
-                android:paddingTop="2dp" />
+                android:paddingTop="4dp" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
