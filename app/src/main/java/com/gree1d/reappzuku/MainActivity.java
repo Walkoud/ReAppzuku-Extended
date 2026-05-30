@@ -111,7 +111,7 @@ public class MainActivity extends BaseActivity {
             if (binding.toolbar.getNavigationIcon() != null)
                 androidx.core.graphics.drawable.DrawableCompat.setTint(
                         binding.toolbar.getNavigationIcon(), onColor);
-        } else if (!isAmoled && accent == ACCENT_SYSTEM) {
+        } else if (accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
             binding.toolbar.setTitleTextColor(Color.WHITE);
         } else {
