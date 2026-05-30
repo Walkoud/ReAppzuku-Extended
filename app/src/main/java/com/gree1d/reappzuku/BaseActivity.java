@@ -88,6 +88,13 @@ public abstract class BaseActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
+        // AMOLED + системный акцент: DynamicColors из App.java успел наложить
+        // системный colorPrimary поверх AppTheme_Amoled. Принудительно восстанавливаем
+        // цвета Amoled-темы поверх Dynamic Color overlay.
+        if (isAmoled && accent == ACCENT_SYSTEM) {
+            getTheme().applyStyle(R.style.AppTheme_Amoled, true);
+        }
+
         if (accent == ACCENT_CUSTOM) {
             applyCustomAccentOverlay();
         }
