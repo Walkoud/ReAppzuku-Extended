@@ -171,13 +171,6 @@ public class StatisticsActivity extends BaseActivity {
         com.google.android.material.tabs.TabLayout tabs = binding.tabPeriodSelector;
         for (String label : chartPeriodLabels) tabs.addTab(tabs.newTab().setText(label));
         tabs.selectTab(tabs.getTabAt(selectedPeriodIdx));
-        if (tabs.getChildCount() > 0) {
-            tabs.getChildAt(0).setBackground(null);
-        }
-        tabs.post(() -> {
-            View strip = tabs.getChildAt(0);
-            if (strip != null) strip.setBackground(null);
-        });
 
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         if (accent == ACCENT_CUSTOM) {
