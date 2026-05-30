@@ -1,6 +1,7 @@
 package com.gree1d.reappzuku;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
@@ -13,6 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.gree1d.reappzuku.AppConstants.RAM_MONITOR_UPDATE_INTERVAL_MS;
+import static com.gree1d.reappzuku.PreferenceKeys.*;
+import static com.gree1d.reappzuku.AppConstants.*;
 
 public class RamMonitor {
     private static final String TAG = "RamMonitor";
@@ -32,6 +35,25 @@ public class RamMonitor {
         this.ramUsageBar = ramUsageBar;
         this.ramUsageText = ramUsageText;
         this.executor = Executors.newSingleThreadExecutor();
+
+        // Применяем цвет акцента сразу при создании
+        applyAccentColor();
+    }
+
+    // Вызывается из MainActivity после смены акцента (например при recreate)
+    public void applyAccentColor() {
+        SharedPreferences prefs = context.getSharedPreferences("AppPreferences", Context.MODE_PRIVATE);
+        int accent = prefs.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+
+        int baseColor;
+        if (accent == ACCENT_CUSTOM) {
+            baseColor = prefs.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        } else {
+            // Для системного и всех остальных — берём colorPrimary из текущей темы Activity
+            baseColor = com.google.android.material.color.MaterialColors.getColor(
+                    ramUsageBar, androidx.appcompat.R.attr.colorPrimary);
+        }
+        ramUsageBar.setIndicatorColor(baseColor);
     }
 
     public void startMonitoring() {
@@ -60,17 +82,17 @@ public class RamMonitor {
                             ramUsageText.setText(context.getString(R.string.ram_usage,
                                     ramInfo.usedMb, ramInfo.totalMb));
 
-                            // Цвет индикатора по уровню загруженности
+                            // Цвет по уровню загруженности поверх акцента
                             float fraction = (float) ramInfo.usedMb / ramInfo.totalMb;
-                            int indicatorColor;
-                            if (fraction < 0.6f) {
-                                indicatorColor = resolveAttrColor(androidx.appcompat.R.attr.colorPrimary);
-                            } else if (fraction < 0.85f) {
-                                indicatorColor = 0xFFFF9800; // orange — нет надёжного MD3 attr для tertiary
+                            if (fraction >= 0.85f) {
+                                ramUsageBar.setIndicatorColor(
+                                        resolveAttrColor(androidx.appcompat.R.attr.colorError));
+                            } else if (fraction >= 0.6f) {
+                                ramUsageBar.setIndicatorColor(0xFFFF9800);
                             } else {
-                                indicatorColor = resolveAttrColor(androidx.appcompat.R.attr.colorError);
+                                // Возвращаем цвет акцента
+                                applyAccentColor();
                             }
-                            ramUsageBar.setIndicatorColor(indicatorColor);
                         } else {
                             ramUsageText.setText(context.getString(R.string.ram_usage_unavailable));
                         }
