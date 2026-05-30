@@ -11,7 +11,6 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import com.google.android.material.color.DynamicColors;
 import com.google.android.material.color.MaterialColors;
 
 import static com.gree1d.reappzuku.AppConstants.*;
@@ -52,12 +51,9 @@ public abstract class BaseActivity extends AppCompatActivity {
                 case ACCENT_PEACH:     setTheme(R.style.AppTheme_AccentPeach_Amoled);     break;
                 case ACCENT_POWDER:    setTheme(R.style.AppTheme_AccentPowder_Amoled);    break;
                 case ACCENT_FOG:       setTheme(R.style.AppTheme_AccentFog_Amoled);       break;
-
-                default:               setTheme(R.style.AppTheme_AccentCustom_Amoled); break;
+                default:               setTheme(R.style.AppTheme_AccentCustom_Amoled);    break;
             }
-        } else if (isSystemTheme || accent == ACCENT_SYSTEM) {
-            DynamicColors.applyToActivityIfAvailable(this);
-        } else {
+        } else if (!isSystemTheme && accent != ACCENT_SYSTEM) {
             switch (accent) {
                 case ACCENT_INDIGO:    setTheme(R.style.AppTheme_AccentIndigo);    break;
                 case ACCENT_CRIMSON:   setTheme(R.style.AppTheme_AccentCrimson);   break;
@@ -100,11 +96,8 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     private void applyCustomAccentOverlay() {
         int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-
         int darkColor = darkenColor(color, 0.75f);
-
         getTheme().applyStyle(R.style.AppTheme_AccentCustomOverride, true);
-
     }
 
     public int getAccentColor() {
