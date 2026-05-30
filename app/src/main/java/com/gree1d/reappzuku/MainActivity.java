@@ -549,6 +549,11 @@ public class MainActivity extends BaseActivity {
                 .create();
         triggersDialog.show();
         tintDialogButtons(triggersDialog);
+        android.view.Window window = triggersDialog.getWindow();
+        if (window != null) {
+            int maxHeight = (int) (getResources().getDisplayMetrics().heightPixels * 0.85);
+            window.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, maxHeight);
+        }
     }
 
     private void addSectionHeader(LinearLayout container, String title) {
