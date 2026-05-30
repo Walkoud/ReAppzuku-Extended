@@ -103,7 +103,7 @@
                 android:textSize="11sp"
                 android:focusable="false" />
 
-            <!-- Строка 3: ОЗУ + CPU + бейджи -->
+            <!-- Строка 3: ОЗУ + CPU + бейджи — без изменений от оригинала -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -130,50 +130,40 @@
                     android:textSize="11sp"
                     android:focusable="false" />
 
-                <!--
-                    System badge: оригинальный цвет текста #1A5276 (тёмно-синий).
-                    Фон — полупрозрачный синий, хорошо виден и в светлой, и в тёмной теме.
-                -->
-                <com.google.android.material.chip.Chip
+                <!-- Бейджи — оригинальный стиль TextView с @drawable/badge_* -->
+                <TextView
                     android:id="@+id/badge_system"
-                    style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
+                    android:background="@drawable/badge_system"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingTop="1dp"
+                    android:paddingBottom="1dp"
                     android:text="System"
                     android:textColor="#1A5276"
                     android:textSize="10sp"
+                    android:textStyle="bold"
                     android:visibility="gone"
-                    android:focusable="false"
-                    app:chipBackgroundColor="#2A1A5276"
-                    app:chipStrokeColor="#1A5276"
-                    app:chipStrokeWidth="1dp"
-                    app:chipMinHeight="20dp"
-                    app:chipStartPadding="6dp"
-                    app:chipEndPadding="6dp"
-                    app:ensureMinTouchTargetSize="false" />
+                    android:focusable="false" />
 
-                <!--
-                    Persistent badge: оригинальный цвет текста #6C3483 (фиолетовый).
-                -->
-                <com.google.android.material.chip.Chip
+                <TextView
                     android:id="@+id/badge_persistent"
-                    style="@style/Widget.Material3.Chip.Assist"
                     android:layout_width="wrap_content"
-                    android:layout_height="22dp"
-                    android:layout_marginStart="4dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/badge_persistent"
+                    android:paddingStart="5dp"
+                    android:paddingEnd="5dp"
+                    android:paddingTop="1dp"
+                    android:paddingBottom="1dp"
                     android:text="Persistent"
                     android:textColor="#6C3483"
                     android:textSize="10sp"
+                    android:textStyle="bold"
                     android:visibility="gone"
-                    android:focusable="false"
-                    app:chipBackgroundColor="#2A6C3483"
-                    app:chipStrokeColor="#6C3483"
-                    app:chipStrokeWidth="1dp"
-                    app:chipMinHeight="20dp"
-                    app:chipStartPadding="6dp"
-                    app:chipEndPadding="6dp"
-                    app:ensureMinTouchTargetSize="false" />
+                    android:focusable="false" />
 
             </LinearLayout>
 
@@ -198,13 +188,14 @@
 
         </LinearLayout>
 
+        <!-- ic_force_stop увеличен: padding 10dp→6dp, контейнер 44dp→48dp -->
         <LinearLayout
             android:id="@+id/linear3"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:orientation="horizontal"
             android:gravity="center"
-            android:padding="10dp">
+            android:padding="6dp">
 
             <ImageView
                 android:id="@+id/btn_app_action"
