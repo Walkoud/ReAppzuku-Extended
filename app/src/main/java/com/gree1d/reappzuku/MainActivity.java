@@ -549,14 +549,6 @@ public class MainActivity extends BaseActivity {
                 .create();
         triggersDialog.show();
         tintDialogButtons(triggersDialog);
-        android.view.Window window = triggersDialog.getWindow();
-        if (window != null) {
-            int maxHeight = (int) (getResources().getDisplayMetrics().heightPixels * 0.85);
-            window.setLayout(android.view.ViewGroup.LayoutParams.MATCH_PARENT, maxHeight);
-        }
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            dialogView.setScrollCaptureHint(android.view.View.SCROLL_CAPTURE_HINT_INCLUDE);
-        }
     }
 
     private void addSectionHeader(LinearLayout container, String title) {
