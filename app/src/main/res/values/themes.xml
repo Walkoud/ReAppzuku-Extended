@@ -448,6 +448,14 @@
         <item name="colorControlNormal">#FFFFFFFF</item>
     </style>
 
+    <style name="Widget.App.TabLayout" parent="Widget.Material3.TabLayout">
+        <item name="materialThemeOverlay">@style/ThemeOverlay.App.TabLayout</item>
+    </style>
+
+    <style name="ThemeOverlay.App.TabLayout" parent="">
+        <item name="colorOutlineVariant">?attr/colorSurface</item>
+    </style>
+
     <style name="AppBottomSheetDialogTheme" parent="Theme.Material3.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
     </style>
