@@ -7,6 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- 1. TopAppBar: MaterialToolbar внутри AppBarLayout -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
@@ -69,6 +70,7 @@
 
         </RelativeLayout>
 
+        <!-- 2. RAM: LinearProgressIndicator вместо ProgressBar -->
         <LinearLayout
             android:id="@+id/linear1"
             android:layout_width="match_parent"
@@ -130,20 +132,20 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/kill_button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_gravity="bottom"
         android:text="@string/fab_kill_app"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
+        android:textSize="15sp"
         android:textStyle="bold"
-        android:backgroundTint="#0136FF"
+        android:letterSpacing="0.02"
         android:visibility="gone"
-        android:stateListAnimator="@null"
         android:insetTop="0dp"
         android:insetBottom="0dp"
-        style="@style/Widget.App.KillButton" />
+        app:cornerRadius="0dp"
+        app:elevation="0dp"
+        style="@style/Widget.Material3.Button.UnelevatedButton" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
