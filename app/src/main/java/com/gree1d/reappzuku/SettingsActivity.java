@@ -74,6 +74,7 @@ public class SettingsActivity extends BaseActivity {
     private SleepModeManager sleepModeManager;
     private BackupManager backupManager;
     private RestrictionsScheduler scheduler;
+    private AdditionalScenariosManager additionalScenariosManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private int easterEggClickCount = 0;
@@ -100,6 +101,7 @@ public class SettingsActivity extends BaseActivity {
         backupManager = new BackupManager(this);
         scheduler = new RestrictionsScheduler(
                 getApplicationContext(), handler, executor, shellManager, appManager);
+        additionalScenariosManager = new AdditionalScenariosManager(this);
 
         setupToolbar();
         loadSettings();
@@ -145,6 +147,7 @@ public class SettingsActivity extends BaseActivity {
             R.id.section_title_appearance,
             R.id.section_title_stability,
             R.id.section_title_autokill,
+            R.id.section_title_additional_scenarios,
             R.id.section_title_advanced,
             R.id.section_title_about
         };
@@ -262,6 +265,8 @@ public class SettingsActivity extends BaseActivity {
         } catch (Exception e) {
             binding.textVersion.setText(R.string.app_name);
         }
+
+        loadAdditionalScenariosSettings();
     }
 
     private void setupListeners() {
@@ -414,6 +419,7 @@ public class SettingsActivity extends BaseActivity {
 
         updateKillModeVisibility();
         applyServiceDependentState(isServiceEnabled());
+        setupAdditionalScenariosListeners();
     }
 
     private void updateKillModeVisibility() {
@@ -1889,6 +1895,179 @@ public class SettingsActivity extends BaseActivity {
         resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                 .setView(layout)
                 .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show());
+    }
+
+    private void loadAdditionalScenariosSettings() {
+        binding.checkboxHwHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
+        binding.checkboxHwUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
+        binding.checkboxHwCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
+        binding.checkboxAppLaunchTrigger.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
+        updateAppLaunchTriggerListVisibility(additionalScenariosManager.isAppLaunchTriggerEnabled());
+        refreshAppLaunchTargetList();
+    }
+
+    private void setupAdditionalScenariosListeners() {
+        binding.checkboxHwHeadset.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                btn.setChecked(false);
+                showServiceRequiredToast();
+                return;
+            }
+            additionalScenariosManager.setHeadsetTriggerEnabled(isChecked);
+            additionalScenariosManager.updateHardwareReceiverState();
+        });
+
+        binding.checkboxHwUsb.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                btn.setChecked(false);
+                showServiceRequiredToast();
+                return;
+            }
+            additionalScenariosManager.setUsbTriggerEnabled(isChecked);
+            additionalScenariosManager.updateHardwareReceiverState();
+        });
+
+        binding.checkboxHwCharger.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                btn.setChecked(false);
+                showServiceRequiredToast();
+                return;
+            }
+            additionalScenariosManager.setChargerTriggerEnabled(isChecked);
+            additionalScenariosManager.updateHardwareReceiverState();
+        });
+
+        binding.checkboxAppLaunchTrigger.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked && !isServiceEnabled()) {
+                btn.setChecked(false);
+                showServiceRequiredToast();
+                return;
+            }
+            if (isChecked && !isAccessibilityServiceEnabled()) {
+                btn.setChecked(false);
+                showAccessibilityServiceRequiredDialog();
+                return;
+            }
+            additionalScenariosManager.setAppLaunchTriggerEnabled(isChecked);
+            updateAppLaunchTriggerListVisibility(isChecked);
+        });
+
+        binding.btnAddTargetApp.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAddTargetAppDialog();
+        });
+    }
+
+    private void updateAppLaunchTriggerListVisibility(boolean visible) {
+        binding.layoutAppLaunchTriggerApps.setVisibility(visible ? View.VISIBLE : View.GONE);
+    }
+
+    private void refreshAppLaunchTargetList() {
+        Set<String> packages = additionalScenariosManager.getAppLaunchTriggerPackages();
+        binding.containerTargetApps.removeAllViews();
+
+        if (packages.isEmpty()) {
+            TextView emptyText = new TextView(this);
+            emptyText.setText(getString(R.string.scenarios_app_launch_empty));
+            int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+            emptyText.setPadding(dp8, dp8, dp8, dp8);
+            emptyText.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+            binding.containerTargetApps.addView(emptyText);
+            return;
+        }
+
+        PackageManager pm = getPackageManager();
+        for (String pkg : packages) {
+            View itemView = getLayoutInflater().inflate(R.layout.item_target_app, binding.containerTargetApps, false);
+            TextView textName = itemView.findViewById(R.id.text_target_app_name);
+            TextView textPkg = itemView.findViewById(R.id.text_target_app_package);
+            android.widget.ImageButton btnRemove = itemView.findViewById(R.id.btn_remove_target_app);
+
+            String appName = pkg;
+            try {
+                android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+                appName = pm.getApplicationLabel(info).toString();
+            } catch (PackageManager.NameNotFoundException ignored) {}
+
+            textName.setText(appName);
+            textPkg.setText(pkg);
+
+            final String finalPkg = pkg;
+            btnRemove.setOnClickListener(v -> {
+                Set<String> current = additionalScenariosManager.getAppLaunchTriggerPackages();
+                current.remove(finalPkg);
+                additionalScenariosManager.saveAppLaunchTriggerPackages(current);
+                refreshAppLaunchTargetList();
+            });
+
+            binding.containerTargetApps.addView(itemView);
+        }
+    }
+
+    private void showAddTargetAppDialog() {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter, null);
+        ListView listView = dialogView.findViewById(R.id.filter_list_view);
+        ProgressBar progressBar = dialogView.findViewById(R.id.filter_loading_progress);
+        EditText searchBox = dialogView.findViewById(R.id.filter_search);
+        LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
+        filterOptions.setVisibility(View.GONE);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.scenarios_app_launch_add_title))
+                .setView(dialogView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
+
+        progressBar.setVisibility(View.VISIBLE);
+        listView.setVisibility(View.GONE);
+        searchBox.setVisibility(View.GONE);
+        dialog.show();
+        resetDialogButtonColors(dialog);
+
+        appManager.loadAllApps(allApps -> {
+            Set<String> currentTargets = additionalScenariosManager.getAppLaunchTriggerPackages();
+            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, currentTargets);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
+            listView.setAdapter(filterAdapter);
+            listView.setOnItemClickListener(null);
+
+            progressBar.setVisibility(View.GONE);
+            listView.setVisibility(View.VISIBLE);
+            searchBox.setVisibility(View.VISIBLE);
+
+            searchBox.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filterAdapter.getFilter().filter(s); }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                additionalScenariosManager.saveAppLaunchTriggerPackages(filterAdapter.getSelectedPackages());
+                refreshAppLaunchTargetList();
+                dialog.dismiss();
+            });
+        });
+    }
+
+    private boolean isAccessibilityServiceEnabled() {
+        String expectedService = getPackageName() + "/" + AppLaunchAccessibilityService.class.getName();
+        String enabledServices = android.provider.Settings.Secure.getString(
+                getContentResolver(), android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        return enabledServices != null && enabledServices.contains(expectedService);
+    }
+
+    private void showAccessibilityServiceRequiredDialog() {
+        resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.scenarios_accessibility_required_title))
+                .setMessage(getString(R.string.scenarios_accessibility_required_message))
+                .setPositiveButton(getString(R.string.scenarios_accessibility_open_settings), (dialog, which) -> {
+                    dialog.dismiss();
+                    startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                })
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
                 .show());
     }
 
