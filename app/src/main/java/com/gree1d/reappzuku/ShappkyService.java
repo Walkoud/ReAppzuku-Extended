@@ -47,6 +47,7 @@ public class ShappkyService extends Service {
     private RestrictionsScheduler scheduler;
     private KillTriggerReceiver screenOffReceiver;
     private RestrictionsWatchdogManager watchdog;
+    private AdditionalScenariosManager additionalScenariosManager;
 
     private boolean isFrozen = false;
     private boolean shizukuLostNotificationShown = false;
@@ -113,6 +114,9 @@ public class ShappkyService extends Service {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screenOffReceiver, filter);
+
+        additionalScenariosManager = new AdditionalScenariosManager(this);
+        additionalScenariosManager.updateHardwareReceiverState();
 
         scheduleNextKill();
         scheduler.scheduleNext();
@@ -396,6 +400,9 @@ public class ShappkyService extends Service {
         cancelShizukuLostNotification();
         if (screenOffReceiver != null) {
             unregisterReceiver(screenOffReceiver);
+        }
+        if (additionalScenariosManager != null) {
+            additionalScenariosManager.stop();
         }
         watchdog.stop();
         handler.removeCallbacksAndMessages(null);

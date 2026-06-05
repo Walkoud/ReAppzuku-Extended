@@ -1944,13 +1944,11 @@ public class SettingsActivity extends BaseActivity {
                 showServiceRequiredToast();
                 return;
             }
-            if (isChecked && !isAccessibilityServiceEnabled()) {
-                btn.setChecked(false);
-                showAccessibilityServiceRequiredDialog();
-                return;
-            }
             additionalScenariosManager.setAppLaunchTriggerEnabled(isChecked);
             updateAppLaunchTriggerListVisibility(isChecked);
+            if (isChecked && !isAccessibilityServiceEnabled()) {
+                showAccessibilityServiceRequiredDialog();
+            }
         });
 
         binding.btnAddTargetApp.setOnClickListener(v -> {
