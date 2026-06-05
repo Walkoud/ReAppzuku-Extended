@@ -3,6 +3,7 @@ package com.gree1d.reappzuku;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -28,14 +29,14 @@ public class HardwareEventReceiver extends BroadcastReceiver {
 
         switch (action) {
             case Intent.ACTION_HEADSET_PLUG:
-                relevant = true;
-                break;
             case "android.hardware.usb.action.USB_STATE":
-            case "android.hardware.usb.action.USB_DEVICE_ATTACHED":
-                relevant = true;
-                break;
             case Intent.ACTION_POWER_CONNECTED:
             case Intent.ACTION_POWER_DISCONNECTED:
+            case WifiManager.WIFI_STATE_CHANGED_ACTION:
+            case "android.net.conn.CONNECTIVITY_ACTION":
+            case "android.bluetooth.adapter.action.STATE_CHANGED":
+            case "android.location.PROVIDERS_CHANGED":
+            case WifiManager.WIFI_AP_STATE_CHANGED_ACTION:
                 relevant = true;
                 break;
         }
