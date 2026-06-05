@@ -977,10 +977,10 @@
 
     <!-- Hardware events -->
     <string name="scenarios_hardware_events_title">Hardware Events</string>
-    <string name="scenarios_hw_headset">Headphones connected / disconnected</string>
-    <string name="scenarios_hw_usb">USB connected / disconnected</string>
+    <string name="scenarios_hw_headset">Headphones connected (ACTION_HEADSET_PLUG)</string>
+    <string name="scenarios_hw_usb">USB connected (USB_STATE / USB_DEVICE_ATTACHED)</string>
     <string name="scenarios_hw_charger">Charger connected / disconnected</string>
-    <string name="scenarios_hw_wifi">WiFi or Mobile network on/off</string>
+    <string name="scenarios_hw_wifi">WiFi / Mobile network on/off</string>
     <string name="scenarios_hw_bluetooth">Bluetooth on/off</string>
     <string name="scenarios_hw_gps">GPS / Location on/off</string>
     <string name="scenarios_hw_hotspot">Hotspot on/off</string>
@@ -989,6 +989,7 @@
     <!-- App launch trigger -->
     <string name="scenarios_app_launch_title">App Launch Trigger</string>
     <string name="scenarios_app_launch_enable">Run Auto-Kill when target app launches</string>
+    <string name="scenarios_app_launch_clear_cache">Clear cache of all apps on launch</string>
     <string name="scenarios_app_launch_target_apps">Target apps</string>
     <string name="scenarios_app_launch_add">Add app</string>
     <string name="scenarios_app_launch_add_title">Select target apps</string>
@@ -998,7 +999,7 @@
     <!-- Kill source selector -->
     <string name="scenarios_kill_mode_label">Auto-Kill settings to use</string>
     <string name="scenarios_kill_mode_current">Current settings</string>
-    <string name="scenarios_kill_mode_preset">Preset</string>
+    <string name="scenarios_kill_mode_preset">Preset (coming soon)</string>
 
     <!-- Accessibility service -->
     <string name="accessibility_service_description">Detects when target apps are launched to trigger Auto-Kill and free RAM</string>
