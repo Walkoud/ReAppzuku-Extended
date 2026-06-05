@@ -148,7 +148,6 @@ public class SettingsActivity extends BaseActivity {
             R.id.section_title_appearance,
             R.id.section_title_stability,
             R.id.section_title_autokill,
-            R.id.section_title_additional_scenarios,
             R.id.section_title_advanced,
             R.id.section_title_about
         };
@@ -1934,6 +1933,16 @@ public class SettingsActivity extends BaseActivity {
         int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
         int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
 
+        TypedValue tv = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.textColorPrimary, tv, true);
+        int colorPrimary = ContextCompat.getColor(this, tv.resourceId);
+        getTheme().resolveAttribute(android.R.attr.textColorSecondary, tv, true);
+        int colorSecondary = ContextCompat.getColor(this, tv.resourceId);
+        getTheme().resolveAttribute(com.google.android.material.R.attr.colorSecondary, tv, true);
+        int colorAccent = tv.data;
+        getTheme().resolveAttribute(android.R.attr.colorControlHighlight, tv, true);
+        int colorDivider = tv.data;
+
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(0, dp8, 0, dp8);
@@ -1942,7 +1951,7 @@ public class SettingsActivity extends BaseActivity {
         headerHw.setText(getString(R.string.scenarios_hardware_events_title));
         headerHw.setTextSize(12);
         headerHw.setTypeface(null, android.graphics.Typeface.BOLD);
-        headerHw.setTextColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_dynamic_secondary40));
+        headerHw.setTextColor(colorAccent);
         headerHw.setPadding(dp24, dp8, dp24, dp4);
         root.addView(headerHw);
 
@@ -1967,7 +1976,7 @@ public class SettingsActivity extends BaseActivity {
         TextView noteHw = new TextView(this);
         noteHw.setText(getString(R.string.scenarios_hw_delay_note));
         noteHw.setTextSize(12);
-        noteHw.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        noteHw.setTextColor(colorSecondary);
         noteHw.setPadding(dp24, dp4, dp24, dp16);
         root.addView(noteHw);
 
@@ -1976,14 +1985,14 @@ public class SettingsActivity extends BaseActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 1);
         dividerParams.setMargins(dp16, 0, dp16, dp16);
         divider.setLayoutParams(dividerParams);
-        divider.setBackgroundColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_divider_color));
+        divider.setBackgroundColor(colorDivider);
         root.addView(divider);
 
         TextView headerLaunch = new TextView(this);
         headerLaunch.setText(getString(R.string.scenarios_app_launch_title));
         headerLaunch.setTextSize(12);
         headerLaunch.setTypeface(null, android.graphics.Typeface.BOLD);
-        headerLaunch.setTextColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_dynamic_secondary40));
+        headerLaunch.setTextColor(colorAccent);
         headerLaunch.setPadding(dp24, dp4, dp24, dp4);
         root.addView(headerLaunch);
 
@@ -2000,12 +2009,13 @@ public class SettingsActivity extends BaseActivity {
         TextView tvTargetAppsLabel = new TextView(this);
         tvTargetAppsLabel.setText(getString(R.string.scenarios_app_launch_target_apps));
         tvTargetAppsLabel.setTextSize(14);
+        tvTargetAppsLabel.setTextColor(colorPrimary);
         tvTargetAppsLabel.setPadding(dp24, dp8, dp24, 0);
         layoutTargetApps.addView(tvTargetAppsLabel);
 
         TextView tvTargetAppsList = new TextView(this);
         tvTargetAppsList.setTextSize(12);
-        tvTargetAppsList.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        tvTargetAppsList.setTextColor(colorSecondary);
         tvTargetAppsList.setPadding(dp24, dp4, dp24, dp8);
         TypedValue outValue = new TypedValue();
         getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
@@ -2018,13 +2028,13 @@ public class SettingsActivity extends BaseActivity {
                 LinearLayout.LayoutParams.MATCH_PARENT, 1);
         divider2Params.setMargins(dp16, dp8, dp16, dp8);
         divider2.setLayoutParams(divider2Params);
-        divider2.setBackgroundColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_divider_color));
+        divider2.setBackgroundColor(colorDivider);
         layoutTargetApps.addView(divider2);
 
         TextView tvKillModeLabel = new TextView(this);
         tvKillModeLabel.setText(getString(R.string.scenarios_kill_mode_label));
         tvKillModeLabel.setTextSize(12);
-        tvKillModeLabel.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        tvKillModeLabel.setTextColor(colorSecondary);
         tvKillModeLabel.setPadding(dp24, dp4, dp24, dp4);
         layoutTargetApps.addView(tvKillModeLabel);
 
