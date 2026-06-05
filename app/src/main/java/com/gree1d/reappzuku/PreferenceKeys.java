@@ -40,6 +40,7 @@ public final class PreferenceKeys {
     public static final String KEY_HW_TRIGGER_BLUETOOTH = "hw_trigger_bluetooth";
     public static final String KEY_HW_TRIGGER_GPS = "hw_trigger_gps";
     public static final String KEY_HW_TRIGGER_HOTSPOT = "hw_trigger_hotspot";
+    public static final String KEY_APP_LAUNCH_CLEAR_CACHE = "app_launch_clear_cache";
 
     // Service & Automation
     public static final String KEY_AUTO_KILL_ENABLED = "autoKillEnabled";
