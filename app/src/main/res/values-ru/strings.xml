@@ -960,7 +960,7 @@
     <string name="log_detail_bucket_restored">Bucket восстановлен</string>
 
     <!-- Auto-Kill Advanced -->
-    <string name="scenarios_settings_title">Дополнительные сценарии</string>
+    <string name="section_additional_scenarios">Дополнительные сценарии</string>
     <string name="scenarios_summary_none">Отключено</string>
     <string name="scenarios_hw_headset_short">Наушники</string>
     <string name="scenarios_hw_usb_short">USB</string>
