@@ -53,6 +53,10 @@ public class AutoKillManager {
     }
 
     public void performAutoKill(Runnable onComplete) {
+        performAutoKill(onComplete, null);
+    }
+
+    public void performAutoKill(Runnable onComplete, Set<String> extraWhitelist) {
         executor.execute(() -> {
             if (!shellManager.resolveAnyShellPermission()) {
                 if (onComplete != null)
@@ -129,6 +133,10 @@ public class AutoKillManager {
                             }
                             if (ProtectedApps.isProtected(context, pkg)) {
                                 Log.d(TAG, "SKIP (protected): " + pkg);
+                                return false;
+                            }
+                            if (extraWhitelist != null && extraWhitelist.contains(pkg)) {
+                                Log.d(TAG, "SKIP (extra whitelist): " + pkg);
                                 return false;
                             }
                             if (scheduler != null && scheduler.isProtected(pkg, RestrictionsScheduler.PROTECT_AUTO_KILL)) {

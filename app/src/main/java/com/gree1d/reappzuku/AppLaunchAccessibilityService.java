@@ -83,7 +83,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         lastTriggerTime = now;
 
         Log.d(TAG, "Target app launched: " + packageName + " — triggering Auto-Kill");
-        autoKillManager.performAutoKill(null);
+        autoKillManager.performAutoKill(null, new HashSet<>(targetPackages));
     }
 
     @Override

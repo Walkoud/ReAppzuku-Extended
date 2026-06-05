@@ -33,6 +33,7 @@ import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.os.Handler;
 import androidx.activity.result.ActivityResultLauncher;
@@ -1899,111 +1900,209 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void loadAdditionalScenariosSettings() {
-        binding.checkboxHwHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
-        binding.checkboxHwUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
-        binding.checkboxHwCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
-        binding.checkboxAppLaunchTrigger.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
-        updateAppLaunchTriggerListVisibility(additionalScenariosManager.isAppLaunchTriggerEnabled());
-        refreshAppLaunchTargetList();
+        updateAdditionalScenariosSummary();
     }
 
     private void setupAdditionalScenariosListeners() {
-        binding.checkboxHwHeadset.setOnCheckedChangeListener((btn, isChecked) -> {
-            if (isChecked && !isServiceEnabled()) {
-                btn.setChecked(false);
-                showServiceRequiredToast();
-                return;
-            }
-            additionalScenariosManager.setHeadsetTriggerEnabled(isChecked);
-            additionalScenariosManager.updateHardwareReceiverState();
+        binding.layoutAdditionalScenarios.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAdditionalScenariosDialog();
         });
+    }
 
-        binding.checkboxHwUsb.setOnCheckedChangeListener((btn, isChecked) -> {
-            if (isChecked && !isServiceEnabled()) {
-                btn.setChecked(false);
-                showServiceRequiredToast();
-                return;
-            }
-            additionalScenariosManager.setUsbTriggerEnabled(isChecked);
+    private void updateAdditionalScenariosSummary() {
+        List<String> active = new ArrayList<>();
+        if (additionalScenariosManager.isHeadsetTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_headset_short));
+        if (additionalScenariosManager.isUsbTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_usb_short));
+        if (additionalScenariosManager.isChargerTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_charger_short));
+        if (additionalScenariosManager.isAppLaunchTriggerEnabled())
+            active.add(getString(R.string.scenarios_app_launch_short));
+
+        if (active.isEmpty()) {
+            binding.textAdditionalScenariosSummary.setText(getString(R.string.scenarios_summary_none));
+        } else {
+            binding.textAdditionalScenariosSummary.setText(android.text.TextUtils.join(", ", active));
+        }
+    }
+
+    private void showAdditionalScenariosDialog() {
+        int dp4 = (int) (getResources().getDisplayMetrics().density * 4);
+        int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
+        int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp8, 0, dp8);
+
+        TextView headerHw = new TextView(this);
+        headerHw.setText(getString(R.string.scenarios_hardware_events_title));
+        headerHw.setTextSize(12);
+        headerHw.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerHw.setTextColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_dynamic_secondary40));
+        headerHw.setPadding(dp24, dp8, dp24, dp4);
+        root.addView(headerHw);
+
+        CheckBox cbHeadset = new CheckBox(this);
+        cbHeadset.setText(getString(R.string.scenarios_hw_headset));
+        cbHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
+        cbHeadset.setPadding(dp24, dp8, dp24, dp8);
+        root.addView(cbHeadset);
+
+        CheckBox cbUsb = new CheckBox(this);
+        cbUsb.setText(getString(R.string.scenarios_hw_usb));
+        cbUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
+        cbUsb.setPadding(dp24, dp8, dp24, dp8);
+        root.addView(cbUsb);
+
+        CheckBox cbCharger = new CheckBox(this);
+        cbCharger.setText(getString(R.string.scenarios_hw_charger));
+        cbCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
+        cbCharger.setPadding(dp24, dp8, dp24, dp8);
+        root.addView(cbCharger);
+
+        TextView noteHw = new TextView(this);
+        noteHw.setText(getString(R.string.scenarios_hw_delay_note));
+        noteHw.setTextSize(12);
+        noteHw.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        noteHw.setPadding(dp24, dp4, dp24, dp16);
+        root.addView(noteHw);
+
+        View divider = new View(this);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        dividerParams.setMargins(dp16, 0, dp16, dp16);
+        divider.setLayoutParams(dividerParams);
+        divider.setBackgroundColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_divider_color));
+        root.addView(divider);
+
+        TextView headerLaunch = new TextView(this);
+        headerLaunch.setText(getString(R.string.scenarios_app_launch_title));
+        headerLaunch.setTextSize(12);
+        headerLaunch.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerLaunch.setTextColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_dynamic_secondary40));
+        headerLaunch.setPadding(dp24, dp4, dp24, dp4);
+        root.addView(headerLaunch);
+
+        CheckBox cbAppLaunch = new CheckBox(this);
+        cbAppLaunch.setText(getString(R.string.scenarios_app_launch_enable));
+        cbAppLaunch.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
+        cbAppLaunch.setPadding(dp24, dp8, dp24, dp8);
+        root.addView(cbAppLaunch);
+
+        LinearLayout layoutTargetApps = new LinearLayout(this);
+        layoutTargetApps.setOrientation(LinearLayout.VERTICAL);
+        layoutTargetApps.setVisibility(cbAppLaunch.isChecked() ? View.VISIBLE : View.GONE);
+
+        TextView tvTargetAppsLabel = new TextView(this);
+        tvTargetAppsLabel.setText(getString(R.string.scenarios_app_launch_target_apps));
+        tvTargetAppsLabel.setTextSize(14);
+        tvTargetAppsLabel.setPadding(dp24, dp8, dp24, 0);
+        layoutTargetApps.addView(tvTargetAppsLabel);
+
+        TextView tvTargetAppsList = new TextView(this);
+        tvTargetAppsList.setTextSize(12);
+        tvTargetAppsList.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        tvTargetAppsList.setPadding(dp24, dp4, dp24, dp8);
+        TypedValue outValue = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+        layoutTargetApps.setBackgroundResource(outValue.resourceId);
+        updateDialogTargetAppsList(tvTargetAppsList);
+        layoutTargetApps.addView(tvTargetAppsList);
+
+        View divider2 = new View(this);
+        LinearLayout.LayoutParams divider2Params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        divider2Params.setMargins(dp16, dp8, dp16, dp8);
+        divider2.setLayoutParams(divider2Params);
+        divider2.setBackgroundColor(ContextCompat.getColor(this, com.google.android.material.R.color.material_divider_color));
+        layoutTargetApps.addView(divider2);
+
+        TextView tvKillModeLabel = new TextView(this);
+        tvKillModeLabel.setText(getString(R.string.scenarios_kill_mode_label));
+        tvKillModeLabel.setTextSize(12);
+        tvKillModeLabel.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
+        tvKillModeLabel.setPadding(dp24, dp4, dp24, dp4);
+        layoutTargetApps.addView(tvKillModeLabel);
+
+        RadioGroup radioGroup = new RadioGroup(this);
+        radioGroup.setPadding(dp16, 0, dp16, dp8);
+
+        RadioButton radioCurrentSettings = new RadioButton(this);
+        radioCurrentSettings.setText(getString(R.string.scenarios_kill_mode_current));
+        radioCurrentSettings.setChecked(true);
+        radioCurrentSettings.setPadding(dp8, dp8, dp8, dp8);
+        radioGroup.addView(radioCurrentSettings);
+
+        RadioButton radioPreset = new RadioButton(this);
+        radioPreset.setText(getString(R.string.scenarios_kill_mode_preset));
+        radioPreset.setEnabled(false);
+        radioPreset.setAlpha(0.4f);
+        radioPreset.setPadding(dp8, dp8, dp8, dp8);
+        radioGroup.addView(radioPreset);
+
+        layoutTargetApps.addView(radioGroup);
+        root.addView(layoutTargetApps);
+
+        cbAppLaunch.setOnCheckedChangeListener((btn, isChecked) ->
+                layoutTargetApps.setVisibility(isChecked ? View.VISIBLE : View.GONE));
+
+        layoutTargetApps.setOnClickListener(v -> showTargetAppsPickerDialog(() ->
+                updateDialogTargetAppsList(tvTargetAppsList)));
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(root);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.section_additional_scenarios))
+                .setView(scrollView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.show();
+        resetDialogButtonColors(dialog);
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            additionalScenariosManager.setHeadsetTriggerEnabled(cbHeadset.isChecked());
+            additionalScenariosManager.setUsbTriggerEnabled(cbUsb.isChecked());
+            additionalScenariosManager.setChargerTriggerEnabled(cbCharger.isChecked());
             additionalScenariosManager.updateHardwareReceiverState();
-        });
 
-        binding.checkboxHwCharger.setOnCheckedChangeListener((btn, isChecked) -> {
-            if (isChecked && !isServiceEnabled()) {
-                btn.setChecked(false);
-                showServiceRequiredToast();
-                return;
-            }
-            additionalScenariosManager.setChargerTriggerEnabled(isChecked);
-            additionalScenariosManager.updateHardwareReceiverState();
-        });
+            boolean appLaunchWasOff = !additionalScenariosManager.isAppLaunchTriggerEnabled();
+            additionalScenariosManager.setAppLaunchTriggerEnabled(cbAppLaunch.isChecked());
 
-        binding.checkboxAppLaunchTrigger.setOnCheckedChangeListener((btn, isChecked) -> {
-            if (isChecked && !isServiceEnabled()) {
-                btn.setChecked(false);
-                showServiceRequiredToast();
-                return;
-            }
-            additionalScenariosManager.setAppLaunchTriggerEnabled(isChecked);
-            updateAppLaunchTriggerListVisibility(isChecked);
-            if (isChecked && !isAccessibilityServiceEnabled()) {
+            if (cbAppLaunch.isChecked() && appLaunchWasOff && !isAccessibilityServiceEnabled()) {
                 showAccessibilityServiceRequiredDialog();
             }
-        });
 
-        binding.btnAddTargetApp.setOnClickListener(v -> {
-            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
-            showAddTargetAppDialog();
+            updateAdditionalScenariosSummary();
+            dialog.dismiss();
         });
     }
 
-    private void updateAppLaunchTriggerListVisibility(boolean visible) {
-        binding.layoutAppLaunchTriggerApps.setVisibility(visible ? View.VISIBLE : View.GONE);
-    }
-
-    private void refreshAppLaunchTargetList() {
+    private void updateDialogTargetAppsList(TextView tvTargetAppsList) {
         Set<String> packages = additionalScenariosManager.getAppLaunchTriggerPackages();
-        binding.containerTargetApps.removeAllViews();
-
         if (packages.isEmpty()) {
-            TextView emptyText = new TextView(this);
-            emptyText.setText(getString(R.string.scenarios_app_launch_empty));
-            int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
-            emptyText.setPadding(dp8, dp8, dp8, dp8);
-            emptyText.setTextColor(ContextCompat.getColor(this, android.R.color.secondary_text_light));
-            binding.containerTargetApps.addView(emptyText);
+            tvTargetAppsList.setText(getString(R.string.scenarios_app_launch_empty));
             return;
         }
-
         PackageManager pm = getPackageManager();
+        List<String> names = new ArrayList<>();
         for (String pkg : packages) {
-            View itemView = getLayoutInflater().inflate(R.layout.item_target_app, binding.containerTargetApps, false);
-            TextView textName = itemView.findViewById(R.id.text_target_app_name);
-            TextView textPkg = itemView.findViewById(R.id.text_target_app_package);
-            android.widget.ImageButton btnRemove = itemView.findViewById(R.id.btn_remove_target_app);
-
-            String appName = pkg;
             try {
                 android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
-                appName = pm.getApplicationLabel(info).toString();
-            } catch (PackageManager.NameNotFoundException ignored) {}
-
-            textName.setText(appName);
-            textPkg.setText(pkg);
-
-            final String finalPkg = pkg;
-            btnRemove.setOnClickListener(v -> {
-                Set<String> current = additionalScenariosManager.getAppLaunchTriggerPackages();
-                current.remove(finalPkg);
-                additionalScenariosManager.saveAppLaunchTriggerPackages(current);
-                refreshAppLaunchTargetList();
-            });
-
-            binding.containerTargetApps.addView(itemView);
+                names.add(pm.getApplicationLabel(info).toString());
+            } catch (PackageManager.NameNotFoundException ignored) {
+                names.add(pkg);
+            }
         }
+        tvTargetAppsList.setText(android.text.TextUtils.join(", ", names));
     }
 
-    private void showAddTargetAppDialog() {
+    private void showTargetAppsPickerDialog(Runnable onSaved) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter, null);
         ListView listView = dialogView.findViewById(R.id.filter_list_view);
         ProgressBar progressBar = dialogView.findViewById(R.id.filter_loading_progress);
@@ -2044,7 +2143,7 @@ public class SettingsActivity extends BaseActivity {
 
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
                 additionalScenariosManager.saveAppLaunchTriggerPackages(filterAdapter.getSelectedPackages());
-                refreshAppLaunchTargetList();
+                if (onSaved != null) onSaved.run();
                 dialog.dismiss();
             });
         });
