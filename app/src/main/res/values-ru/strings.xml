@@ -969,8 +969,8 @@
 
     <!-- Hardware events -->
     <string name="scenarios_hardware_events_title">Аппаратные события</string>
-    <string name="scenarios_hw_headset">Подключение наушников (ACTION_HEADSET_PLUG)</string>
-    <string name="scenarios_hw_usb">Подключение USB (USB_STATE / USB_DEVICE_ATTACHED)</string>
+    <string name="scenarios_hw_headset">Подключение наушников</string>
+    <string name="scenarios_hw_usb">Подключение USB</string>
     <string name="scenarios_hw_charger">Подключение / отключение зарядки</string>
     <string name="scenarios_hw_delay_note">Auto-Kill запускается через 10 секунд после события, чтобы фоновые приложения успели запуститься</string>
 
