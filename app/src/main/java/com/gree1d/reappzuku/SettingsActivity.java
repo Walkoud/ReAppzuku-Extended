@@ -2065,18 +2065,6 @@ public class SettingsActivity extends BaseActivity {
         if (checkboxTint != null) cbAppLaunch.setButtonTintList(checkboxTint);
         root.addView(cbAppLaunch);
 
-        CheckBox cbClearCache = new CheckBox(this);
-        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
-        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
-        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
-        cbClearCache.setLayoutParams(cbParams);
-        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            cbClearCache.setEnabled(false);
-            cbClearCache.setAlpha(0.4f);
-        }
-        root.addView(cbClearCache);
-
         LinearLayout layoutTargetApps = new LinearLayout(this);
         layoutTargetApps.setOrientation(LinearLayout.VERTICAL);
         layoutTargetApps.setVisibility(cbAppLaunch.isChecked() ? View.VISIBLE : View.GONE);
@@ -2130,6 +2118,19 @@ public class SettingsActivity extends BaseActivity {
         radioGroup.addView(radioPreset);
 
         layoutTargetApps.addView(radioGroup);
+
+        CheckBox cbClearCache = new CheckBox(this);
+        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
+        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
+        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
+        cbClearCache.setLayoutParams(cbParams);
+        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            cbClearCache.setEnabled(false);
+            cbClearCache.setAlpha(0.4f);
+        }
+        layoutTargetApps.addView(cbClearCache);
+
         root.addView(layoutTargetApps);
 
         cbAppLaunch.setOnCheckedChangeListener((btn, isChecked) ->
