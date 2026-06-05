@@ -964,7 +964,7 @@
     <string name="log_detail_bucket_restored">Bucket restored</string>
 
     <!-- Auto-Kill Advanced -->
-    <string name="scenarios_settings_title">Advanced Conditions</string>
+    <string name="section_additional_scenarios">Advanced Conditions</string>
     <string name="scenarios_summary_none">Disabled</string>
     <string name="scenarios_hw_headset_short">Headphones</string>
     <string name="scenarios_hw_usb_short">USB</string>
