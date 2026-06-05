@@ -958,4 +958,39 @@
     <string name="log_detail_bucket_was">Bucket был</string>
     <string name="log_detail_bucket_set">Bucket установлен</string>
     <string name="log_detail_bucket_restored">Bucket восстановлен</string>
+
+    <!-- Auto-Kill Advanced -->
+    <string name="section_additional_scenarios">Дополнительные сценарии</string>
+    <string name="scenarios_summary_none">Отключено</string>
+    <string name="scenarios_hw_headset_short">Наушники</string>
+    <string name="scenarios_hw_usb_short">USB</string>
+    <string name="scenarios_hw_charger_short">Зарядка</string>
+    <string name="scenarios_app_launch_short">Запуск приложения</string>
+
+    <!-- Hardware events -->
+    <string name="scenarios_hardware_events_title">Аппаратные события</string>
+    <string name="scenarios_hw_headset">Подключение наушников (ACTION_HEADSET_PLUG)</string>
+    <string name="scenarios_hw_usb">Подключение USB (USB_STATE / USB_DEVICE_ATTACHED)</string>
+    <string name="scenarios_hw_charger">Подключение / отключение зарядки</string>
+    <string name="scenarios_hw_delay_note">Auto-Kill запускается через 10 секунд после события, чтобы фоновые приложения успели запуститься</string>
+
+    <!-- App launch trigger -->
+    <string name="scenarios_app_launch_title">Запуск приложения</string>
+    <string name="scenarios_app_launch_enable">Запускать Auto-Kill при открытии целевого приложения</string>
+    <string name="scenarios_app_launch_target_apps">Целевые приложения</string>
+    <string name="scenarios_app_launch_add">Добавить</string>
+    <string name="scenarios_app_launch_add_title">Выбор целевых приложений</string>
+    <string name="scenarios_app_launch_empty">Приложения не выбраны</string>
+    <string name="scenarios_remove_target_app">Удалить</string>
+
+    <!-- Kill source selector -->
+    <string name="scenarios_kill_mode_label">Настройки Auto-Kill для использования</string>
+    <string name="scenarios_kill_mode_current">Текущие настройки</string>
+    <string name="scenarios_kill_mode_preset">Пресет (скоро)</string>
+
+    <!-- Accessibility service -->
+    <string name="accessibility_service_description">Определяет запуск целевых приложений для запуска Auto-Kill и освобождения RAM</string>
+    <string name="scenarios_accessibility_required_title">Требуется служба специальных возможностей</string>
+    <string name="scenarios_accessibility_required_message">Для работы триггера «Запуск приложения» включите ReAppzuku в настройках специальных возможностей. Настройка сохранена и активируется после включения службы.</string>
+    <string name="scenarios_accessibility_open_settings">Открыть настройки</string>
 </resources>
