@@ -964,12 +964,17 @@
     <string name="log_detail_bucket_restored">Bucket restored</string>
 
     <!-- Auto-Kill Advanced -->
-    <string name="section_additional_scenarios">Additional Scenarios</string>
+    <string name="scenarios_settings_title">Advanced Conditions</string>
+    <string name="scenarios_summary_none">Disabled</string>
+    <string name="scenarios_hw_headset_short">Headphones</string>
+    <string name="scenarios_hw_usb_short">USB</string>
+    <string name="scenarios_hw_charger_short">Charger</string>
+    <string name="scenarios_app_launch_short">App Launch</string>
 
     <!-- Hardware events -->
     <string name="scenarios_hardware_events_title">Hardware Events</string>
-    <string name="scenarios_hw_headset">Headphones connected (ACTION_HEADSET_PLUG)</string>
-    <string name="scenarios_hw_usb">USB connected (USB_STATE / USB_DEVICE_ATTACHED)</string>
+    <string name="scenarios_hw_headset">Headphones connected</string>
+    <string name="scenarios_hw_usb">USB connected</string>
     <string name="scenarios_hw_charger">Charger connected / disconnected</string>
     <string name="scenarios_hw_delay_note">Auto-Kill runs 10 seconds after the event to allow background apps to start</string>
 
