@@ -960,7 +960,7 @@
     <string name="log_detail_bucket_restored">Bucket восстановлен</string>
 
     <!-- Auto-Kill Advanced -->
-    <string name="section_additional_scenarios">Дополнительные сценарии</string>
+    <string name="section_additional_scenarios">Дополнительные условия</string>
     <string name="scenarios_summary_none">Отключено</string>
     <string name="scenarios_hw_headset_short">Наушники</string>
     <string name="scenarios_hw_usb_short">USB</string>
@@ -991,11 +991,6 @@
     <string name="scenarios_app_launch_add_title">Выбор целевых приложений</string>
     <string name="scenarios_app_launch_empty">Приложения не выбраны</string>
     <string name="scenarios_remove_target_app">Удалить</string>
-
-    <!-- Kill source selector -->
-    <string name="scenarios_kill_mode_label">Настройки Auto-Kill для использования</string>
-    <string name="scenarios_kill_mode_current">Текущие настройки</string>
-    <string name="scenarios_kill_mode_preset">Пресет (скоро)</string>
 
     <!-- Accessibility service -->
     <string name="accessibility_service_description">Определяет запуск целевых приложений для запуска Auto-Kill и освобождения RAM</string>
