@@ -2073,6 +2073,18 @@ public class SettingsActivity extends BaseActivity {
         updateDialogTargetAppsList(tvTargetAppsList);
         layoutTargetApps.addView(tvTargetAppsList);
 
+        CheckBox cbClearCache = new CheckBox(this);
+        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
+        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
+        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
+        cbClearCache.setLayoutParams(cbParams);
+        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            cbClearCache.setEnabled(false);
+            cbClearCache.setAlpha(0.4f);
+        }
+        layoutTargetApps.addView(cbClearCache);
+
         root.addView(layoutTargetApps);
 
         cbAppLaunch.setOnCheckedChangeListener((btn, isChecked) ->
@@ -2106,6 +2118,7 @@ public class SettingsActivity extends BaseActivity {
 
             boolean appLaunchWasOff = !additionalScenariosManager.isAppLaunchTriggerEnabled();
             additionalScenariosManager.setAppLaunchTriggerEnabled(cbAppLaunch.isChecked());
+            additionalScenariosManager.setAppLaunchClearCacheEnabled(cbClearCache.isChecked());
 
             if (cbAppLaunch.isChecked() && appLaunchWasOff && !isAccessibilityServiceEnabled()) {
                 showAccessibilityServiceRequiredDialog();
