@@ -18,6 +18,9 @@ public class HardwareEventReceiver extends BroadcastReceiver {
     private static final String TAG = "HardwareEventReceiver";
     private static final long TRIGGER_DELAY_MS = 10_000L;
 
+    private static final Handler debounceHandler = new Handler(Looper.getMainLooper());
+    private static Runnable pendingKill = null;
+
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent == null || intent.getAction() == null) return;
@@ -51,10 +54,10 @@ public class HardwareEventReceiver extends BroadcastReceiver {
                 int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, -1);
                 String wifiStateStr;
                 switch (wifiState) {
-                    case WifiManager.WIFI_STATE_ENABLED:  wifiStateStr = "enabled";   break;
-                    case WifiManager.WIFI_STATE_DISABLED: wifiStateStr = "disabled";  break;
-                    case WifiManager.WIFI_STATE_ENABLING: wifiStateStr = "enabling";  break;
-                    case WifiManager.WIFI_STATE_DISABLING:wifiStateStr = "disabling"; break;
+                    case WifiManager.WIFI_STATE_ENABLED:   wifiStateStr = "enabled";            break;
+                    case WifiManager.WIFI_STATE_DISABLED:  wifiStateStr = "disabled";           break;
+                    case WifiManager.WIFI_STATE_ENABLING:  wifiStateStr = "enabling";           break;
+                    case WifiManager.WIFI_STATE_DISABLING: wifiStateStr = "disabling";          break;
                     default:                               wifiStateStr = "unknown(" + wifiState + ")"; break;
                 }
                 eventDescription = "WiFi state: " + wifiStateStr;
@@ -68,10 +71,10 @@ public class HardwareEventReceiver extends BroadcastReceiver {
                 int btState = intent.getIntExtra("android.bluetooth.adapter.extra.STATE", -1);
                 String btStateStr;
                 switch (btState) {
-                    case 12: btStateStr = "on";       break;
-                    case 10: btStateStr = "off";      break;
-                    case 11: btStateStr = "turning on";  break;
-                    case 13: btStateStr = "turning off"; break;
+                    case 12: btStateStr = "on";           break;
+                    case 10: btStateStr = "off";          break;
+                    case 11: btStateStr = "turning on";   break;
+                    case 13: btStateStr = "turning off";  break;
                     default: btStateStr = "unknown(" + btState + ")"; break;
                 }
                 eventDescription = "Bluetooth state: " + btStateStr;
@@ -100,29 +103,33 @@ public class HardwareEventReceiver extends BroadcastReceiver {
             Log.d(TAG, "Event ignored (intermediate state): " + action);
             return;
         }
-        
+
         Log.i(TAG, "Hardware event triggered: " + eventDescription);
-        
-        Log.i(TAG, "Scheduling Auto-Kill in " + (TRIGGER_DELAY_MS / 1000) + "s after: " + eventDescription);
-        
-        final String eventDesc = eventDescription;
-        
-        Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(() -> {
-            Log.i(TAG, "Executing Auto-Kill triggered by: " + eventDesc);
-            
+
+        if (pendingKill != null) {
+            debounceHandler.removeCallbacks(pendingKill);
+            Log.d(TAG, "Previous Auto-Kill schedule cancelled, rescheduling for: " + eventDescription);
+        }
+
+        final String finalDescription = eventDescription;
+        final Context appContext = context.getApplicationContext();
+
+        pendingKill = () -> {
+            pendingKill = null;
+            Log.i(TAG, "Executing Auto-Kill triggered by: " + finalDescription);
             ExecutorService executor = Executors.newSingleThreadExecutor();
-            ShellManager shellManager = new ShellManager(context.getApplicationContext(), handler, executor);
-            BackgroundAppManager appManager = new BackgroundAppManager(
-                    context.getApplicationContext(), handler, executor, shellManager);
-            AutoKillManager autoKillManager = new AutoKillManager(
-                    context.getApplicationContext(), handler, executor, shellManager,
+            ShellManager shellManager = new ShellManager(appContext, debounceHandler, executor);
+            BackgroundAppManager appManager = new BackgroundAppManager(appContext, debounceHandler, executor, shellManager);
+            AutoKillManager autoKillManager = new AutoKillManager(appContext, debounceHandler, executor, shellManager,
                     appManager.getCurrentAppsList());
-        
+
             autoKillManager.performAutoKill(() -> {
-                Log.i(TAG, "Auto-Kill completed for event: " + eventDesc);
+                Log.i(TAG, "Auto-Kill completed for event: " + finalDescription);
                 executor.shutdown();
             });
-        }, TRIGGER_DELAY_MS);
+        };
+
+        Log.i(TAG, "Scheduling Auto-Kill in " + (TRIGGER_DELAY_MS / 1000) + "s after: " + finalDescription);
+        debounceHandler.postDelayed(pendingKill, TRIGGER_DELAY_MS);
     }
 }
