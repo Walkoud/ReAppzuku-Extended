@@ -100,13 +100,17 @@ public class HardwareEventReceiver extends BroadcastReceiver {
             Log.d(TAG, "Event ignored (intermediate state): " + action);
             return;
         }
-
+        
         Log.i(TAG, "Hardware event triggered: " + eventDescription);
-
+        
         Log.i(TAG, "Scheduling Auto-Kill in " + (TRIGGER_DELAY_MS / 1000) + "s after: " + eventDescription);
+        
+        final String eventDesc = eventDescription;
+        
         Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(() -> {
-            Log.i(TAG, "Executing Auto-Kill triggered by: " + eventDescription);
+            Log.i(TAG, "Executing Auto-Kill triggered by: " + eventDesc);
+            
             ExecutorService executor = Executors.newSingleThreadExecutor();
             ShellManager shellManager = new ShellManager(context.getApplicationContext(), handler, executor);
             BackgroundAppManager appManager = new BackgroundAppManager(
@@ -114,9 +118,9 @@ public class HardwareEventReceiver extends BroadcastReceiver {
             AutoKillManager autoKillManager = new AutoKillManager(
                     context.getApplicationContext(), handler, executor, shellManager,
                     appManager.getCurrentAppsList());
-
+        
             autoKillManager.performAutoKill(() -> {
-                Log.i(TAG, "Auto-Kill completed for event: " + eventDescription);
+                Log.i(TAG, "Auto-Kill completed for event: " + eventDesc);
                 executor.shutdown();
             });
         }, TRIGGER_DELAY_MS);
