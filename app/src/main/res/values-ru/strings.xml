@@ -985,7 +985,7 @@
     <!-- App launch trigger -->
     <string name="scenarios_app_launch_title">Запуск приложения</string>
     <string name="scenarios_app_launch_enable">Запускать Auto-Kill при открытии целевого приложения</string>
-    <string name="scenarios_app_launch_clear_cache">Очищать кэш всех приложений при запуске</string>
+    <string name="scenarios_app_launch_clear_cache">Очищать ОЗУ при запуске</string>
     <string name="scenarios_app_launch_target_apps">Целевые приложения</string>
     <string name="scenarios_app_launch_add">Добавить</string>
     <string name="scenarios_app_launch_add_title">Выбор целевых приложений</string>
