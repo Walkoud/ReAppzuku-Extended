@@ -996,11 +996,6 @@
     <string name="scenarios_app_launch_empty">No apps selected</string>
     <string name="scenarios_remove_target_app">Remove</string>
 
-    <!-- Kill source selector -->
-    <string name="scenarios_kill_mode_label">Auto-Kill settings to use</string>
-    <string name="scenarios_kill_mode_current">Current settings</string>
-    <string name="scenarios_kill_mode_preset">Preset (coming soon)</string>
-
     <!-- Accessibility service -->
     <string name="accessibility_service_description">Detects when target apps are launched to trigger Auto-Kill and free RAM</string>
     <string name="scenarios_accessibility_required_title">Accessibility Service Required</string>
