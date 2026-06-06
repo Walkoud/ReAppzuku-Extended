@@ -1941,11 +1941,6 @@ public class SettingsActivity extends BaseActivity {
         int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
         int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
 
-        LinearLayout.LayoutParams cbParams = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        cbParams.setMarginStart(dp16);
-
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         boolean isCustomAccent = accent == ACCENT_CUSTOM;
         int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
@@ -1981,56 +1976,49 @@ public class SettingsActivity extends BaseActivity {
         CheckBox cbHeadset = new CheckBox(this);
         cbHeadset.setText(getString(R.string.scenarios_hw_headset));
         cbHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
-        cbHeadset.setPadding(dp4, dp8, dp24, dp8);
-        cbHeadset.setLayoutParams(cbParams);
+        cbHeadset.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbHeadset.setButtonTintList(checkboxTint);
         root.addView(cbHeadset);
 
         CheckBox cbUsb = new CheckBox(this);
         cbUsb.setText(getString(R.string.scenarios_hw_usb));
         cbUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
-        cbUsb.setPadding(dp4, dp8, dp24, dp8);
-        cbUsb.setLayoutParams(cbParams);
+        cbUsb.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbUsb.setButtonTintList(checkboxTint);
         root.addView(cbUsb);
 
         CheckBox cbCharger = new CheckBox(this);
         cbCharger.setText(getString(R.string.scenarios_hw_charger));
         cbCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
-        cbCharger.setPadding(dp4, dp8, dp24, dp8);
-        cbCharger.setLayoutParams(cbParams);
+        cbCharger.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbCharger.setButtonTintList(checkboxTint);
         root.addView(cbCharger);
 
         CheckBox cbWifi = new CheckBox(this);
         cbWifi.setText(getString(R.string.scenarios_hw_wifi));
         cbWifi.setChecked(additionalScenariosManager.isWifiTriggerEnabled());
-        cbWifi.setPadding(dp4, dp8, dp24, dp8);
-        cbWifi.setLayoutParams(cbParams);
+        cbWifi.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbWifi.setButtonTintList(checkboxTint);
         root.addView(cbWifi);
 
         CheckBox cbBluetooth = new CheckBox(this);
         cbBluetooth.setText(getString(R.string.scenarios_hw_bluetooth));
         cbBluetooth.setChecked(additionalScenariosManager.isBluetoothTriggerEnabled());
-        cbBluetooth.setPadding(dp4, dp8, dp24, dp8);
-        cbBluetooth.setLayoutParams(cbParams);
+        cbBluetooth.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbBluetooth.setButtonTintList(checkboxTint);
         root.addView(cbBluetooth);
 
         CheckBox cbGps = new CheckBox(this);
         cbGps.setText(getString(R.string.scenarios_hw_gps));
         cbGps.setChecked(additionalScenariosManager.isGpsTriggerEnabled());
-        cbGps.setPadding(dp4, dp8, dp24, dp8);
-        cbGps.setLayoutParams(cbParams);
+        cbGps.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbGps.setButtonTintList(checkboxTint);
         root.addView(cbGps);
 
         CheckBox cbHotspot = new CheckBox(this);
         cbHotspot.setText(getString(R.string.scenarios_hw_hotspot));
         cbHotspot.setChecked(additionalScenariosManager.isHotspotTriggerEnabled());
-        cbHotspot.setPadding(dp4, dp8, dp24, dp8);
-        cbHotspot.setLayoutParams(cbParams);
+        cbHotspot.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbHotspot.setButtonTintList(checkboxTint);
         root.addView(cbHotspot);
 
@@ -2060,8 +2048,7 @@ public class SettingsActivity extends BaseActivity {
         CheckBox cbAppLaunch = new CheckBox(this);
         cbAppLaunch.setText(getString(R.string.scenarios_app_launch_enable));
         cbAppLaunch.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
-        cbAppLaunch.setPadding(dp4, dp8, dp24, dp8);
-        cbAppLaunch.setLayoutParams(cbParams);
+        cbAppLaunch.setPadding(dp24, dp8, dp24, dp8);
         if (checkboxTint != null) cbAppLaunch.setButtonTintList(checkboxTint);
         root.addView(cbAppLaunch);
 
@@ -2085,35 +2072,6 @@ public class SettingsActivity extends BaseActivity {
         layoutTargetApps.setBackgroundResource(outValue.resourceId);
         updateDialogTargetAppsList(tvTargetAppsList);
         layoutTargetApps.addView(tvTargetAppsList);
-
-        View divider2 = new View(this);
-        LinearLayout.LayoutParams divider2Params = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 1);
-        divider2Params.setMargins(dp16, dp8, dp16, dp8);
-        divider2.setLayoutParams(divider2Params);
-        divider2.setBackgroundColor(colorDivider);
-        layoutTargetApps.addView(divider2);
-
-        TextView tvKillModeLabel = new TextView(this);
-        tvKillModeLabel.setText(getString(R.string.scenarios_kill_mode_label));
-        tvKillModeLabel.setTextSize(12);
-        tvKillModeLabel.setTextColor(colorSecondary);
-        tvKillModeLabel.setPadding(dp24, dp4, dp24, dp4);
-        layoutTargetApps.addView(tvKillModeLabel);
-
-        layoutTargetApps.addView(radioGroup);
-
-        CheckBox cbClearCache = new CheckBox(this);
-        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
-        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
-        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
-        cbClearCache.setLayoutParams(cbParams);
-        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-            cbClearCache.setEnabled(false);
-            cbClearCache.setAlpha(0.4f);
-        }
-        layoutTargetApps.addView(cbClearCache);
 
         root.addView(layoutTargetApps);
 
@@ -2148,7 +2106,6 @@ public class SettingsActivity extends BaseActivity {
 
             boolean appLaunchWasOff = !additionalScenariosManager.isAppLaunchTriggerEnabled();
             additionalScenariosManager.setAppLaunchTriggerEnabled(cbAppLaunch.isChecked());
-            additionalScenariosManager.setAppLaunchClearCacheEnabled(cbClearCache.isChecked());
 
             if (cbAppLaunch.isChecked() && appLaunchWasOff && !isAccessibilityServiceEnabled()) {
                 showAccessibilityServiceRequiredDialog();
