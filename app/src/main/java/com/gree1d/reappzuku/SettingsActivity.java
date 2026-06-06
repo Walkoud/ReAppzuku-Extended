@@ -1941,6 +1941,10 @@ public class SettingsActivity extends BaseActivity {
         int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
         int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
 
+        LinearLayout.LayoutParams cbParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        cbParams.setMarginStart(dp16);
+
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         boolean isCustomAccent = accent == ACCENT_CUSTOM;
         int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
