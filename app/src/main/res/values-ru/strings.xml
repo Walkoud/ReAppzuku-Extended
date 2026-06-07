@@ -310,6 +310,11 @@
     <string name="settings_hidden_apps_title">Скрытые приложения</string>
     <string name="settings_hidden_apps_subtitle">Скрыть приложения из общего списка</string>
     <string name="settings_hidden_apps_dialog_title">Выберите приложения для скрытия из общего списка</string>
+    <string name="freeze_badge_timer">Временно</string>
+    <string name="freeze_badge_permanent">Постоянно</string>
+    <string name="filter_freeze_type_dialog_title">Тип заморозки</string>
+    <string name="filter_freeze_timer_option">Временно (при выключении экрана)</string>
+    <string name="filter_freeze_permanent_option">Постоянно (разморозка только вручную)</string>
 
     <string-array name="settings_sleep_mode_delay_labels">
         <item>5 минут</item>
