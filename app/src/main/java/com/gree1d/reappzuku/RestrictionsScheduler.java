@@ -537,7 +537,7 @@ public class RestrictionsScheduler {
                 }
 
                 if ((entry.protectFlags & PROTECT_SLEEP_MODE) != 0) {
-                    shellManager.unfreezePackage(pkg);
+                    shellManager.runShellCommandBlocking("pm enable " + pkg);
                 }
 
                 if (entry.onActivateAction != ON_ACTIVATE_NOTHING && entry.componentName != null) {
