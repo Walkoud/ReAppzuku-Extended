@@ -1,7 +1,9 @@
 package com.gree1d.reappzuku
 
+import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.annotation.Keep
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -9,7 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -18,7 +20,6 @@ import androidx.glance.appwidget.action.actionStartService
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.isSystemInDarkTheme
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.fillMaxSize
@@ -40,12 +41,15 @@ class RamKillWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val data = withContext(Dispatchers.IO) { loadRamData(context) }
-        provideContent { WidgetContent(context, data) }
+        provideContent { WidgetContent(data) }
     }
 
     @Composable
-    private fun WidgetContent(context: Context, data: RamData) {
-        val isDark = isSystemInDarkTheme()
+    private fun WidgetContent(data: RamData) {
+        val context = LocalContext.current
+        val nightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        val isDark = nightMode == Configuration.UI_MODE_NIGHT_YES
+
         val bgColor = if (isDark) Color.Black else Color.White
         val textColor = if (isDark) Color.White else Color.Black
         val subColor = if (isDark) Color(0xCCFFFFFF) else Color(0xCC000000)
