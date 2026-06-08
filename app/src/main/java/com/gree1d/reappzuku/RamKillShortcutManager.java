@@ -85,8 +85,7 @@ public class RamKillShortcutManager {
         executor.execute(() -> {
             long ramBefore = readAvailableRamKb();
             Log.d(TAG, "performKillAndUpdate: ramBefore=" + ramBefore + " KB");
-            clearCacheForActivePackages(autoKillManager);
-            Log.d(TAG, "performKillAndUpdate: cache cleared, posting kill");
+            new Thread(() -> clearCacheForActivePackages(autoKillManager)).start();
             autoKillManager.performAutoKillWithResult(null, null, (killCount, ignored) -> {
                 Log.d(TAG, "performKillAndUpdate: kill callback received, killCount=" + killCount + ", scheduling toast in 2000ms");
                 mainHandler.postDelayed(() -> {
