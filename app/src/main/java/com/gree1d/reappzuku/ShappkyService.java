@@ -118,7 +118,7 @@ public class ShappkyService extends Service {
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
         additionalScenariosManager.updateHardwareReceiverState();
-        ramKillShortcutManager = new RamKillShortcutManager(this);
+        ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
 
         scheduleNextKill();
         scheduler.scheduleNext();

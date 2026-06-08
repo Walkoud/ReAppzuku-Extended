@@ -35,11 +35,13 @@ public class RamKillShortcutManager {
     private static final int CORNER_RADIUS = 24;
 
     private final Context context;
+    private final ShellManager shellManager;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public RamKillShortcutManager(Context context) {
+    public RamKillShortcutManager(Context context, ShellManager shellManager) {
         this.context = context.getApplicationContext();
+        this.shellManager = shellManager;
     }
 
     public void requestPinShortcut() {
@@ -115,7 +117,6 @@ public class RamKillShortcutManager {
 
     private void clearCacheForActivePackages(AutoKillManager autoKillManager) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
-        ShellManager shellManager = ShellManager.getInstance(context);
         String psOutput = shellManager.runShellCommandAndGetFullOutput("ps -A -o name");
         if (psOutput == null || psOutput.trim().isEmpty()) return;
         android.content.pm.PackageManager pm = context.getPackageManager();

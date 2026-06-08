@@ -104,7 +104,7 @@ public class SettingsActivity extends BaseActivity {
         scheduler = new RestrictionsScheduler(
                 getApplicationContext(), handler, executor, shellManager, appManager);
         additionalScenariosManager = new AdditionalScenariosManager(this);
-        ramKillShortcutManager = new RamKillShortcutManager(this);
+        ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
 
         setupToolbar();
         loadSettings();
