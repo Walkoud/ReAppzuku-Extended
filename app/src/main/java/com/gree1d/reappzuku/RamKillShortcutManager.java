@@ -81,21 +81,27 @@ public class RamKillShortcutManager {
     }
 
     public void performKillAndUpdate(AutoKillManager autoKillManager) {
+        Log.d(TAG, "performKillAndUpdate: started, thread=" + Thread.currentThread().getName());
         executor.execute(() -> {
             long ramBefore = readAvailableRamKb();
+            Log.d(TAG, "performKillAndUpdate: ramBefore=" + ramBefore + " KB");
             clearCacheForActivePackages(autoKillManager);
-            autoKillManager.performAutoKillWithResult(null, null, (killCount, ignored) ->
-                    mainHandler.postDelayed(() -> {
-                        long ramAfter = readAvailableRamKb();
-                        long freedKb = Math.max(0, ramAfter - ramBefore);
-                        showKillToast(killCount, freedKb);
-                        updateShortcut();
-                    }, 2000)
-            );
+            Log.d(TAG, "performKillAndUpdate: cache cleared, posting kill");
+            autoKillManager.performAutoKillWithResult(null, null, (killCount, ignored) -> {
+                Log.d(TAG, "performKillAndUpdate: kill callback received, killCount=" + killCount + ", scheduling toast in 2000ms");
+                mainHandler.postDelayed(() -> {
+                    long ramAfter = readAvailableRamKb();
+                    long freedKb = Math.max(0, ramAfter - ramBefore);
+                    Log.d(TAG, "performKillAndUpdate: ramAfter=" + ramAfter + " KB, freedKb=" + freedKb + " KB");
+                    showKillToast(killCount, freedKb);
+                    updateShortcut();
+                }, 2000);
+            });
         });
     }
 
     private void showKillToast(int killCount, long freedKb) {
+        Log.d(TAG, "showKillToast: killCount=" + killCount + ", freedKb=" + freedKb + ", thread=" + Thread.currentThread().getName());
         String ram;
         if (freedKb <= 0) {
             ram = null;
@@ -104,6 +110,7 @@ public class RamKillShortcutManager {
         } else {
             ram = String.format(Locale.getDefault(), "%.1f MB", freedKb / 1024f);
         }
+        Log.d(TAG, "showKillToast: ram=" + ram);
         String msg;
         if (ram == null) {
             msg = context.getResources().getQuantityString(
@@ -112,7 +119,9 @@ public class RamKillShortcutManager {
             msg = context.getResources().getQuantityString(
                     R.plurals.toast_killed_apps, killCount, killCount, ram);
         }
+        Log.d(TAG, "showKillToast: msg=\"" + msg + "\", showing toast");
         Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
+        Log.d(TAG, "showKillToast: toast shown");
     }
 
     private void clearCacheForActivePackages(AutoKillManager autoKillManager) {
