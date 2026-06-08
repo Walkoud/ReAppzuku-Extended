@@ -23,7 +23,6 @@ import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import static com.gree1d.reappzuku.AppConstants.*;
@@ -98,7 +97,7 @@ public class UpdateChecker {
         });
     }
 
-    public static void checkForUpdatesManual(Context context) {
+    public static void checkForUpdatesManual(Context context, SharedPreferences prefs) {
         if (!isConnected(context)) {
             showToast(context, "No internet");
             return;
@@ -117,7 +116,7 @@ public class UpdateChecker {
                     return;
                 }
                 if (isNewer(info.tagName, currentVersion)) {
-                    showUpdateDialog(context, info);
+                    showUpdateDialog(context, info, prefs);
                 } else {
                     showToast(context, context.getString(R.string.update_up_to_date, currentVersion));
                 }
@@ -304,7 +303,7 @@ public class UpdateChecker {
     }
 
 
-    private static void showUpdateDialog(Context context, ReleaseInfo info) {
+    private static void showUpdateDialog(Context context, ReleaseInfo info, SharedPreferences prefs) {
         String bodyMd = info.changelog.isEmpty()
                 ? "Version " + info.tagName + " is available."
                 : "Version " + info.tagName + " is available.\n\n" + stripGitHubAlerts(info.changelog);
@@ -325,7 +324,6 @@ public class UpdateChecker {
         ScrollView scrollView = new ScrollView(context);
         scrollView.addView(messageView);
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         int accent = prefs.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         boolean isCustomAccent = accent == ACCENT_CUSTOM;
         int onColor = prefs.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
