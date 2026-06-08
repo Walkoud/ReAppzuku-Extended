@@ -43,7 +43,7 @@
         </activity>
         <activity
             android:name=".KillShortcutActivity"
-            android:exported="true"
+            android:exported="false"
             android:noHistory="true"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Transparent" />
