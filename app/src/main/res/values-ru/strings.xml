@@ -10,6 +10,7 @@
     <string name="tile_background_kill_subtitle">Запускает настроенный Auto-Kill</string>
     <string name="shortcut_kill_short_label">Остановить приложение</string>
     <string name="shortcut_kill_long_label">Завершить работу приложения в фоновом режиме</string>
+    <string name="ram_kill_widget_description">Виджет загруженности ОЗУ. Нажмите для очистки от фоновых приложений.</string>
 
     <!-- ══════════════════════════════════════════════
          ОБЩЕЕ
