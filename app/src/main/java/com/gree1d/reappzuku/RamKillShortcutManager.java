@@ -85,7 +85,7 @@ public class RamKillShortcutManager {
         executor.execute(() -> {
             long ramBefore = readAvailableRamKb();
             Log.d(TAG, "performKillAndUpdate: ramBefore=" + ramBefore + " KB");
-            new Thread(() -> clearCacheForActivePackages(autoKillManager)).start();
+            new Thread(() -> trimMemoryForActivePackages(autoKillManager)).start();
             autoKillManager.performAutoKillWithResult(null, null, (killCount, ignored) -> {
                 Log.d(TAG, "performKillAndUpdate: kill callback received, killCount=" + killCount + ", scheduling toast in 2000ms");
                 mainHandler.postDelayed(() -> {
@@ -123,22 +123,24 @@ public class RamKillShortcutManager {
         Log.d(TAG, "showKillToast: toast shown");
     }
 
-    private void clearCacheForActivePackages(AutoKillManager autoKillManager) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
-        String psOutput = shellManager.runShellCommandAndGetFullOutput("ps -A -o name");
+    private void trimMemoryForActivePackages(AutoKillManager autoKillManager) {
+        String psOutput = shellManager.runShellCommandAndGetFullOutput("ps -A -o pid,name");
         if (psOutput == null || psOutput.trim().isEmpty()) return;
         android.content.pm.PackageManager pm = context.getPackageManager();
         java.util.Set<String> whitelist = autoKillManager.getWhitelistedApps();
         for (String line : psOutput.split("\n")) {
-            String pkg = line.trim();
-            if (pkg.isEmpty() || !pkg.contains(".")) continue;
-            String basePkg = pkg.contains(":") ? pkg.substring(0, pkg.indexOf(":")) : pkg;
+            String[] parts = line.trim().split("\\s+", 2);
+            if (parts.length < 2) continue;
+            String pid = parts[0].trim();
+            String fullName = parts[1].trim();
+            String basePkg = fullName.contains(":") ? fullName.substring(0, fullName.indexOf(":")) : fullName;
+            if (basePkg.isEmpty() || !basePkg.contains(".")) continue;
             if (whitelist.contains(basePkg)) continue;
             if (ProtectedApps.isProtected(context, basePkg)) continue;
             try {
                 android.content.pm.ApplicationInfo ai = pm.getApplicationInfo(basePkg, 0);
                 if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_PERSISTENT) != 0) continue;
-                shellManager.runShellCommandBlocking("pm clear --cache-only " + basePkg);
+                shellManager.runShellCommandBlocking("am send-trim-memory " + pid + " COMPLETE");
             } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
         }
     }

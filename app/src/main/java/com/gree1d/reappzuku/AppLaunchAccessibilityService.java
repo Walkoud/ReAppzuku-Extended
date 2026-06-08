@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -89,13 +88,12 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         Log.d(TAG, "Target app launched: " + packageName + " — triggering Auto-Kill");
         autoKillManager.performAutoKill(null, new HashSet<>(targetPackages));
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-                && prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false)) {
-            executor.execute(() -> clearCacheForAll(targetPackages));
+        if (prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false)) {
+            executor.execute(() -> trimMemoryForAll(targetPackages));
         }
     }
 
-    private void clearCacheForAll(Set<String> excludePackages) {
+    private void trimMemoryForAll(Set<String> excludePackages) {
         PackageManager pm = getPackageManager();
         List<ApplicationInfo> installedApps;
         try {
@@ -105,19 +103,32 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
             return;
         }
 
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        Set<String> whitelistedApps = prefs.getStringSet(KEY_WHITELISTED_APPS, new HashSet<>());
+        Set<String> hiddenApps = prefs.getStringSet(KEY_HIDDEN_APPS, new HashSet<>());
+
         for (ApplicationInfo app : installedApps) {
             String pkg = app.packageName;
 
             if (pkg.equals(getPackageName())) continue;
             if (excludePackages.contains(pkg)) continue;
+            if (hiddenApps.contains(pkg)) continue;
+            if (whitelistedApps.contains(pkg)) continue;
             if (ProtectedApps.isProtected(getApplicationContext(), pkg)) continue;
             if ((app.flags & ApplicationInfo.FLAG_PERSISTENT) != 0) continue;
 
             try {
-                shellManager.runShellCommandAndGetFullOutput("pm clear --cache-only " + pkg);
-                Log.d(TAG, "Cache cleared: " + pkg);
+                String pidOutput = shellManager.runShellCommandAndGetFullOutput("pidof " + pkg);
+                if (pidOutput == null || pidOutput.trim().isEmpty()) continue;
+                for (String pidStr : pidOutput.trim().split("\\s+")) {
+                    pidStr = pidStr.trim();
+                    if (pidStr.isEmpty()) continue;
+                    shellManager.runShellCommandAndGetFullOutput(
+                            "am send-trim-memory " + pidStr + " RUNNING_CRITICAL");
+                    Log.d(TAG, "Trim memory sent to " + pkg + " (pid " + pidStr + ")");
+                }
             } catch (Exception e) {
-                Log.w(TAG, "Failed to clear cache for " + pkg + ": " + e.getMessage());
+                Log.w(TAG, "Failed to trim memory for " + pkg + ": " + e.getMessage());
             }
         }
     }
