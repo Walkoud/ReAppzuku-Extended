@@ -23,6 +23,11 @@ import android.widget.TextView;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import static com.gree1d.reappzuku.AppConstants.*;
+import static com.gree1d.reappzuku.PreferenceKeys.*;
 
 import io.noties.markwon.Markwon;
 
@@ -320,7 +325,15 @@ public class UpdateChecker {
         ScrollView scrollView = new ScrollView(context);
         scrollView.addView(messageView);
 
-        AlertDialog dialog = new AlertDialog.Builder(context)
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        int accent = prefs.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean isCustomAccent = accent == ACCENT_CUSTOM;
+        int onColor = prefs.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        int btnColor = isCustomAccent
+                ? ((onColor == ACCENT_ON_BLACK) ? android.graphics.Color.BLACK : android.graphics.Color.WHITE)
+                : ContextCompat.getColor(context, R.color.dialog_button_text);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(context)
                 .setTitle(context.getString(R.string.update_dialog_title))
                 .setView(scrollView)
                 .setPositiveButton(context.getString(R.string.update_dialog_download), (d, w) -> {
@@ -335,14 +348,8 @@ public class UpdateChecker {
                 .setNegativeButton(context.getString(R.string.update_dialog_close), null)
                 .create();
 
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawable(
-                    new android.graphics.drawable.ColorDrawable(
-                            ContextCompat.getColor(context, R.color.background_primary)));
-        }
         dialog.show();
 
-        int btnColor = ContextCompat.getColor(context, R.color.dialog_button_text);
         if (dialog.getButton(AlertDialog.BUTTON_POSITIVE) != null)
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(btnColor);
         if (dialog.getButton(AlertDialog.BUTTON_NEGATIVE) != null)
