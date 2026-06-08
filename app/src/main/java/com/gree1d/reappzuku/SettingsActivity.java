@@ -76,6 +76,7 @@ public class SettingsActivity extends BaseActivity {
     private BackupManager backupManager;
     private RestrictionsScheduler scheduler;
     private AdditionalScenariosManager additionalScenariosManager;
+    private RamKillShortcutManager ramKillShortcutManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private int easterEggClickCount = 0;
@@ -103,6 +104,7 @@ public class SettingsActivity extends BaseActivity {
         scheduler = new RestrictionsScheduler(
                 getApplicationContext(), handler, executor, shellManager, appManager);
         additionalScenariosManager = new AdditionalScenariosManager(this);
+        ramKillShortcutManager = new RamKillShortcutManager(this);
 
         setupToolbar();
         loadSettings();
@@ -1913,6 +1915,7 @@ public class SettingsActivity extends BaseActivity {
             if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
             showAdditionalScenariosDialog();
         });
+        binding.layoutAddShortcut.setOnClickListener(v -> ramKillShortcutManager.requestPinShortcut());
     }
 
     private void updateAdditionalScenariosSummary() {

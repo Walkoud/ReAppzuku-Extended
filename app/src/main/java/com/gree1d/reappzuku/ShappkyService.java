@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import android.content.BroadcastReceiver;
+import java.util.Set;
 import android.content.IntentFilter;
 
 import static com.gree1d.reappzuku.PreferenceKeys.*;
@@ -48,6 +49,7 @@ public class ShappkyService extends Service {
     private KillTriggerReceiver screenOffReceiver;
     private RestrictionsWatchdogManager watchdog;
     private AdditionalScenariosManager additionalScenariosManager;
+    private RamKillShortcutManager ramKillShortcutManager;
 
     private boolean isFrozen = false;
     private boolean shizukuLostNotificationShown = false;
@@ -117,6 +119,7 @@ public class ShappkyService extends Service {
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
         additionalScenariosManager.updateHardwareReceiverState();
+        ramKillShortcutManager = new RamKillShortcutManager(this);
 
         scheduleNextKill();
         scheduler.scheduleNext();
@@ -204,7 +207,10 @@ public class ShappkyService extends Service {
                 break;
 
             case "WIDGET_KILL":
-                executor.execute(() -> autoKillManager.performAutoKill(null));
+                executor.execute(() -> {
+                    clearCacheForActivePackages();
+                    autoKillManager.performAutoKill(null);
+                });
                 break;
         }
 
@@ -320,7 +326,7 @@ public class ShappkyService extends Service {
             public void run() {
                 if (!isRunning) return;
                 AppzukuWidget.updateAllWidgetsFromJava(ShappkyService.this);
-                RamKillWidget.updateAllWidgetsFromJava(ShappkyService.this);
+                ramKillShortcutManager.updateShortcut();
                 handler.postDelayed(this, WIDGET_UPDATE_INTERVAL_MS);
             }
         };
@@ -394,6 +400,27 @@ public class ShappkyService extends Service {
             return (int) ((totalRam - availableRam) * 100 / totalRam);
         } catch (IOException | NumberFormatException e) {
             return 0;
+        }
+    }
+
+    private void clearCacheForActivePackages() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return;
+        String psOutput = shellManager.runShellCommandAndGetFullOutput("ps -A -o name | grep '\.'");
+        if (psOutput == null || psOutput.trim().isEmpty()) return;
+        android.content.pm.PackageManager pm = getPackageManager();
+        Set<String> whitelist = autoKillManager.getWhitelistedApps();
+        for (String line : psOutput.split("\n")) {
+            String pkg = line.trim();
+            if (pkg.isEmpty() || !pkg.contains(".")) continue;
+            String basePkg = pkg.contains(":") ? pkg.substring(0, pkg.indexOf(":")) : pkg;
+            if (whitelist.contains(basePkg)) continue;
+            if (ProtectedApps.isProtected(this, basePkg)) continue;
+            try {
+                android.content.pm.ApplicationInfo ai = pm.getApplicationInfo(basePkg, 0);
+                if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_PERSISTENT) != 0) continue;
+                shellManager.runShellCommandBlocking("pm clear --cache-only " + basePkg);
+            } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {
+            }
         }
     }
 
