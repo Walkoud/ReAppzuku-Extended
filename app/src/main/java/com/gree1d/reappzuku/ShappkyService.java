@@ -202,6 +202,10 @@ public class ShappkyService extends Service {
             case "SCHEDULER_TICK":
                 scheduler.tick();
                 break;
+
+            case "WIDGET_KILL":
+                executor.execute(() -> autoKillManager.performAutoKill(null));
+                break;
         }
 
         return START_STICKY;
@@ -316,6 +320,7 @@ public class ShappkyService extends Service {
             public void run() {
                 if (!isRunning) return;
                 AppzukuWidget.updateAllWidgetsFromJava(ShappkyService.this);
+                RamKillWidget.updateAllWidgetsFromJava(ShappkyService.this);
                 handler.postDelayed(this, WIDGET_UPDATE_INTERVAL_MS);
             }
         };
