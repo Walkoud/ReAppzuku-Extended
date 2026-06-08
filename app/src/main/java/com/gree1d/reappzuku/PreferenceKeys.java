@@ -63,7 +63,6 @@ public final class PreferenceKeys {
     public static final String KEY_REPLACEMENT_NOTICE_SHOWN_VERSION = "replacement_notice_shown_version";
 
     // Notifications
-    // Values: NOTIFICATION_MODE_ALL (0) = all notifications, NOTIFICATION_MODE_IMPORTANT_ONLY (1) = critical only
     public static final String KEY_NOTIFICATION_MODE = "notificationMode";
     public static final int NOTIFICATION_MODE_ALL = 0;
     public static final int NOTIFICATION_MODE_IMPORTANT_ONLY = 1;
@@ -73,5 +72,6 @@ public final class PreferenceKeys {
     public static final String KEY_SLEEP_MODE_APPS = "sleepModeApps";
     public static final String KEY_SLEEP_MODE_APPS_PERMANENT = "sleep_mode_apps_permanent";
     public static final String KEY_SLEEP_MODE_DELAY = "sleepModeDelay";
+    public static final String KEY_SLEEP_MODE_APPS_FROZEN = "sleep_mode_apps_frozen";
 
 }
