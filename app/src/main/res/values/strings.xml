@@ -1018,14 +1018,4 @@
     <string name="scenarios_accessibility_required_title">Accessibility Service Required</string>
     <string name="scenarios_accessibility_required_message">For the App Launch trigger to work, enable ReAppzuku in Accessibility Settings. The setting has been saved and will activate once the service is enabled.</string>
     <string name="scenarios_accessibility_open_settings">Open Settings</string>
-
-    <!-- Translate Release Text -->
-    <string name="update_dialog_translate">Translate</string>
-    <string name="update_dialog_show_original">Show original</string>
-    <string name="update_translate_download_title">Download translate kit</string>
-    <string name="update_translate_download_message">For translate to %1$s need download this language kit (~30 MB). Continue?</string>
-    <string name="update_translate_download_ok">Yes, download</string>
-    <string name="update_translate_download_failed">Download translate kit error</string>
-    <string name="update_translate_model_missing">Translate kit not installed</string>
-    <string name="update_translate_failed">Translate error</string>
 </resources>
