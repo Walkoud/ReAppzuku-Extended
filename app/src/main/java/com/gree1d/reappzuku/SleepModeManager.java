@@ -59,14 +59,40 @@ public class SleepModeManager {
         return null;
     }
 
+    public Set<String> getFrozenTimerApps() {
+        return new HashSet<>(sharedpreferences.getStringSet(KEY_SLEEP_MODE_APPS_FROZEN, new HashSet<>()));
+    }
+
+    private void markFrozen(String packageName) {
+        Set<String> frozen = getFrozenTimerApps();
+        frozen.add(packageName);
+        sharedpreferences.edit().putStringSet(KEY_SLEEP_MODE_APPS_FROZEN, frozen).apply();
+    }
+
+    private void markUnfrozen(String packageName) {
+        Set<String> frozen = getFrozenTimerApps();
+        frozen.remove(packageName);
+        sharedpreferences.edit().putStringSet(KEY_SLEEP_MODE_APPS_FROZEN, frozen).apply();
+    }
+
     public void saveSleepModeApps(Set<String> timerPackages, Set<String> permanentPackages,
             Runnable onComplete) {
         Set<String> previousPermanent = getPermanentFreezeApps();
+
+        Set<String> previousTimer = getSleepModeApps();
 
         sharedpreferences.edit()
                 .putStringSet(KEY_SLEEP_MODE_APPS, new HashSet<>(timerPackages))
                 .putStringSet(KEY_SLEEP_MODE_APPS_PERMANENT, new HashSet<>(permanentPackages))
                 .apply();
+
+        Set<String> removedFromTimer = new HashSet<>(previousTimer);
+        removedFromTimer.removeAll(timerPackages);
+        if (!removedFromTimer.isEmpty()) {
+            Set<String> frozen = getFrozenTimerApps();
+            frozen.removeAll(removedFromTimer);
+            sharedpreferences.edit().putStringSet(KEY_SLEEP_MODE_APPS_FROZEN, frozen).apply();
+        }
 
         Set<String> toFreeze = new HashSet<>(permanentPackages);
         toFreeze.removeAll(previousPermanent);
@@ -146,9 +172,12 @@ public class SleepModeManager {
             return;
         }
         executor.execute(() -> {
+            Set<String> alreadyFrozen = getFrozenTimerApps();
             for (String packageName : packages) {
+                if (alreadyFrozen.contains(packageName)) continue;
                 if (scheduler != null && scheduler.isProtected(packageName, RestrictionsScheduler.PROTECT_SLEEP_MODE)) continue;
                 boolean ok = shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
+                if (ok) markFrozen(packageName);
                 SleepModeLogManager.logFreeze(context, packageName, ok);
             }
             if (onComplete != null) handler.post(onComplete);
@@ -164,6 +193,7 @@ public class SleepModeManager {
         executor.execute(() -> {
             for (String packageName : packages) {
                 boolean ok = shellManager.runShellCommandBlocking("pm enable " + packageName);
+                if (ok) markUnfrozen(packageName);
                 SleepModeLogManager.logUnfreeze(context, packageName, ok);
             }
             if (onComplete != null) handler.post(onComplete);
