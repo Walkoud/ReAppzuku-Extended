@@ -229,6 +229,9 @@ public class AutoKillManager {
                 checkRelaunches(toKill, db);
             } else {
                 savePendingRss(new HashMap<>());
+                if (onResult != null) {
+                    handler.post(() -> onResult.accept(0, 0L));
+                }
             }
 
             if (onComplete != null)
