@@ -350,7 +350,6 @@ public class StatisticsActivity extends BaseActivity {
                 centerText = "";
         }
         binding.tvChartCenterValue.setText(centerText);
-        // Keep hidden tv_chart_total in sync for any legacy references
         binding.tvChartTotal.setText(centerText);
     }
 
@@ -687,8 +686,18 @@ public class StatisticsActivity extends BaseActivity {
                         getString(R.string.stats_dialog_subtitle),
                         content.rootView);
                 dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
+                dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
                 dialog.show();
                 applyCustomAccentToDialogButtons(dialog);
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                    executor.execute(() -> {
+                        com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll();
+                        handler.post(() -> {
+                            Toast.makeText(this, getString(R.string.settings_restriction_log_cleared), Toast.LENGTH_SHORT).show();
+                            dialog.dismiss();
+                        });
+                    });
+                });
             });
         });
     }
@@ -721,6 +730,7 @@ public class StatisticsActivity extends BaseActivity {
                 getString(R.string.stats_top_offenders_dialog_subtitle),
                 content.rootView);
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
+        dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.stats_top_offenders_reset), (d, w) -> {});
         dialog.show();
         applyCustomAccentToDialogButtons(dialog);
 
@@ -729,6 +739,16 @@ public class StatisticsActivity extends BaseActivity {
         content.filterSpinner.setOnItemClickListener((parent, view, position, id) -> {
             content.filterSpinner.setText(topOffenderFilterLabels[position], false);
             loadTopOffenders(position, offendersAdapter, summaryText, loading, listView, emptyView);
+        });
+
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            executor.execute(() -> {
+                com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll();
+                handler.post(() -> {
+                    Toast.makeText(this, getString(R.string.settings_restriction_log_cleared), Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                });
+            });
         });
     }
 
