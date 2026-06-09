@@ -487,7 +487,6 @@
     <string name="settings_restriction_log_dialog_subtitle">Recent restriction results.</string>
     <string name="settings_restriction_log_clear">Clear</string>
     <string name="settings_restriction_log_summary">Recent events: %1$d entries.</string>
-    <string name="settings_restriction_log_cleared">Background restriction log cleared</string>
     <string name="log_bg_restriction_empty">No background restriction events yet.\n\nEntries are stored in app database and trimmed automatically.</string>
 
     <!-- ── Sleep Mode Log ── -->
