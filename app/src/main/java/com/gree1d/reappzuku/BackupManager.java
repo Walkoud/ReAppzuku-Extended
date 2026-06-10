@@ -14,13 +14,23 @@ public class BackupManager {
     private static final String TAG = "BackupManager";
     private static final String KEY_BACKUP_VERSION = "backup_version";
     private static final int BACKUP_VERSION = 4;
-    private static final String KEY_SYSTEM_APPS_WARNING_SHOWN = "system_apps_warning_shown";
     private static final String KEY_MANUAL_OPS_MASKS = "manual_ops_masks";
 
     private final SharedPreferences prefs;
 
     public BackupManager(Context context) {
         this.prefs = context.getSharedPreferences(PreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE);
+    }
+
+    private boolean getSafeBool(String key, boolean defVal) {
+        try {
+            return prefs.getBoolean(key, defVal);
+        } catch (ClassCastException e) {
+            Log.w(TAG, "getSafeBool: key=" + key + " stored as wrong type, falling back to String parse");
+            String raw = prefs.getString(key, null);
+            if (raw == null) return defVal;
+            return Boolean.parseBoolean(raw);
+        }
     }
 
     public String createBackupJson() {
@@ -49,45 +59,41 @@ public class BackupManager {
             Log.d(TAG, "createBackupJson: extra sets written");
 
             root.put(KEY_KILL_MODE, prefs.getInt(KEY_KILL_MODE, 0));
-            root.put(KEY_AUTO_KILL_ENABLED, prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false));
-            root.put(KEY_PERIODIC_KILL_ENABLED, prefs.getBoolean(KEY_PERIODIC_KILL_ENABLED, false));
+            root.put(KEY_AUTO_KILL_ENABLED, getSafeBool(KEY_AUTO_KILL_ENABLED, false));
+            root.put(KEY_PERIODIC_KILL_ENABLED, getSafeBool(KEY_PERIODIC_KILL_ENABLED, false));
             root.put(KEY_KILL_INTERVAL, prefs.getInt(KEY_KILL_INTERVAL, AppConstants.DEFAULT_KILL_INTERVAL_MS));
-            root.put(KEY_KILL_ON_SCREEN_OFF, prefs.getBoolean(KEY_KILL_ON_SCREEN_OFF, false));
+            root.put(KEY_KILL_ON_SCREEN_OFF, getSafeBool(KEY_KILL_ON_SCREEN_OFF, false));
             Log.d(TAG, "createBackupJson: kill settings written");
 
             root.put(KEY_RAM_THRESHOLD, prefs.getInt(KEY_RAM_THRESHOLD, AppConstants.DEFAULT_RAM_THRESHOLD_PERCENT));
-            root.put(KEY_RAM_THRESHOLD_ENABLED, prefs.getBoolean(KEY_RAM_THRESHOLD_ENABLED, false));
+            root.put(KEY_RAM_THRESHOLD_ENABLED, getSafeBool(KEY_RAM_THRESHOLD_ENABLED, false));
             Log.d(TAG, "createBackupJson: RAM settings written");
 
-            root.put(KEY_SHOW_SYSTEM_APPS, prefs.getBoolean(KEY_SHOW_SYSTEM_APPS, false));
-            root.put(KEY_SHOW_PERSISTENT_APPS, prefs.getBoolean(KEY_SHOW_PERSISTENT_APPS, false));
+            root.put(KEY_SHOW_SYSTEM_APPS, getSafeBool(KEY_SHOW_SYSTEM_APPS, false));
+            root.put(KEY_SHOW_PERSISTENT_APPS, getSafeBool(KEY_SHOW_PERSISTENT_APPS, false));
             root.put(KEY_THEME, prefs.getInt(KEY_THEME, androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM));
             root.put(KEY_ACCENT, prefs.getInt(KEY_ACCENT, AppConstants.ACCENT_SYSTEM));
             root.put(KEY_ACCENT_CUSTOM_COLOR, prefs.getInt(KEY_ACCENT_CUSTOM_COLOR, AppConstants.ACCENT_CUSTOM_DEFAULT_COLOR));
             root.put(KEY_ACCENT_ON_COLOR, prefs.getInt(KEY_ACCENT_ON_COLOR, AppConstants.ACCENT_ON_WHITE));
-            root.put(KEY_AMOLED, prefs.getBoolean(KEY_AMOLED, false));
+            root.put(KEY_AMOLED, getSafeBool(KEY_AMOLED, false));
             root.put(KEY_SORT_MODE, prefs.getInt(KEY_SORT_MODE, AppConstants.SORT_MODE_DEFAULT));
             root.put(KEY_NOTIFICATION_MODE, prefs.getInt(KEY_NOTIFICATION_MODE, NOTIFICATION_MODE_ALL));
             root.put(KEY_AUTO_KILL_TYPE, prefs.getInt(KEY_AUTO_KILL_TYPE, 0));
             Log.d(TAG, "createBackupJson: display/UI settings written");
 
-            root.put(KEY_SYSTEM_APPS_WARNING_SHOWN, prefs.getBoolean(KEY_SYSTEM_APPS_WARNING_SHOWN, false));
-            root.put(KEY_AUTO_KILL_PENDING_RSS, prefs.getBoolean(KEY_AUTO_KILL_PENDING_RSS, false));
-            Log.d(TAG, "createBackupJson: misc booleans written");
-
-            root.put(KEY_SLEEP_MODE_ENABLED, prefs.getBoolean(KEY_SLEEP_MODE_ENABLED, false));
+            root.put(KEY_SLEEP_MODE_ENABLED, getSafeBool(KEY_SLEEP_MODE_ENABLED, false));
             root.put(KEY_SLEEP_MODE_DELAY, prefs.getLong(KEY_SLEEP_MODE_DELAY, AppConstants.DEFAULT_SLEEP_MODE_DELAY_MS));
             Log.d(TAG, "createBackupJson: sleep mode settings written");
 
-            root.put(KEY_HW_TRIGGER_HEADSET, prefs.getBoolean(KEY_HW_TRIGGER_HEADSET, false));
-            root.put(KEY_HW_TRIGGER_USB, prefs.getBoolean(KEY_HW_TRIGGER_USB, false));
-            root.put(KEY_HW_TRIGGER_CHARGER, prefs.getBoolean(KEY_HW_TRIGGER_CHARGER, false));
-            root.put(KEY_HW_TRIGGER_WIFI, prefs.getBoolean(KEY_HW_TRIGGER_WIFI, false));
-            root.put(KEY_HW_TRIGGER_BLUETOOTH, prefs.getBoolean(KEY_HW_TRIGGER_BLUETOOTH, false));
-            root.put(KEY_HW_TRIGGER_GPS, prefs.getBoolean(KEY_HW_TRIGGER_GPS, false));
-            root.put(KEY_HW_TRIGGER_HOTSPOT, prefs.getBoolean(KEY_HW_TRIGGER_HOTSPOT, false));
-            root.put(KEY_APP_LAUNCH_TRIGGER_ENABLED, prefs.getBoolean(KEY_APP_LAUNCH_TRIGGER_ENABLED, false));
-            root.put(KEY_APP_LAUNCH_CLEAR_CACHE, prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false));
+            root.put(KEY_HW_TRIGGER_HEADSET, getSafeBool(KEY_HW_TRIGGER_HEADSET, false));
+            root.put(KEY_HW_TRIGGER_USB, getSafeBool(KEY_HW_TRIGGER_USB, false));
+            root.put(KEY_HW_TRIGGER_CHARGER, getSafeBool(KEY_HW_TRIGGER_CHARGER, false));
+            root.put(KEY_HW_TRIGGER_WIFI, getSafeBool(KEY_HW_TRIGGER_WIFI, false));
+            root.put(KEY_HW_TRIGGER_BLUETOOTH, getSafeBool(KEY_HW_TRIGGER_BLUETOOTH, false));
+            root.put(KEY_HW_TRIGGER_GPS, getSafeBool(KEY_HW_TRIGGER_GPS, false));
+            root.put(KEY_HW_TRIGGER_HOTSPOT, getSafeBool(KEY_HW_TRIGGER_HOTSPOT, false));
+            root.put(KEY_APP_LAUNCH_TRIGGER_ENABLED, getSafeBool(KEY_APP_LAUNCH_TRIGGER_ENABLED, false));
+            root.put(KEY_APP_LAUNCH_CLEAR_CACHE, getSafeBool(KEY_APP_LAUNCH_CLEAR_CACHE, false));
             Log.d(TAG, "createBackupJson: hardware triggers written");
 
             String result = root.toString(4);
@@ -149,8 +155,6 @@ public class BackupManager {
             restoreInt(editor, root, KEY_AUTO_KILL_TYPE);
             Log.d(TAG, "restoreBackupJson: display/UI settings restored");
 
-            restoreBoolean(editor, root, KEY_SYSTEM_APPS_WARNING_SHOWN);
-            restoreBoolean(editor, root, KEY_AUTO_KILL_PENDING_RSS);
             restoreBoolean(editor, root, KEY_SLEEP_MODE_ENABLED);
             restoreLong(editor, root, KEY_SLEEP_MODE_DELAY);
             Log.d(TAG, "restoreBackupJson: sleep mode settings restored");
