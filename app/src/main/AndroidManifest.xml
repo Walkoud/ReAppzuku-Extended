@@ -141,6 +141,15 @@
                 android:resource="@xml/widget_info" />
         </receiver>
 
+        <receiver
+            android:name=".PresetManager$PresetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.gree1d.reappzuku.PRESET_ACTIVATE" />
+                <action android:name="com.gree1d.reappzuku.PRESET_DEACTIVATE" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
