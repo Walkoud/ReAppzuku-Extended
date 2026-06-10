@@ -42,6 +42,9 @@ public final class PreferenceKeys {
     public static final String KEY_HW_TRIGGER_HOTSPOT = "hw_trigger_hotspot";
     public static final String KEY_APP_LAUNCH_CLEAR_CACHE = "app_launch_clear_cache";
 
+    // Auto-Kill Presets
+    public static final String KEY_PRESET_ACTIVE = "active_preset_number";
+
     // Service & Automation
     public static final String KEY_AUTO_KILL_ENABLED = "autoKillEnabled";
     public static final String KEY_PERIODIC_KILL_ENABLED = "periodicKillEnabled";
