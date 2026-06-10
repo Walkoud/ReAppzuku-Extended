@@ -94,7 +94,7 @@ public class RamKillShortcutManager {
                     Log.d(TAG, "performKillAndUpdate: ramAfter=" + ramAfter + " KB, freedKb=" + freedKb + " KB");
                     showKillToast(killCount, freedKb);
                     updateShortcut();
-                }, 2000);
+                }, 5000);
             });
         });
     }

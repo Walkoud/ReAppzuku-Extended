@@ -34,6 +34,10 @@ public class BackupManager {
             putStringSet(root, KEY_MANUAL_RESTRICTION_APPS);
             putManualOpsMasks(root);
             putStringSet(root, KEY_SLEEP_MODE_APPS);
+            putStringSet(root, KEY_SLEEP_MODE_APPS_PERMANENT);
+            putStringSet(root, KEY_MEDIUM_RESTRICTION_APPS);
+            putStringSet(root, KEY_BATTERY_WHITELIST_REMOVED);
+            putStringSet(root, KEY_APP_LAUNCH_TRIGGER_PACKAGES);
 
             root.put(KEY_KILL_MODE, prefs.getInt(KEY_KILL_MODE, 0));
             root.put(KEY_AUTO_KILL_ENABLED, prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false));
@@ -47,11 +51,25 @@ public class BackupManager {
             root.put(KEY_THEME, prefs.getInt(KEY_THEME,
                     androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM));
             root.put(KEY_ACCENT, prefs.getInt(KEY_ACCENT, AppConstants.ACCENT_SYSTEM));
+            root.put(KEY_ACCENT_CUSTOM_COLOR, prefs.getInt(KEY_ACCENT_CUSTOM_COLOR, AppConstants.ACCENT_CUSTOM_DEFAULT_COLOR));
+            root.put(KEY_ACCENT_ON_COLOR, prefs.getInt(KEY_ACCENT_ON_COLOR, AppConstants.ACCENT_ON_WHITE));
             root.put(KEY_AMOLED, prefs.getBoolean(KEY_AMOLED, false));
             root.put(KEY_SORT_MODE, prefs.getInt(KEY_SORT_MODE, AppConstants.SORT_MODE_DEFAULT));
+            root.put(KEY_NOTIFICATION_MODE, prefs.getInt(KEY_NOTIFICATION_MODE, NOTIFICATION_MODE_ALL));
+            root.put(KEY_AUTO_KILL_TYPE, prefs.getInt(KEY_AUTO_KILL_TYPE, 0));
             root.put(KEY_SYSTEM_APPS_WARNING_SHOWN, prefs.getBoolean(KEY_SYSTEM_APPS_WARNING_SHOWN, false));
+            root.put(KEY_AUTO_KILL_PENDING_RSS, prefs.getBoolean(KEY_AUTO_KILL_PENDING_RSS, false));
             root.put(KEY_SLEEP_MODE_ENABLED, prefs.getBoolean(KEY_SLEEP_MODE_ENABLED, false));
             root.put(KEY_SLEEP_MODE_DELAY, prefs.getLong(KEY_SLEEP_MODE_DELAY, AppConstants.DEFAULT_SLEEP_MODE_DELAY_MS));
+            root.put(KEY_HW_TRIGGER_HEADSET, prefs.getBoolean(KEY_HW_TRIGGER_HEADSET, false));
+            root.put(KEY_HW_TRIGGER_USB, prefs.getBoolean(KEY_HW_TRIGGER_USB, false));
+            root.put(KEY_HW_TRIGGER_CHARGER, prefs.getBoolean(KEY_HW_TRIGGER_CHARGER, false));
+            root.put(KEY_HW_TRIGGER_WIFI, prefs.getBoolean(KEY_HW_TRIGGER_WIFI, false));
+            root.put(KEY_HW_TRIGGER_BLUETOOTH, prefs.getBoolean(KEY_HW_TRIGGER_BLUETOOTH, false));
+            root.put(KEY_HW_TRIGGER_GPS, prefs.getBoolean(KEY_HW_TRIGGER_GPS, false));
+            root.put(KEY_HW_TRIGGER_HOTSPOT, prefs.getBoolean(KEY_HW_TRIGGER_HOTSPOT, false));
+            root.put(KEY_APP_LAUNCH_TRIGGER_ENABLED, prefs.getBoolean(KEY_APP_LAUNCH_TRIGGER_ENABLED, false));
+            root.put(KEY_APP_LAUNCH_CLEAR_CACHE, prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false));
             return root.toString(4);
         } catch (Exception e) {
             e.printStackTrace();
@@ -72,6 +90,10 @@ public class BackupManager {
             restoreSet(editor, root, KEY_MANUAL_RESTRICTION_APPS);
             restoreManualOpsMasks(editor, root);
             restoreSet(editor, root, KEY_SLEEP_MODE_APPS);
+            restoreSet(editor, root, KEY_SLEEP_MODE_APPS_PERMANENT);
+            restoreSet(editor, root, KEY_MEDIUM_RESTRICTION_APPS);
+            restoreSet(editor, root, KEY_BATTERY_WHITELIST_REMOVED);
+            restoreSet(editor, root, KEY_APP_LAUNCH_TRIGGER_PACKAGES);
             restoreInt(editor, root, KEY_KILL_MODE);
             restoreBoolean(editor, root, KEY_AUTO_KILL_ENABLED);
             restoreBoolean(editor, root, KEY_PERIODIC_KILL_ENABLED);
@@ -83,11 +105,25 @@ public class BackupManager {
             restoreBoolean(editor, root, KEY_SHOW_PERSISTENT_APPS);
             restoreInt(editor, root, KEY_THEME);
             restoreInt(editor, root, KEY_ACCENT);
+            restoreInt(editor, root, KEY_ACCENT_CUSTOM_COLOR);
+            restoreInt(editor, root, KEY_ACCENT_ON_COLOR);
             restoreBoolean(editor, root, KEY_AMOLED);
             restoreInt(editor, root, KEY_SORT_MODE);
+            restoreInt(editor, root, KEY_NOTIFICATION_MODE);
+            restoreInt(editor, root, KEY_AUTO_KILL_TYPE);
             restoreBoolean(editor, root, KEY_SYSTEM_APPS_WARNING_SHOWN);
+            restoreBoolean(editor, root, KEY_AUTO_KILL_PENDING_RSS);
             restoreBoolean(editor, root, KEY_SLEEP_MODE_ENABLED);
             restoreLong(editor, root, KEY_SLEEP_MODE_DELAY);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_HEADSET);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_USB);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_CHARGER);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_WIFI);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_BLUETOOTH);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_GPS);
+            restoreBoolean(editor, root, KEY_HW_TRIGGER_HOTSPOT);
+            restoreBoolean(editor, root, KEY_APP_LAUNCH_TRIGGER_ENABLED);
+            restoreBoolean(editor, root, KEY_APP_LAUNCH_CLEAR_CACHE);
 
             editor.apply();
             return true;
