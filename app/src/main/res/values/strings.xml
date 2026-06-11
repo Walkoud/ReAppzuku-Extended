@@ -1040,15 +1040,6 @@
     <string name="preset_app_list_mode_switch_hint">Switch to "Own list" to edit</string>
     <string name="preset_list_count_current">%d apps (from current settings)</string>
     <string name="preset_list_count_own">%d apps selected</string>
-    <string name="scenarios_summary_none">None</string>
-    <string name="scenarios_hw_headset_short">Headset</string>
-    <string name="scenarios_hw_usb_short">USB</string>
-    <string name="scenarios_hw_charger_short">Charger</string>
-    <string name="scenarios_hw_wifi_short">Wi-Fi</string>
-    <string name="scenarios_hw_bluetooth_short">Bluetooth</string>
-    <string name="scenarios_hw_gps_short">GPS</string>
-    <string name="scenarios_hw_hotspot_short">Hotspot</string>
-    <string name="scenarios_app_launch_short">App launch</string>
     <string name="preset_save_button">Save preset</string>
     <string name="preset_saved">Preset %d saved</string>
     <string name="preset_export_json_button">Export to JSON file</string>
