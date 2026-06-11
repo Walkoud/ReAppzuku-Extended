@@ -1915,6 +1915,7 @@ public class SettingsActivity extends BaseActivity {
             if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
             showAdditionalScenariosDialog();
         });
+        binding.layoutPresets.setOnClickListener(v -> showPresetPickerDialog());
         binding.layoutAddShortcut.setOnClickListener(v -> ramKillShortcutManager.requestPinShortcut());
     }
 
@@ -1942,6 +1943,53 @@ public class SettingsActivity extends BaseActivity {
         } else {
             binding.textAdditionalScenariosSummary.setText(android.text.TextUtils.join(", ", active));
         }
+    }
+
+    private void showPresetPickerDialog() {
+        View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        TextView titleView = view.findViewById(R.id.single_choice_title);
+        RadioGroup group = view.findViewById(R.id.single_choice_group);
+        titleView.setText(getString(R.string.settings_presets_title));
+
+        String[] labels = {
+                getString(R.string.preset_title, PresetModel.PRESET_1),
+                getString(R.string.preset_title, PresetModel.PRESET_2)
+        };
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor()) : null;
+
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+        for (int i = 0; i < labels.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(labels[i]);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            group.addView(rb);
+        }
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(view)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .create();
+
+        group.setOnCheckedChangeListener((g, id) -> {
+            if (id == -1) return;
+            int presetNumber = (id - 1000) + 1;
+            dialog.dismiss();
+            Intent intent = new Intent(this, PresetSettingsActivity.class);
+            intent.putExtra(PresetSettingsActivity.EXTRA_PRESET_NUMBER, presetNumber);
+            startActivity(intent);
+        });
+
+        dialog.show();
+        resetDialogButtonColors(dialog);
     }
 
     private void showAdditionalScenariosDialog() {
