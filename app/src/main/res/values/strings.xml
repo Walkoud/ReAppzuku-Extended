@@ -1018,4 +1018,28 @@
     <string name="scenarios_accessibility_required_title">Accessibility Service Required</string>
     <string name="scenarios_accessibility_required_message">For the App Launch trigger to work, enable ReAppzuku in Accessibility Settings. The setting has been saved and will activate once the service is enabled.</string>
     <string name="scenarios_accessibility_open_settings">Open Settings</string>
+
+    <!-- Auto-Kill Presets -->
+    <string name="preset_section_title">Auto-Kill Presets</string>
+    <string name="settings_presets_title">Auto-Kill Presets</string>
+    <string name="settings_presets_subtitle">Schedule up to 2 rule sets by time</string>
+    <string name="preset_title">Preset %d</string>
+    <string name="preset_name_title">Preset name</string>
+    <string name="preset_name_dialog_title">Preset name</string>
+    <string name="preset_time_range_title">Active time</string>
+    <string name="preset_time_range_dialog_title">Active time</string>
+    <string name="preset_time_from_label">From</string>
+    <string name="preset_time_to_label">To</string>
+    <string name="preset_time_range_error_same">Start and end time must differ</string>
+    <string name="preset_app_list_mode_title">App list source</string>
+    <string name="preset_app_list_mode_dialog_title">App list source</string>
+    <string name="preset_app_list_mode_current">Use current whitelist / blacklist</string>
+    <string name="preset_app_list_mode_own">Use preset\'s own list</string>
+    <string name="preset_app_list_mode_switch_hint">Switch to "Own list" to edit</string>
+    <string name="preset_list_count_current">%d apps (from current settings)</string>
+    <string name="preset_list_count_own">%d apps selected</string>
+    <string name="preset_save_button">Save preset</string>
+    <string name="preset_saved">Preset %d saved</string>
+    <string name="preset_overlap_title">Time overlap</string>
+    <string name="preset_overlap_message">This time range overlaps with the other preset (%1$d:%2$02d – %3$d:%4$02d). Adjust the time so presets don\'t overlap.</string>
 </resources>
