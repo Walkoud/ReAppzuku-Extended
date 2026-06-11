@@ -97,9 +97,7 @@ ReAppzuku is licensed under [GNU General Public License v3.0](LICENSE).
 ## Credits
 
 Forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
-
----
-
+<br><br>
 >![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)
 ![Grok / xAI](https://img.shields.io/badge/Grok-000000?logo=xai&logoColor=white)
