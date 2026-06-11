@@ -1046,6 +1046,4 @@
     <string name="preset_export_subtitle">Save preset in JSON</string>
     <string name="preset_export_success">Preset file saved</string>
     <string name="preset_export_failed">File saving error</string>
-    <string name="scenarios_summary_none">None</string>
-    <string name="scenarios_summary_count">Active: %d</string>
 </resources>
