@@ -100,4 +100,7 @@ Forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
 
 ---
 
-> ReAppzuku was built using vibecoding — an approach where a significant part of the code was generated with help of AI (LLM).
+>![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)
+![Grok / xAI](https://img.shields.io/badge/Grok-000000?logo=xai&logoColor=white)
+> ReAppzuku was built using vibecoding — an approach where a significant part of code was generated with help of AI (LLM).
