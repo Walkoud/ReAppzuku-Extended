@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -15,6 +16,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -23,6 +25,8 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 
@@ -52,9 +56,12 @@ public class PresetSettingsActivity extends BaseActivity {
     private SharedPreferences sharedPreferences;
     private BackgroundAppManager appManager;
     private AutoKillManager autoKillManager;
+    private AdditionalScenariosManager additionalScenariosManager;
     private ShellManager shellManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
+
+    private ActivityResultLauncher<String> exportLauncher;
 
     private int presetNumber;
     private PresetManager presetManager;
@@ -77,6 +84,11 @@ public class PresetSettingsActivity extends BaseActivity {
         shellManager = new ShellManager(this.getApplicationContext(), handler, executor);
         appManager = new BackgroundAppManager(this.getApplicationContext(), handler, executor, shellManager);
         autoKillManager = new AutoKillManager(this.getApplicationContext(), handler, executor, shellManager, appManager.getCurrentAppsList());
+        additionalScenariosManager = new AdditionalScenariosManager(this.getApplicationContext(), sharedPreferences);
+
+        exportLauncher = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("application/json"),
+                uri -> { if (uri != null) exportPresetToUri(uri); });
 
         setupToolbar();
         loadWorkingModel();
@@ -149,6 +161,7 @@ public class PresetSettingsActivity extends BaseActivity {
         updateKillModeText(workingModel.killMode);
         updateKillModeListVisibility(workingModel.killMode);
         updateListCounts();
+        updateAdditionalScenariosSummary();
     }
 
     private void setupListeners() {
@@ -174,6 +187,15 @@ public class PresetSettingsActivity extends BaseActivity {
 
         binding.layoutAutoKillType.setOnClickListener(v -> showAutoKillTypeDialog());
         binding.layoutKillMode.setOnClickListener(v -> showKillModeDialog());
+
+        binding.layoutAdditionalScenarios.setOnClickListener(v -> showAdditionalScenariosDialog());
+
+        binding.layoutExportPreset.setOnClickListener(v -> {
+            String fileName = (workingModel.name != null && !workingModel.name.isEmpty())
+                    ? workingModel.name.replaceAll("[^a-zA-Z0-9_\\-]", "_") + ".json"
+                    : "preset" + presetNumber + ".json";
+            exportLauncher.launch(fileName);
+        });
 
         binding.layoutWhitelist.setOnClickListener(v -> {
             if (appListMode == APP_LIST_MODE_CURRENT) {
@@ -562,6 +584,199 @@ public class PresetSettingsActivity extends BaseActivity {
                 dialog.dismiss();
             });
         });
+    }
+
+    private void updateAdditionalScenariosSummary() {
+        int count = 0;
+        if (additionalScenariosManager.isHeadsetTriggerEnabled()) count++;
+        if (additionalScenariosManager.isUsbTriggerEnabled()) count++;
+        if (additionalScenariosManager.isChargerTriggerEnabled()) count++;
+        if (additionalScenariosManager.isWifiTriggerEnabled()) count++;
+        if (additionalScenariosManager.isBluetoothTriggerEnabled()) count++;
+        if (additionalScenariosManager.isGpsTriggerEnabled()) count++;
+        if (additionalScenariosManager.isHotspotTriggerEnabled()) count++;
+        if (additionalScenariosManager.isAppLaunchTriggerEnabled()) count++;
+        binding.textAdditionalScenariosSummary.setText(count == 0
+                ? getString(R.string.scenarios_summary_none)
+                : getString(R.string.scenarios_summary_count, count));
+    }
+
+    private void showAdditionalScenariosDialog() {
+        int dp4 = (int) (getResources().getDisplayMetrics().density * 4);
+        int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
+        int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean isCustomAccent = accent == ACCENT_CUSTOM;
+        int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        android.content.res.ColorStateList checkboxTint = isCustomAccent
+                ? android.content.res.ColorStateList.valueOf(customColor) : null;
+        int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        int buttonTextColor = isCustomAccent
+                ? ((onColor == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE)
+                : ContextCompat.getColor(this, R.color.dialog_button_text);
+
+        android.util.TypedValue tv = new android.util.TypedValue();
+        getTheme().resolveAttribute(android.R.attr.textColorSecondary, tv, true);
+        int colorSecondary = ContextCompat.getColor(this, tv.resourceId);
+        getTheme().resolveAttribute(com.google.android.material.R.attr.colorSecondary, tv, true);
+        int colorAccent = isCustomAccent ? customColor : tv.data;
+        getTheme().resolveAttribute(android.R.attr.colorControlHighlight, tv, true);
+        int colorDivider = tv.data;
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp8, 0, dp8);
+
+        TextView headerHw = new TextView(this);
+        headerHw.setText(getString(R.string.scenarios_hardware_events_title));
+        headerHw.setTextSize(12);
+        headerHw.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerHw.setTextColor(colorAccent);
+        headerHw.setPadding(dp24, dp8, dp24, dp4);
+        root.addView(headerHw);
+
+        CheckBox cbHeadset = new CheckBox(this);
+        cbHeadset.setText(getString(R.string.scenarios_hw_headset));
+        cbHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
+        cbHeadset.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbHeadset.setButtonTintList(checkboxTint);
+        root.addView(cbHeadset);
+
+        CheckBox cbUsb = new CheckBox(this);
+        cbUsb.setText(getString(R.string.scenarios_hw_usb));
+        cbUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
+        cbUsb.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbUsb.setButtonTintList(checkboxTint);
+        root.addView(cbUsb);
+
+        CheckBox cbCharger = new CheckBox(this);
+        cbCharger.setText(getString(R.string.scenarios_hw_charger));
+        cbCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
+        cbCharger.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbCharger.setButtonTintList(checkboxTint);
+        root.addView(cbCharger);
+
+        CheckBox cbWifi = new CheckBox(this);
+        cbWifi.setText(getString(R.string.scenarios_hw_wifi));
+        cbWifi.setChecked(additionalScenariosManager.isWifiTriggerEnabled());
+        cbWifi.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbWifi.setButtonTintList(checkboxTint);
+        root.addView(cbWifi);
+
+        CheckBox cbBluetooth = new CheckBox(this);
+        cbBluetooth.setText(getString(R.string.scenarios_hw_bluetooth));
+        cbBluetooth.setChecked(additionalScenariosManager.isBluetoothTriggerEnabled());
+        cbBluetooth.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbBluetooth.setButtonTintList(checkboxTint);
+        root.addView(cbBluetooth);
+
+        CheckBox cbGps = new CheckBox(this);
+        cbGps.setText(getString(R.string.scenarios_hw_gps));
+        cbGps.setChecked(additionalScenariosManager.isGpsTriggerEnabled());
+        cbGps.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbGps.setButtonTintList(checkboxTint);
+        root.addView(cbGps);
+
+        CheckBox cbHotspot = new CheckBox(this);
+        cbHotspot.setText(getString(R.string.scenarios_hw_hotspot));
+        cbHotspot.setChecked(additionalScenariosManager.isHotspotTriggerEnabled());
+        cbHotspot.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbHotspot.setButtonTintList(checkboxTint);
+        root.addView(cbHotspot);
+
+        TextView noteHw = new TextView(this);
+        noteHw.setText(getString(R.string.scenarios_hw_delay_note));
+        noteHw.setTextSize(12);
+        noteHw.setTextColor(colorSecondary);
+        noteHw.setPadding(dp24, dp4, dp24, dp16);
+        root.addView(noteHw);
+
+        View divider = new View(this);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        dividerParams.setMargins(dp16, 0, dp16, dp16);
+        divider.setLayoutParams(dividerParams);
+        divider.setBackgroundColor(colorDivider);
+        root.addView(divider);
+
+        TextView headerLaunch = new TextView(this);
+        headerLaunch.setText(getString(R.string.scenarios_app_launch_title));
+        headerLaunch.setTextSize(12);
+        headerLaunch.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerLaunch.setTextColor(colorAccent);
+        headerLaunch.setPadding(dp24, dp4, dp24, dp4);
+        root.addView(headerLaunch);
+
+        CheckBox cbAppLaunch = new CheckBox(this);
+        cbAppLaunch.setText(getString(R.string.scenarios_app_launch_enable));
+        cbAppLaunch.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
+        cbAppLaunch.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbAppLaunch.setButtonTintList(checkboxTint);
+        root.addView(cbAppLaunch);
+
+        CheckBox cbClearCache = new CheckBox(this);
+        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
+        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
+        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
+        LinearLayout.LayoutParams cbParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        cbParams.setMarginStart(dp16);
+        cbClearCache.setLayoutParams(cbParams);
+        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            cbClearCache.setEnabled(false);
+            cbClearCache.setAlpha(0.4f);
+        }
+        root.addView(cbClearCache);
+
+        cbAppLaunch.setOnCheckedChangeListener((btn, isChecked) ->
+                cbClearCache.setVisibility(isChecked ? View.VISIBLE : View.GONE));
+        cbClearCache.setVisibility(cbAppLaunch.isChecked() ? View.VISIBLE : View.GONE);
+
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        scrollView.addView(root);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.section_additional_scenarios))
+                .setView(scrollView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(buttonTextColor);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(buttonTextColor);
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            additionalScenariosManager.setHeadsetTriggerEnabled(cbHeadset.isChecked());
+            additionalScenariosManager.setUsbTriggerEnabled(cbUsb.isChecked());
+            additionalScenariosManager.setChargerTriggerEnabled(cbCharger.isChecked());
+            additionalScenariosManager.setWifiTriggerEnabled(cbWifi.isChecked());
+            additionalScenariosManager.setBluetoothTriggerEnabled(cbBluetooth.isChecked());
+            additionalScenariosManager.setGpsTriggerEnabled(cbGps.isChecked());
+            additionalScenariosManager.setHotspotTriggerEnabled(cbHotspot.isChecked());
+            additionalScenariosManager.updateHardwareReceiverState();
+            additionalScenariosManager.setAppLaunchTriggerEnabled(cbAppLaunch.isChecked());
+            additionalScenariosManager.setAppLaunchClearCacheEnabled(cbClearCache.isChecked());
+            updateAdditionalScenariosSummary();
+            dialog.dismiss();
+        });
+    }
+
+    private void exportPresetToUri(Uri uri) {
+        try {
+            String json = workingModel.toJson().toString(4);
+            try (java.io.OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) throw new java.io.IOException("OutputStream is null");
+                os.write(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            Toast.makeText(this, getString(R.string.preset_export_success), Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "exportPresetToUri: success uri=" + uri);
+        } catch (Exception e) {
+            Log.e(TAG, "exportPresetToUri: FAILED", e);
+            Toast.makeText(this, getString(R.string.preset_export_failed), Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void updateTimeRangeText() {

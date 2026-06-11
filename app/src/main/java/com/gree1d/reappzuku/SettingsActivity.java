@@ -1951,10 +1951,15 @@ public class SettingsActivity extends BaseActivity {
         RadioGroup group = view.findViewById(R.id.single_choice_group);
         titleView.setText(getString(R.string.settings_presets_title));
 
-        String[] labels = {
-                getString(R.string.preset_title, PresetModel.PRESET_1),
-                getString(R.string.preset_title, PresetModel.PRESET_2)
-        };
+        PresetManager presetManager = new PresetManager(this);
+        String[] labels = new String[2];
+        for (int i = 0; i < 2; i++) {
+            int num = i + 1;
+            PresetModel m = presetManager.loadPreset(num);
+            labels[i] = (m != null && m.name != null && !m.name.isEmpty())
+                    ? m.name
+                    : getString(R.string.preset_title, num);
+        }
 
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)

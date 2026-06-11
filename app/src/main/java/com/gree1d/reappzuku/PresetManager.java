@@ -299,10 +299,8 @@ public class PresetManager {
         long activateTime = nextAlarmTime(model.startHour, model.startMinute);
         long deactivateTime = nextAlarmTime(model.endHour, model.endMinute);
 
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, activateTime,
-                AlarmManager.INTERVAL_DAY, activateIntent);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, deactivateTime,
-                AlarmManager.INTERVAL_DAY, deactivateIntent);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, activateTime, activateIntent);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, deactivateTime, deactivateIntent);
 
         Log.d(TAG, "scheduleAlarms #" + model.presetNumber
                 + " | activateAt=" + model.startHour + ":" + String.format("%02d", model.startMinute)
@@ -380,6 +378,22 @@ public class PresetManager {
         return active;
     }
 
+    public void rescheduleNextDayAlarm(int presetNumber, String action, int hour, int minute) {
+        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, hour);
+        calendar.set(Calendar.MINUTE, minute);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        calendar.add(Calendar.DAY_OF_YEAR, 1);
+        PendingIntent pi = buildPendingIntent(presetNumber, action);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pi);
+        Log.d(TAG, "rescheduleNextDayAlarm #" + presetNumber + " action=" + action
+                + " at=" + hour + ":" + String.format("%02d", minute)
+                + " (tomorrow, ms=" + calendar.getTimeInMillis() + ")");
+    }
+
     public void checkAndApplyCurrentPreset() {
         Log.d(TAG, "checkAndApplyCurrentPreset | currentActive=" + getActivePresetNumber());
         for (int number : new int[]{PresetModel.PRESET_1, PresetModel.PRESET_2}) {
@@ -389,8 +403,12 @@ public class PresetManager {
                 continue;
             }
             if (isCurrentlyActive(model)) {
-                Log.d(TAG, "checkAndApplyCurrentPreset | preset #" + number + " is in its time window — activating");
-                activatePreset(number);
+                if (getActivePresetNumber() != number) {
+                    Log.d(TAG, "checkAndApplyCurrentPreset | preset #" + number + " is in its time window — activating");
+                    activatePreset(number);
+                } else {
+                    Log.d(TAG, "checkAndApplyCurrentPreset | preset #" + number + " already active — skipping");
+                }
                 return;
             }
         }
@@ -427,8 +445,18 @@ public class PresetManager {
 
             if (ACTION_PRESET_ACTIVATE.equals(intent.getAction())) {
                 manager.activatePreset(presetNumber);
+                PresetModel model = manager.loadPreset(presetNumber);
+                if (model != null) {
+                    manager.rescheduleNextDayAlarm(presetNumber, ACTION_PRESET_ACTIVATE,
+                            model.startHour, model.startMinute);
+                }
             } else if (ACTION_PRESET_DEACTIVATE.equals(intent.getAction())) {
                 manager.deactivatePreset(presetNumber);
+                PresetModel model = manager.loadPreset(presetNumber);
+                if (model != null) {
+                    manager.rescheduleNextDayAlarm(presetNumber, ACTION_PRESET_DEACTIVATE,
+                            model.endHour, model.endMinute);
+                }
             }
         }
     }
