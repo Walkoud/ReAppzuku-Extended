@@ -626,15 +626,15 @@ Determines **which** apps get targeted by Auto-Kill.
 **Whitelist / Blacklist**\
 App list for selected mode. One of two lists is shown depending on mode.
 
-**Advanced Conditions**  
+**Advanced Conditions**\ 
 Expand Auto-Kill with extra triggers — for cases where regular schedule is not enough.
 
-- **Hardware Events**  
+- **Hardware Events**. 
 Auto-Kill launches automatically on selected events: headphone or USB connect/disconnect, charging state change, WiFi, mobile network, Bluetooth, GPS or hotspot. After event, 10-second pause is held — so parasitic apps have time to start and get cleaned up.
 
-- **App Launch**  
+- **App Launch**. 
 Auto-Kill triggers right when selected target apps are opened — useful on budget devices to free RAM and CPU before launching heavy games or programs. Target apps themselves do not get killed.  
-  - **Clear Cache** — additionally clears cache of all apps, except Protected, Persistent and other target apps.
+  - **Clear Cache**. Additionally clears cache of all apps, except Protected, Persistent and other target apps.
 > ℹ️ **App Launch** function requires special permission in "Accessibility" settings. This feature can also slightly increase battery usage by ReAppzuku itself.
 
 **Auto-Kill Presets**\
@@ -642,13 +642,13 @@ Save your own set of Auto-Kill settings that activates automatically at a specif
 **2 presets** are available. Each can be configured independently: its own name, its own active time range, its own Auto-Kill rules, its own app lists, and its own additional scenarios.
 > ℹ️ While active, presets ignore the immunity granted to apps by the Restrictions Scheduler. This is done to avoid confusion in the settings.
 
-- **Enable preset**
+- **Enable preset**.
 The master switch. If disabled, the preset **will not activate** on schedule, even if its time window starts. If the preset is currently active and this switch is turned off, it deactivates immediately and the original settings are restored.
 
-- **Preset name**
+- **Preset name**.
 A custom name, up to 30 characters. Shown in the preset picker dialog in the main settings. If the preset is currently active, an **"Active"** badge appears next to its name.
 
-- **Active time**
+- **Active time**.
 A "From — To" range, displayed using the device's time format (12/24-hour). Ranges that cross midnight are supported (e.g. 22:00 – 06:00).
 > ℹ️ The two presets cannot overlap in their active time. If you try to save a preset with an overlapping range, a warning will show the conflicting preset's time range — adjust one of the presets' times to resolve it.
 
@@ -657,19 +657,19 @@ Choose between:
   - **Use current whitelist / blacklist** — the preset always uses the live whitelist/blacklist from the main settings at the moment it activates
   - **Use preset's own list** — the preset has its own independent whitelist/blacklist, edited separately and unaffected by changes to the main settings
 
-- **Auto-Kill management and Advanced Conditions**
+- **Auto-Kill management and Advanced Conditions**.
 A standard Auto-Kill settings block, same as in the regular app settings. All these settings are described in [Auto-Kill Settings](#-auto-kill-settings)
 
-- **Save preset**
+- **Save preset**.
 Applies all changes: saves the settings, reschedules the activation/deactivation alarms, and immediately activates or deactivates the preset if needed (if the changes affect the current time window).
 
-- **Import/Export JSON file**
+- **Import/Export JSON file**.
 Save preset to JSON file or restore it from a backup file. To apply changes, click "Save" button.
 
-- **Reset preset**
+- **Reset preset**.
 Resets all current settings on screen back to their default values (taken from the app's main settings). **Changes are not applied** until "Save" is pressed — you can simply leave the screen without saving, and the reset will not affect the already-saved preset.
 
-**RAM Kill Shortcut**  
+**RAM Kill Shortcut**\
 Adds small 1x1 shortcut to home screen. Tapping shortcut launches Auto-Kill according to current list (black or white). Additionally performs RAM cleanup from active apps, but excludes whitelist, protected and persistent system apps.
 
 ---
