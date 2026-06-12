@@ -26,6 +26,7 @@ Root or Shizuku privileges are required.
   * Kill on screen lock: force-stop background processes immediately after screen turns off.
   * RAM threshold: Kill triggers only when RAM usage reaches a set limit (75%–100%).
   * Kill on hardware events/launch app: Kill is triggered by selected hardware events or when target application is launched, with option to additionally clear RAM.
+  * Auto-Kill presets: Customize and schedule Auto-Kill behavior at specific times. 
 * **Manual controls:**
   * Main screen: view all active background processes with RAM usage, select and kill in bulk.
   * Quick Tiles: "Stop app" kills current foreground app; "Stop background apps" runs Auto-Kill with your lists.
