@@ -33,7 +33,6 @@ public class PresetManager {
     static final String ACTION_PRESET_DEACTIVATE = "com.gree1d.reappzuku.PRESET_DEACTIVATE";
     static final String EXTRA_PRESET_NUMBER = "preset_number";
 
-    private static final String KEY_ACTIVE_PRESET = "active_preset_number";
     private static final String KEY_BACKUP_PREFIX = "preset_backup_";
 
     private static final String P_NAME = "name";
@@ -371,8 +370,9 @@ public class PresetManager {
         int interval = mainPrefs.getInt(KEY_KILL_INTERVAL, 15);
         Log.d(TAG, "rescheduleWorker | autoKill=" + autoKillEnabled
                 + " periodic=" + periodicEnabled + " interval=" + interval);
+        boolean presetActive = mainPrefs.getInt(KEY_ACTIVE_PRESET, 0) != 0;
         AutoKillWorker.cancel(context);
-        if (autoKillEnabled && periodicEnabled) {
+        if ((autoKillEnabled || presetActive) && periodicEnabled) {
             AutoKillWorker.schedule(context);
             Log.d(TAG, "rescheduleWorker — scheduled with interval=" + interval);
         } else {
