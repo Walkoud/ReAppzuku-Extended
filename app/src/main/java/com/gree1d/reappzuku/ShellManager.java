@@ -3,7 +3,6 @@ package com.gree1d.reappzuku;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
@@ -15,11 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import org.lsposed.hiddenapibypass.HiddenApiBypass;
 import rikka.shizuku.Shizuku;
-import rikka.shizuku.ShizukuBinderWrapper;
 import rikka.shizuku.ShizukuRemoteProcess;
-import rikka.shizuku.SystemServiceHelper;
 
 
 public class ShellManager {
@@ -260,47 +256,6 @@ public class ShellManager {
             return executeShizukuCommandAndGetFullOutput(command);
         }
         return null;
-    }
-
-
-    public boolean freezePackage(String packageName) {
-        if (packageName == null || packageName.isEmpty()) return false;
-        return setPackageEnabledState(packageName, PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER);
-    }
-
-
-    public boolean unfreezePackage(String packageName) {
-        if (packageName == null || packageName.isEmpty()) return false;
-        return setPackageEnabledState(packageName, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT);
-    }
-
-
-    private boolean setPackageEnabledState(String packageName, int newState) {
-        if (!hasShizukuPermission()) {
-            Log.w(TAG, "setPackageEnabledState: Shizuku not available");
-            return false;
-        }
-        try {
-            IBinder binder = new ShizukuBinderWrapper(SystemServiceHelper.getSystemService("package"));
-            Class<?> stubClass = Class.forName("android.content.pm.IPackageManager$Stub");
-            Object pm = HiddenApiBypass.invoke(stubClass, null, "asInterface", binder);
-
-            HiddenApiBypass.invoke(
-                    pm.getClass(),
-                    pm,
-                    "setApplicationEnabledSetting",
-                    packageName,
-                    newState,
-                    0,
-                    0,
-                    context.getPackageName()
-            );
-            Log.d(TAG, "setPackageEnabledState(" + newState + ") ok: " + packageName);
-            return true;
-        } catch (Exception e) {
-            Log.w(TAG, "setPackageEnabledState failed for " + packageName, e);
-            return false;
-        }
     }
 
 

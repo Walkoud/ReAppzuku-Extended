@@ -9,6 +9,7 @@ import android.app.NotificationManager;
 import android.content.SharedPreferences;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 
 import static com.gree1d.reappzuku.PreferenceKeys.*;
@@ -31,6 +33,7 @@ public class ShappkyService extends Service {
     private static final String TAG = "ShappkyService";
     static final String ACTION_IDLE_FREEZE = "com.gree1d.reappzuku.IDLE_FREEZE";
     private static final int FREEZE_ALARM_REQUEST_CODE = 1001;
+    private static final int RESTART_ALARM_REQUEST_CODE = 1002;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -44,9 +47,10 @@ public class ShappkyService extends Service {
     private RestrictionsScheduler scheduler;
     private KillTriggerReceiver screenOffReceiver;
     private RestrictionsWatchdogManager watchdog;
+    private AdditionalScenariosManager additionalScenariosManager;
+    private RamKillShortcutManager ramKillShortcutManager;
 
     private boolean isFrozen = false;
-
     private boolean shizukuLostNotificationShown = false;
 
     public static boolean isRunning() {
@@ -98,7 +102,12 @@ public class ShappkyService extends Service {
                 .setOngoing(true)
                 .build();
 
-        startForeground(NOTIFICATION_ID_SERVICE, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID_SERVICE, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        } else {
+            startForeground(NOTIFICATION_ID_SERVICE, notification);
+        }
         isRunning = true;
 
         screenOffReceiver = new KillTriggerReceiver();
@@ -107,9 +116,13 @@ public class ShappkyService extends Service {
         filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screenOffReceiver, filter);
 
+        additionalScenariosManager = new AdditionalScenariosManager(this);
+        additionalScenariosManager.updateHardwareReceiverState();
+        ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
+
         scheduleNextKill();
         scheduler.scheduleNext();
-        
+
         cancelShizukuLostNotification();
         shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
         scheduleSnapshotCollection();
@@ -117,13 +130,14 @@ public class ShappkyService extends Service {
 
         appManager.reapplySavedBackgroundRestrictions(null);
         watchdog.startIfNeeded();
-        
+
         UpdateChecker.checkForUpdatesAuto(getApplicationContext());
         schedulePeriodicUpdateCheck();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(TAG, "onStartCommand: action=" + (intent != null ? intent.getAction() : "null")); // <-- сюда
         if (intent == null) return START_STICKY;
 
         String action = intent.getAction();
@@ -139,7 +153,6 @@ public class ShappkyService extends Service {
                         if (getCurrentRamUsagePercent() >= threshold) {
                             autoKillManager.performAutoKill(() -> KillTriggerReceiver.releaseAutoKillWakeLock());
                         } else {
-                          
                             KillTriggerReceiver.releaseAutoKillWakeLock();
                         }
                     } else {
@@ -192,6 +205,10 @@ public class ShappkyService extends Service {
             case "SCHEDULER_TICK":
                 scheduler.tick();
                 break;
+
+            case "WIDGET_KILL":
+                ramKillShortcutManager.performKillAndUpdate(autoKillManager);
+                break;
         }
 
         return START_STICKY;
@@ -215,20 +232,18 @@ public class ShappkyService extends Service {
                         Log.w(TAG, "Shizuku permission lost, sending notification");
                         shizukuLostNotificationShown = true;
                     }
-                   
                     sendShizukuLostNotification();
                 } else {
                     if (shizukuLostNotificationShown) {
                         Log.d(TAG, "Shizuku permission restored, cancelling notification");
                         shizukuLostNotificationShown = false;
                     }
-                    
                     cancelShizukuLostNotification();
                 }
 
                 handler.postDelayed(this, SHIZUKU_POLL_INTERVAL_MS);
             }
-        }, 0); 
+        }, 0);
     }
 
     private void sendShizukuLostNotification() {
@@ -285,6 +300,19 @@ public class ShappkyService extends Service {
         );
     }
 
+    private void scheduleServiceRestart() {
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am == null) return;
+        Intent intent = new Intent(this, RestartReceiver.class);
+        PendingIntent pi = PendingIntent.getBroadcast(
+                this,
+                RESTART_ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
+        );
+        am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 3000, pi);
+    }
+
     private static final long SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000L;
     private static final long UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L;
     private static final long WIDGET_UPDATE_INTERVAL_MS = 60 * 1000L;
@@ -295,6 +323,7 @@ public class ShappkyService extends Service {
             public void run() {
                 if (!isRunning) return;
                 AppzukuWidget.updateAllWidgetsFromJava(ShappkyService.this);
+                ramKillShortcutManager.updateShortcut();
                 handler.postDelayed(this, WIDGET_UPDATE_INTERVAL_MS);
             }
         };
@@ -371,13 +400,20 @@ public class ShappkyService extends Service {
         }
     }
 
+
+
+
     @Override
     public void onDestroy() {
         isRunning = false;
+        scheduleServiceRestart();
         cancelIdleFreezeAlarm();
         cancelShizukuLostNotification();
         if (screenOffReceiver != null) {
             unregisterReceiver(screenOffReceiver);
+        }
+        if (additionalScenariosManager != null) {
+            additionalScenariosManager.stop();
         }
         watchdog.stop();
         handler.removeCallbacksAndMessages(null);
@@ -405,6 +441,20 @@ public class ShappkyService extends Service {
                     getString(R.string.service_channel_actions_name),
                     NotificationManager.IMPORTANCE_HIGH);
             nm.createNotificationChannel(actionsChannel);
+        }
+    }
+    
+    public static class RestartReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!ShappkyService.isRunning()) {
+                Intent service = new Intent(context, ShappkyService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(service);
+                } else {
+                    context.startService(service);
+                }
+            }
         }
     }
 }

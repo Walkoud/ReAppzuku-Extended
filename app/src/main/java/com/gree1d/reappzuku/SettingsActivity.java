@@ -2,6 +2,7 @@ package com.gree1d.reappzuku;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -25,12 +26,15 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import com.google.android.material.materialswitch.MaterialSwitch;
+import android.widget.PopupMenu;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.os.Handler;
 import androidx.activity.result.ActivityResultLauncher;
@@ -44,6 +48,7 @@ import android.widget.Toast;
 import android.os.Looper;
 
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.core.content.ContextCompat;
 
 import com.gree1d.reappzuku.databinding.ActivitySettingsBinding;
@@ -71,8 +76,13 @@ public class SettingsActivity extends BaseActivity {
     private SleepModeManager sleepModeManager;
     private BackupManager backupManager;
     private RestrictionsScheduler scheduler;
+    private AdditionalScenariosManager additionalScenariosManager;
+    private RamKillShortcutManager ramKillShortcutManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
+    private int easterEggClickCount = 0;
+    private static final int EASTER_EGG_THRESHOLD = 5;
+    private PresetManager presetManager;
 
     private final ActivityResultLauncher<String> createBackupLauncher = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
@@ -95,6 +105,9 @@ public class SettingsActivity extends BaseActivity {
         backupManager = new BackupManager(this);
         scheduler = new RestrictionsScheduler(
                 getApplicationContext(), handler, executor, shellManager, appManager);
+        additionalScenariosManager = new AdditionalScenariosManager(this);
+        ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
+        presetManager = new PresetManager(this);
 
         setupToolbar();
         loadSettings();
@@ -161,7 +174,7 @@ public class SettingsActivity extends BaseActivity {
         };
 
         for (int id : switchIds) {
-            com.google.android.material.switchmaterial.SwitchMaterial sw = findViewById(id);
+            MaterialSwitch sw = findViewById(id);
             if (sw == null) continue;
 
             android.content.res.ColorStateList thumbTint = new android.content.res.ColorStateList(
@@ -227,20 +240,20 @@ public class SettingsActivity extends BaseActivity {
         int notificationMode = sharedPreferences.getInt(KEY_NOTIFICATION_MODE, NOTIFICATION_MODE_ALL);
         updateNotificationModeText(notificationMode);
 
-        boolean serviceEnabled = sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+        boolean serviceEnabled = getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
         binding.switchAutoKill.setChecked(serviceEnabled);
 
-        boolean periodicKillEnabled = sharedPreferences.getBoolean(KEY_PERIODIC_KILL_ENABLED, false);
+        boolean periodicKillEnabled = getAutoKillPref(KEY_PERIODIC_KILL_ENABLED, false);
         binding.switchPeriodicKill.setChecked(periodicKillEnabled);
 
-        int killInterval = sharedPreferences.getInt(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS);
+        int killInterval = getAutoKillIntPref(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS);
         updateKillIntervalText(killInterval);
 
-        binding.switchKillScreenOff.setChecked(sharedPreferences.getBoolean(KEY_KILL_ON_SCREEN_OFF, false));
+        binding.switchKillScreenOff.setChecked(getAutoKillPref(KEY_KILL_ON_SCREEN_OFF, false));
 
-        boolean ramThresholdEnabled = sharedPreferences.getBoolean(KEY_RAM_THRESHOLD_ENABLED, false);
+        boolean ramThresholdEnabled = getAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, false);
         binding.switchRamThreshold.setChecked(ramThresholdEnabled);
-        int ramThreshold = sharedPreferences.getInt(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
+        int ramThreshold = getAutoKillIntPref(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
         updateRamThresholdText(ramThreshold);
         updateRamThresholdLimitVisibility(ramThresholdEnabled && serviceEnabled);
 
@@ -257,6 +270,8 @@ public class SettingsActivity extends BaseActivity {
         } catch (Exception e) {
             binding.textVersion.setText(R.string.app_name);
         }
+
+        loadAdditionalScenariosSettings();
     }
 
     private void setupListeners() {
@@ -279,7 +294,7 @@ public class SettingsActivity extends BaseActivity {
                 Toast.makeText(this, getString(R.string.settings_requires_privilege), Toast.LENGTH_LONG).show();
                 return;
             }
-            sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, isChecked).apply();
+            putAutoKillPref(KEY_AUTO_KILL_ENABLED, isChecked);
             boolean periodicEnabled = binding.switchPeriodicKill.isChecked();
             updateAutomationOptionsVisibility(isChecked, periodicEnabled);
             applyServiceDependentState(isChecked);
@@ -293,16 +308,16 @@ public class SettingsActivity extends BaseActivity {
         });
 
         binding.switchPeriodicKill.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            sharedPreferences.edit().putBoolean(KEY_PERIODIC_KILL_ENABLED, isChecked).apply();
+            putAutoKillPref(KEY_PERIODIC_KILL_ENABLED, isChecked);
             boolean serviceEnabled = binding.switchAutoKill.isChecked();
             updateAutomationOptionsVisibility(serviceEnabled, isChecked);
         });
 
         binding.switchKillScreenOff.setOnCheckedChangeListener((buttonView, isChecked) ->
-                sharedPreferences.edit().putBoolean(KEY_KILL_ON_SCREEN_OFF, isChecked).apply());
+                putAutoKillPref(KEY_KILL_ON_SCREEN_OFF, isChecked));
 
         binding.switchRamThreshold.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            sharedPreferences.edit().putBoolean(KEY_RAM_THRESHOLD_ENABLED, isChecked).apply();
+            putAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, isChecked);
             updateRamThresholdLimitVisibility(isChecked && binding.switchAutoKill.isChecked());
         });
         binding.layoutRamThreshold.setOnClickListener(v -> showRamThresholdDialog());
@@ -352,7 +367,7 @@ public class SettingsActivity extends BaseActivity {
                 return;
             }
             if (isChecked) {
-                new AlertDialog.Builder(this)
+                resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.settings_sleep_mode_title))
                         .setMessage(getString(R.string.settings_sleep_mode_restart_message))
                         .setPositiveButton(getString(R.string.dialog_ok), (dialog, which) -> {
@@ -362,7 +377,7 @@ public class SettingsActivity extends BaseActivity {
                         })
                         .setNegativeButton(getString(R.string.dialog_cancel), (dialog, which) -> buttonView.setChecked(false))
                         .setCancelable(false)
-                        .show();
+                        .show());
             } else {
                 sleepModeManager.setSleepModeEnabled(false);
             }
@@ -397,11 +412,19 @@ public class SettingsActivity extends BaseActivity {
 
         binding.layoutBackupRestore.setOnClickListener(v -> showBackupRestoreDialog());
         binding.layoutGithub.setOnClickListener(v -> openUrl("https://github.com/gree1d/ReAppzuku"));
-        binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this));
+        binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this, sharedPreferences));
         binding.layoutTelegram.setOnClickListener(v -> openUrl("https://t.me/AkM0o"));
+        binding.textVersion.setOnClickListener(v -> {
+            easterEggClickCount++;
+            if (easterEggClickCount == EASTER_EGG_THRESHOLD) {
+                easterEggClickCount = 0;
+                showEasterEggDialog();
+            }
+        });
 
         updateKillModeVisibility();
         applyServiceDependentState(isServiceEnabled());
+        setupAdditionalScenariosListeners();
     }
 
     private void updateKillModeVisibility() {
@@ -417,8 +440,44 @@ public class SettingsActivity extends BaseActivity {
     }
 
 
+    private boolean isPresetActive() {
+        return presetManager != null && presetManager.getActivePresetNumber() != 0;
+    }
+
+    private boolean getAutoKillPref(String key, boolean defVal) {
+        if (isPresetActive()) {
+            return sharedPreferences.getBoolean(PresetManager.KEY_BACKUP_PREFIX + key, defVal);
+        }
+        return sharedPreferences.getBoolean(key, defVal);
+    }
+
+    private void putAutoKillPref(String key, boolean value) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putBoolean(key, value);
+        if (isPresetActive()) {
+            editor.putBoolean(PresetManager.KEY_BACKUP_PREFIX + key, value);
+        }
+        editor.apply();
+    }
+
+    private int getAutoKillIntPref(String key, int defVal) {
+        if (isPresetActive()) {
+            return sharedPreferences.getInt(PresetManager.KEY_BACKUP_PREFIX + key, defVal);
+        }
+        return sharedPreferences.getInt(key, defVal);
+    }
+
+    private void putAutoKillIntPref(String key, int value) {
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt(key, value);
+        if (isPresetActive()) {
+            editor.putInt(PresetManager.KEY_BACKUP_PREFIX + key, value);
+        }
+        editor.apply();
+    }
+
     private boolean isServiceEnabled() {
-        return sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+        return getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
     }
 
 
@@ -468,7 +527,10 @@ public class SettingsActivity extends BaseActivity {
                     binding.switchAutoKill.setAlpha(0.5f);
 
                     if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)) {
-                        sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, false).apply();
+                        sharedPreferences.edit()
+                                .putBoolean(KEY_AUTO_KILL_ENABLED, false)
+                                .putBoolean(PresetManager.KEY_BACKUP_PREFIX + KEY_AUTO_KILL_ENABLED, false)
+                                .apply();
                         binding.switchAutoKill.setChecked(false);
                         stopService(new Intent(SettingsActivity.this, ShappkyService.class));
                         AutoKillWorker.cancel(SettingsActivity.this);
@@ -511,7 +573,7 @@ public class SettingsActivity extends BaseActivity {
         }
         group.check(1000 + autoKillManager.getAutoKillType());
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setCustomTitle(titleView)
                 .setView(bodyView)
                 .create();
@@ -525,10 +587,11 @@ public class SettingsActivity extends BaseActivity {
             dialog.dismiss();
         });
         dialog.show();
+        resetDialogButtonColors(dialog);
     }
 
     private void showAutoKillTypeHelpDialog(Runnable onBack) {
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_auto_kill_type_help_title))
                 .setMessage(getString(R.string.settings_auto_kill_type_help_message))
                 .setPositiveButton(getString(R.string.dialog_ok_got_it), (d, w) -> {
@@ -537,6 +600,7 @@ public class SettingsActivity extends BaseActivity {
                 })
                 .create();
         dialog.show();
+        resetDialogButtonColors(dialog);
     }
 
     private void showKillModeDialog() {
@@ -549,15 +613,15 @@ public class SettingsActivity extends BaseActivity {
                     autoKillManager.setKillMode(which);
                     updateKillModeVisibility();
                     if (which == 0) {
-                        boolean autoKillEnabled = sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+                        boolean autoKillEnabled = getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
                         Set<String> whitelistedApps = sharedPreferences.getStringSet(KEY_WHITELISTED_APPS, new HashSet<>());
                         if (autoKillEnabled && whitelistedApps.isEmpty()) {
-                            new AlertDialog.Builder(this)
+                            resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                                     .setTitle(R.string.dialog_unsafe_whitelist_title)
                                     .setMessage(R.string.dialog_unsafe_whitelist_message)
                                     .setPositiveButton(R.string.dialog_unsafe_whitelist_ok, (d, w) -> d.dismiss())
                                     .setCancelable(false)
-                                    .show();
+                                    .show());
                         }
                     }
                 });
@@ -571,16 +635,15 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_blacklist_dialog_title))
                 .setView(dialogView)
                 .create();
-        dialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
         searchBox.setVisibility(View.GONE);
         dialog.show();
+        resetDialogButtonColors(dialog);
 
         appManager.loadAllApps(allApps -> {
             allApps = filterOutProtected(allApps);
@@ -621,12 +684,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog whitelistDialog = new AlertDialog.Builder(this)
+        AlertDialog whitelistDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_whitelist_dialog_title))
                 .setView(dialogView)
                 .create();
-        whitelistDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         whitelistDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         whitelistDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -634,6 +695,7 @@ public class SettingsActivity extends BaseActivity {
         listView.setVisibility(View.GONE);
         searchBox.setVisibility(View.GONE);
         whitelistDialog.show();
+        resetDialogButtonColors(whitelistDialog);
 
         appManager.loadAllApps(allApps -> {
             allApps = filterOutProtected(allApps);
@@ -676,12 +738,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog filterDialog = new AlertDialog.Builder(this)
+        AlertDialog filterDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_hidden_apps_dialog_title))
                 .setView(dialogView)
                 .create();
-        filterDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         filterDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         filterDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -689,6 +749,7 @@ public class SettingsActivity extends BaseActivity {
         listView.setVisibility(View.GONE);
         searchBox.setVisibility(View.GONE);
         filterDialog.show();
+        resetDialogButtonColors(filterDialog);
 
         appManager.loadAllApps(allApps -> {
             Set<String> hiddenApps = appManager.getHiddenApps();
@@ -733,12 +794,10 @@ public class SettingsActivity extends BaseActivity {
         View titleView = inflater.inflate(R.layout.dialog_backgroundrest_help, null);
         ((TextView) titleView.findViewById(R.id.dialog_title)).setText(R.string.settings_background_restriction_title);
 
-        AlertDialog restrictionDialog = new AlertDialog.Builder(this)
+        AlertDialog restrictionDialog = new MaterialAlertDialogBuilder(this)
                 .setCustomTitle(titleView)
                 .setView(dialogView)
                 .create();
-        restrictionDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         restrictionDialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (dialog, which) -> dialog.dismiss());
         restrictionDialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (dialog, which) -> {});
 
@@ -746,6 +805,7 @@ public class SettingsActivity extends BaseActivity {
         listView.setVisibility(View.GONE);
         searchBox.setVisibility(View.GONE);
         restrictionDialog.show();
+        resetDialogButtonColors(restrictionDialog);
 
         titleView.findViewById(R.id.btn_help).setOnClickListener(v -> {
             restrictionDialog.dismiss();
@@ -757,15 +817,19 @@ public class SettingsActivity extends BaseActivity {
             List<AppModel> allApps = filterOutProtected(rawApps);
             Set<String> desiredRestrictedApps = appManager.getBackgroundRestrictedApps();
             Set<String> hardRestrictedApps    = appManager.getHardRestrictedApps();
+            Set<String> mediumRestrictedApps  = appManager.getMediumRestrictedApps();
             Set<String> manualRestrictedApps  = appManager.getManualRestrictedApps();
             java.util.Map<String, Integer> initialMasks = buildInitialManualMasks(manualRestrictedApps);
+            java.util.Map<String, Integer> initialBuckets = buildInitialManualBuckets(manualRestrictedApps);
 
             FilterAppsAdapter filterAdapter = new FilterAppsAdapter(
                     this, allApps,
                     desiredRestrictedApps,
                     hardRestrictedApps,
+                    mediumRestrictedApps,
                     manualRestrictedApps,
-                    initialMasks);
+                    initialMasks,
+                    initialBuckets);
             if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
                 filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
@@ -793,16 +857,23 @@ public class SettingsActivity extends BaseActivity {
             });
 
             Runnable doApply = () -> {
-                Set<String> targetPackages = filterAdapter.getSelectedPackages();
-                Set<String> hardPackages   = filterAdapter.getHardRestrictedPackages();
-                Set<String> manualPackages = filterAdapter.getManualRestrictedPackages();
-                java.util.Map<String, Integer> opsMasks = filterAdapter.getManualOpsMasks();
-
+                Set<String> targetPackages  = filterAdapter.getSelectedPackages();
+                Set<String> hardPackages    = filterAdapter.getHardRestrictedPackages();
+                Set<String> mediumPackages  = filterAdapter.getMediumRestrictedPackages();
+                Set<String> manualPackages  = filterAdapter.getManualRestrictedPackages();
+                java.util.Map<String, Integer> opsMasks    = filterAdapter.getManualOpsMasks();
+                java.util.Map<String, Integer> buckets     = filterAdapter.getManualBuckets();
 
                 for (java.util.Map.Entry<String, Integer> e : opsMasks.entrySet()) {
                     appManager.saveManualOpsMask(e.getKey(), e.getValue());
                 }
+                for (java.util.Map.Entry<String, Integer> e : buckets.entrySet()) {
+                    appManager.saveManualBucket(e.getKey(), e.getValue());
+                }
 
+                Set<String> newMediumSet = new java.util.HashSet<>(mediumPackages);
+                newMediumSet.retainAll(targetPackages);
+                appManager.saveMediumRestrictedApps(newMediumSet);
 
                 Set<String> newManualSet = new java.util.HashSet<>(manualPackages);
                 newManualSet.retainAll(targetPackages);
@@ -818,21 +889,21 @@ public class SettingsActivity extends BaseActivity {
                 }
 
                 if (systemAppCount > 0) {
-                    new AlertDialog.Builder(SettingsActivity.this)
+                    resetDialogButtonColors(new MaterialAlertDialogBuilder(SettingsActivity.this)
                             .setTitle(getString(R.string.settings_restriction_system_apps_title))
                             .setMessage(getString(R.string.settings_restriction_system_apps_message, systemAppCount))
                             .setPositiveButton(getString(R.string.settings_restriction_system_apps_confirm), (d2, w2) ->
                                     appManager.applyBackgroundRestriction(targetPackages, hardPackages, null))
                             .setNegativeButton(getString(R.string.dialog_cancel), null)
-                            .show();
+                            .show());
                 } else if (!packagesToRestrict.isEmpty()) {
-                    new AlertDialog.Builder(SettingsActivity.this)
+                    resetDialogButtonColors(new MaterialAlertDialogBuilder(SettingsActivity.this)
                             .setTitle(getString(R.string.settings_restriction_warning_title))
                             .setMessage(getString(R.string.settings_restriction_warning_message))
                             .setPositiveButton(getString(R.string.dialog_apply), (d2, w2) ->
                                     appManager.applyBackgroundRestriction(targetPackages, hardPackages, null))
                             .setNegativeButton(getString(R.string.dialog_cancel), null)
-                            .show();
+                            .show());
                 } else {
                     appManager.applyBackgroundRestriction(targetPackages, hardPackages, null);
                 }
@@ -850,12 +921,25 @@ public class SettingsActivity extends BaseActivity {
         return masks;
     }
 
+    private java.util.Map<String, Integer> buildInitialManualBuckets(Set<String> manualPackages) {
+        java.util.Map<String, Integer> buckets = new java.util.HashMap<>();
+        for (String pkg : manualPackages) {
+            int bucket = appManager.getManualBucket(pkg);
+            if (bucket != 0) buckets.put(pkg, bucket);
+        }
+        return buckets;
+    }
+
     private void showRestrictionTypeHelpDialog(Runnable onBack) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         int start = sb.length();
         sb.append(getString(R.string.bgrest_help_soft_title));
         sb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), start, sb.length(), 0);
         sb.append("\n").append(getString(R.string.bgrest_help_soft_body)).append("\n\n\n\n");
+        start = sb.length();
+        sb.append(getString(R.string.bgrest_help_medium_title));
+        sb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), start, sb.length(), 0);
+        sb.append("\n").append(getString(R.string.bgrest_help_medium_body)).append("\n\n\n\n");
         start = sb.length();
         sb.append(getString(R.string.bgrest_help_hard_title));
         sb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), start, sb.length(), 0);
@@ -865,7 +949,7 @@ public class SettingsActivity extends BaseActivity {
         sb.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), start, sb.length(), 0);
         sb.append("\n").append(getString(R.string.bgrest_help_manual_body));
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.dialog_backgroundrest_title))
                 .setMessage(sb)
                 .setPositiveButton(getString(R.string.dialog_ok_got_it), (d, w) -> {
@@ -874,6 +958,7 @@ public class SettingsActivity extends BaseActivity {
                 })
                 .create();
         dialog.show();
+        resetDialogButtonColors(dialog);
         TextView messageView = dialog.findViewById(android.R.id.message);
         if (messageView != null) messageView.setText(sb);
     }
@@ -907,11 +992,10 @@ public class SettingsActivity extends BaseActivity {
         EditText searchBox = dialogView.findViewById(R.id.filter_search);
         LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_sleep_mode_apps_dialog_title))
                 .setView(dialogView)
                 .create();
-        dialog.getWindow().setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
 
@@ -920,11 +1004,13 @@ public class SettingsActivity extends BaseActivity {
         searchBox.setVisibility(View.GONE);
         filterOptions.setVisibility(View.GONE);
         dialog.show();
+        resetDialogButtonColors(dialog);
 
         sleepModeManager.loadSleepModeApps(allApps -> {
             allApps = filterOutProtected(allApps);
-            Set<String> sleepModeApps = sleepModeManager.getSleepModeApps();
-            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, sleepModeApps);
+            Set<String> timerApps = sleepModeManager.getSleepModeApps();
+            Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
+            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, timerApps, permanentApps, true);
             if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
                 filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
@@ -940,8 +1026,13 @@ public class SettingsActivity extends BaseActivity {
                 @Override public void afterTextChanged(android.text.Editable s) {}
             });
 
-            dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) ->
-                    sleepModeManager.saveSleepModeApps(filterAdapter.getSelectedPackages()));
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                sleepModeManager.saveSleepModeApps(
+                        filterAdapter.getTimerPackages(),
+                        filterAdapter.getPermanentPackages(),
+                        null);
+                dialog.dismiss();
+            });
         });
     }
 
@@ -955,14 +1046,14 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void showRamThresholdDialog() {
-        int current = sharedPreferences.getInt(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
+        int current = getAutoKillIntPref(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
         int selected = 1;
         for (int i = 0; i < RAM_THRESHOLD_VALUES.length; i++) {
             if (RAM_THRESHOLD_VALUES[i] == current) { selected = i; break; }
         }
         showSingleChoiceDialog(getString(R.string.settings_ram_threshold_dialog_title),
                 getResources().getStringArray(R.array.settings_ram_threshold_labels), selected, which -> {
-                    sharedPreferences.edit().putInt(KEY_RAM_THRESHOLD, RAM_THRESHOLD_VALUES[which]).apply();
+                    putAutoKillIntPref(KEY_RAM_THRESHOLD, RAM_THRESHOLD_VALUES[which]);
                     updateRamThresholdText(RAM_THRESHOLD_VALUES[which]);
                 });
     }
@@ -1069,30 +1160,86 @@ public class SettingsActivity extends BaseActivity {
                 : (currentAccent == ACCENT_CUSTOM) ? 1
                 : currentAccent + 1;
 
-        showSingleChoiceDialog(getString(R.string.settings_accent_title), allLabels, selectedIndex, which -> {
+        android.view.View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        android.widget.TextView titleView = view.findViewById(R.id.single_choice_title);
+        android.widget.RadioGroup group = view.findViewById(R.id.single_choice_group);
+
+        titleView.setText(getString(R.string.settings_accent_title));
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor())
+                : null;
+
+        final AlertDialog[] dialogRef = {null};
+
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+        for (int i = 0; i < allLabels.length; i++) {
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(allLabels[i]);
+            rb.setId(1000 + i);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+            rb.setLayoutParams(lp);
+            if (tint != null) rb.setButtonTintList(tint);
+            if (i == 1) {
+                rb.setOnClickListener(v -> {
+                    if (rb.getId() == group.getCheckedRadioButtonId()) {
+                        openCustomColorPicker(dialogRef[0]);
+                    }
+                });
+            }
+            group.addView(rb);
+        }
+        group.check(1000 + selectedIndex);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(view)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .create();
+
+        dialogRef[0] = dialog;
+
+        final boolean[] userInteracted = {false};
+        group.setOnCheckedChangeListener((g, checkedId) -> {
+            if (!userInteracted[0] || checkedId == -1) return;
+            int which = checkedId - 1000;
             if (which == 0) {
                 sharedPreferences.edit().putInt(KEY_ACCENT, ACCENT_SYSTEM).apply();
                 updateAccentText(ACCENT_SYSTEM);
                 updateOnColorLayoutVisibility(ACCENT_SYSTEM);
+                dialog.dismiss();
                 recreate();
             } else if (which == 1) {
-                int currentCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-                ColorPickerDialog.show(this, currentCustomColor, pickedColor -> {
-                    sharedPreferences.edit()
-                            .putInt(KEY_ACCENT, ACCENT_CUSTOM)
-                            .putInt(KEY_ACCENT_CUSTOM_COLOR, pickedColor)
-                            .apply();
-                    updateAccentText(ACCENT_CUSTOM);
-                    updateOnColorLayoutVisibility(ACCENT_CUSTOM);
-                    recreate();
-                });
+                openCustomColorPicker(dialog);
             } else {
                 int accentValue = which - 1;
                 sharedPreferences.edit().putInt(KEY_ACCENT, accentValue).apply();
                 updateAccentText(accentValue);
                 updateOnColorLayoutVisibility(accentValue);
+                dialog.dismiss();
                 recreate();
             }
+        });
+        view.post(() -> userInteracted[0] = true);
+
+        dialog.show();
+        resetDialogButtonColors(dialog);
+    }
+
+    private void openCustomColorPicker(AlertDialog parentDialog) {
+        if (parentDialog != null) parentDialog.dismiss();
+        int currentCustomColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        ColorPickerDialog.show(this, currentCustomColor, pickedColor -> {
+            sharedPreferences.edit()
+                    .putInt(KEY_ACCENT, ACCENT_CUSTOM)
+                    .putInt(KEY_ACCENT_CUSTOM_COLOR, pickedColor)
+                    .apply();
+            updateAccentText(ACCENT_CUSTOM);
+            updateOnColorLayoutVisibility(ACCENT_CUSTOM);
+            recreate();
         });
     }
 
@@ -1142,14 +1289,14 @@ public class SettingsActivity extends BaseActivity {
 
     private void showKillIntervalDialog() {
         if (!binding.switchAutoKill.isChecked() || !binding.switchPeriodicKill.isChecked()) return;
-        int currentInterval = sharedPreferences.getInt(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS);
+        int currentInterval = getAutoKillIntPref(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS);
         int selectedIndex = 1;
         for (int i = 0; i < KILL_INTERVALS_MS.length; i++) {
             if (KILL_INTERVALS_MS[i] == currentInterval) { selectedIndex = i; break; }
         }
         showSingleChoiceDialog(getString(R.string.settings_check_frequency_title),
                 getResources().getStringArray(R.array.settings_kill_interval_labels), selectedIndex, which -> {
-                    sharedPreferences.edit().putInt(KEY_KILL_INTERVAL, KILL_INTERVALS_MS[which]).apply();
+                    putAutoKillIntPref(KEY_KILL_INTERVAL, KILL_INTERVALS_MS[which]);
                     updateKillIntervalText(KILL_INTERVALS_MS[which]);
                 });
     }
@@ -1164,27 +1311,49 @@ public class SettingsActivity extends BaseActivity {
     }
 
     private void setupFilterListeners(View dialogView, FilterAppsAdapter adapter) {
-        CheckBox chkSystem = dialogView.findViewById(R.id.filter_chk_system);
-        CheckBox chkUser = dialogView.findViewById(R.id.filter_chk_user);
-        CheckBox chkRunning = dialogView.findViewById(R.id.filter_chk_running);
-        android.widget.TextView btnClear = dialogView.findViewById(R.id.filter_btn_clear);
+        TextView btnSort = dialogView.findViewById(R.id.filter_btn_sort);
+        TextView btnClear = dialogView.findViewById(R.id.filter_btn_clear);
 
-        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        if (accent == ACCENT_CUSTOM) {
-            android.content.res.ColorStateList tint =
-                    android.content.res.ColorStateList.valueOf(getDialogAccentColor());
-            chkSystem.setButtonTintList(tint);
-            chkUser.setButtonTintList(tint);
-            chkRunning.setButtonTintList(tint);
-            btnClear.setTextColor(getDialogAccentColor());
+        if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM) {
+            int color = getDialogAccentColor();
+            btnSort.setTextColor(color);
+            btnClear.setTextColor(color);
         }
 
-        android.widget.CompoundButton.OnCheckedChangeListener listener = (buttonView, isChecked) ->
-                adapter.setFilters(chkSystem.isChecked(), chkUser.isChecked(), chkRunning.isChecked());
-        chkSystem.setOnCheckedChangeListener(listener);
-        chkUser.setOnCheckedChangeListener(listener);
-        chkRunning.setOnCheckedChangeListener(listener);
+        final boolean[] showSystem  = {false};
+        final boolean[] showUser    = {true};
+        final boolean[] showRunning = {false};
+
+        updateSortButtonText(btnSort, false);
+
+        btnSort.setOnClickListener(v -> {
+            PopupMenu popup = new PopupMenu(this, btnSort);
+            popup.getMenu().add(0, 0, 0, getString(R.string.filter_system))
+                    .setCheckable(true).setChecked(showSystem[0]);
+            popup.getMenu().add(0, 1, 1, getString(R.string.filter_user))
+                    .setCheckable(true).setChecked(showUser[0]);
+            popup.getMenu().add(0, 2, 2, getString(R.string.filter_running))
+                    .setCheckable(true).setChecked(showRunning[0]);
+            popup.setOnMenuItemClickListener(item -> {
+                switch (item.getItemId()) {
+                    case 0: showSystem[0]  = !showSystem[0];  item.setChecked(showSystem[0]);  break;
+                    case 1: showUser[0]    = !showUser[0];    item.setChecked(showUser[0]);    break;
+                    case 2: showRunning[0] = !showRunning[0]; item.setChecked(showRunning[0]); break;
+                }
+                adapter.setFilters(showSystem[0], showUser[0], showRunning[0]);
+                return true;
+            });
+            popup.setOnDismissListener(d -> updateSortButtonText(btnSort, false));
+            updateSortButtonText(btnSort, true);
+            popup.show();
+        });
+
         btnClear.setOnClickListener(v -> adapter.clearSelection());
+    }
+
+    private void updateSortButtonText(TextView btn, boolean open) {
+        String label = getString(R.string.filter_sort_button);
+        btn.setText(open ? label + "  ▲" : label + "  ▼");
     }
 
     private List<AppModel> filterOutProtected(List<AppModel> apps) {
@@ -1230,14 +1399,13 @@ public class SettingsActivity extends BaseActivity {
         android.widget.LinearLayout listContainer =
                 dialogView.findViewById(R.id.scheduler_list_container);
 
-        AlertDialog mainDialog = new AlertDialog.Builder(this)
+        AlertDialog mainDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_restrictions_scheduler_title))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_ok), (d, w) -> d.dismiss())
                 .create();
-        mainDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         mainDialog.show();
+        resetDialogButtonColors(mainDialog);
 
         for (SchedulerAppItem item : items) {
             View row = inflater.inflate(R.layout.item_scheduler_app, listContainer, false);
@@ -1322,6 +1490,7 @@ public class SettingsActivity extends BaseActivity {
         android.widget.RadioGroup rgAction = dialogView.findViewById(R.id.scheduler_rg_action);
         LinearLayout componentContainer   = dialogView.findViewById(R.id.scheduler_component_container);
         TextView btnComponent             = dialogView.findViewById(R.id.scheduler_btn_component);
+        CheckBox cbSetBucket              = dialogView.findViewById(R.id.scheduler_cb_set_bucket_active);
 
 
         boolean hadLaunch = onActivateAction[0] != RestrictionsScheduler.ON_ACTIVATE_NOTHING
@@ -1331,6 +1500,7 @@ public class SettingsActivity extends BaseActivity {
         btnComponent.setText(selectedComponent[0] != null
                 ? shortComponentName(selectedComponent[0])
                 : getString(R.string.scheduler_component_not_selected));
+        cbSetBucket.setChecked(src != null && src.setBucketActive);
 
         rgAction.setOnCheckedChangeListener((rg, id) -> {
             if (id == R.id.scheduler_rb_launch) {
@@ -1350,7 +1520,7 @@ public class SettingsActivity extends BaseActivity {
                 showComponentPickerDialog(item.packageName, selectedComponent, selectedCompType,
                         onActivateAction, btnComponent));
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this)
+        AlertDialog.Builder builder = new MaterialAlertDialogBuilder(this)
                 .setTitle(item.appName)
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_save), null)
@@ -1360,9 +1530,8 @@ public class SettingsActivity extends BaseActivity {
         }
 
         AlertDialog entryDialog = builder.create();
-        entryDialog.getWindow().setBackgroundDrawable(
-                new ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
         entryDialog.show();
+        resetDialogButtonColors(entryDialog);
 
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         if (accent == ACCENT_CUSTOM) {
@@ -1371,6 +1540,7 @@ public class SettingsActivity extends BaseActivity {
             cbAutoKill.setButtonTintList(tint);
             cbBg.setButtonTintList(tint);
             cbSleep.setButtonTintList(tint);
+            cbSetBucket.setButtonTintList(tint);
             for (int i = 0; i < rgAction.getChildCount(); i++) {
                 android.view.View child = rgAction.getChildAt(i);
                 if (child instanceof android.widget.RadioButton)
@@ -1407,6 +1577,7 @@ public class SettingsActivity extends BaseActivity {
             e.onActivateAction = onActivateAction[0];
             e.componentName    = (onActivateAction[0] != RestrictionsScheduler.ON_ACTIVATE_NOTHING)
                     ? selectedComponent[0] : null;
+            e.setBucketActive  = cbSetBucket.isChecked();
             e.enabled          = true;
 
             boolean ok = (src != null) ? scheduler.updateSchedule(e) : scheduler.addSchedule(e);
@@ -1496,7 +1667,7 @@ public class SettingsActivity extends BaseActivity {
                         .map(i -> i[0])
                         .toArray(String[]::new);
 
-                new AlertDialog.Builder(this)
+                resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.scheduler_component_picker_title))
                         .setItems(labels, (d, which) -> {
                             String[] chosen = items.get(which);
@@ -1506,7 +1677,7 @@ public class SettingsActivity extends BaseActivity {
                             btnComponent.setText(shortComponentName(chosen[1]));
                         })
                         .setNegativeButton(getString(R.string.dialog_close), null)
-                        .show();
+                        .show());
             });
         });
     }
@@ -1536,6 +1707,7 @@ public class SettingsActivity extends BaseActivity {
         dst.endMinute        = src.endMinute;
         dst.protectFlags     = src.protectFlags;
         dst.onActivateAction = src.onActivateAction;
+        dst.setBucketActive  = src.setBucketActive;
         dst.enabled          = src.enabled;
         return dst;
     }
@@ -1576,13 +1748,13 @@ public class SettingsActivity extends BaseActivity {
                 getString(R.string.settings_backup_option_save),
                 getString(R.string.settings_backup_option_restore)
         };
-        new AlertDialog.Builder(this)
+        resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_backup_restore_title))
                 .setItems(options, (dialog, which) -> {
                     if (which == 0) createBackupLauncher.launch("appzuku_backup.json");
                     else restoreBackupLauncher.launch(new String[]{"application/json"});
                 })
-                .show();
+                .show());
     }
 
     private void exportBackup(Uri uri) {
@@ -1675,7 +1847,7 @@ public class SettingsActivity extends BaseActivity {
         }
         group.check(1000 + selected);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(view)
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
                 .create();
@@ -1689,6 +1861,17 @@ public class SettingsActivity extends BaseActivity {
         view.post(() -> userInteracted[0] = true);
 
         dialog.show();
+        resetDialogButtonColors(dialog);
+    }
+
+    private void resetDialogButtonColors(AlertDialog dialog) {
+        int color = ContextCompat.getColor(this, R.color.dialog_button_text);
+        android.widget.Button btnPos = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+        android.widget.Button btnNeg = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
+        android.widget.Button btnNeu = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
+        if (btnPos != null) btnPos.setTextColor(color);
+        if (btnNeg != null) btnNeg.setTextColor(color);
+        if (btnNeu != null) btnNeu.setTextColor(color);
     }
 
     private int getDialogAccentColor() {
@@ -1713,14 +1896,17 @@ public class SettingsActivity extends BaseActivity {
             int killMode = sharedPreferences.getInt(KEY_KILL_MODE, 0);
             Set<String> whitelistedApps = sharedPreferences.getStringSet(KEY_WHITELISTED_APPS, new HashSet<>());
             if (killMode == 0 && whitelistedApps.isEmpty()) {
-                sharedPreferences.edit().putBoolean(KEY_AUTO_KILL_ENABLED, false).apply();
+                sharedPreferences.edit()
+                        .putBoolean(KEY_AUTO_KILL_ENABLED, false)
+                        .putBoolean(PresetManager.KEY_BACKUP_PREFIX + KEY_AUTO_KILL_ENABLED, false)
+                        .apply();
                 if (binding.switchAutoKill != null) binding.switchAutoKill.setChecked(false);
-                new AlertDialog.Builder(this)
+                resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.dialog_unsafe_whitelist_title)
                         .setMessage(R.string.dialog_unsafe_whitelist_message)
                         .setPositiveButton(R.string.dialog_unsafe_whitelist_ok, (dialog, which) -> dialog.dismiss())
                         .setCancelable(false)
-                        .show();
+                        .show());
                 stopService(new Intent(this, ShappkyService.class));
                 AutoKillWorker.cancel(this);
                 return;
@@ -1731,6 +1917,488 @@ public class SettingsActivity extends BaseActivity {
             stopService(new Intent(this, ShappkyService.class));
             AutoKillWorker.cancel(this);
         }
+    }
+
+    private void showEasterEggDialog() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(android.view.Gravity.CENTER);
+        int pad = (int) (getResources().getDisplayMetrics().density * 24);
+        layout.setPadding(pad, pad, pad, pad);
+
+        ImageView imageView = new ImageView(this);
+        imageView.setImageResource(R.drawable.settings_page_info);
+        int size = (int) (getResources().getDisplayMetrics().density * 220);
+        LinearLayout.LayoutParams imgParams = new LinearLayout.LayoutParams(size, size);
+        imageView.setLayoutParams(imgParams);
+        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        layout.addView(imageView);
+
+        TextView textView = new TextView(this);
+        textView.setText(getString(R.string.easter_egg_hunter));
+        textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        textView.setGravity(android.view.Gravity.CENTER);
+        LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        tvParams.topMargin = (int) (getResources().getDisplayMetrics().density * 16);
+        textView.setLayoutParams(tvParams);
+        layout.addView(textView);
+
+        resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
+                .setView(layout)
+                .setPositiveButton(getString(R.string.dialog_ok), null)
+                .show());
+    }
+
+    private void loadAdditionalScenariosSettings() {
+        updateAdditionalScenariosSummary();
+    }
+
+    private void setupAdditionalScenariosListeners() {
+        binding.layoutAdditionalScenarios.setOnClickListener(v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAdditionalScenariosDialog();
+        });
+        binding.layoutPresets.setOnClickListener(v -> showPresetPickerDialog());
+        binding.layoutAddShortcut.setOnClickListener(v -> ramKillShortcutManager.requestPinShortcut());
+    }
+
+    private void updateAdditionalScenariosSummary() {
+        List<String> active = new ArrayList<>();
+        if (additionalScenariosManager.isHeadsetTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_headset_short));
+        if (additionalScenariosManager.isUsbTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_usb_short));
+        if (additionalScenariosManager.isChargerTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_charger_short));
+        if (additionalScenariosManager.isWifiTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_wifi_short));
+        if (additionalScenariosManager.isBluetoothTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_bluetooth_short));
+        if (additionalScenariosManager.isGpsTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_gps_short));
+        if (additionalScenariosManager.isHotspotTriggerEnabled())
+            active.add(getString(R.string.scenarios_hw_hotspot_short));
+        if (additionalScenariosManager.isAppLaunchTriggerEnabled())
+            active.add(getString(R.string.scenarios_app_launch_short));
+
+        if (active.isEmpty()) {
+            binding.textAdditionalScenariosSummary.setText(getString(R.string.scenarios_summary_none));
+        } else {
+            binding.textAdditionalScenariosSummary.setText(android.text.TextUtils.join(", ", active));
+        }
+    }
+
+    private void showPresetPickerDialog() {
+        PresetManager presetManager = new PresetManager(this);
+        int activePreset = presetManager.getActivePresetNumber();
+
+        View view = getLayoutInflater().inflate(R.layout.dialog_single_choice, null);
+        TextView titleView = view.findViewById(R.id.single_choice_title);
+        RadioGroup group = view.findViewById(R.id.single_choice_group);
+        titleView.setText(getString(R.string.settings_presets_title));
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        android.content.res.ColorStateList tint = (accent == ACCENT_CUSTOM)
+                ? android.content.res.ColorStateList.valueOf(getDialogAccentColor()) : null;
+
+        int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp12 = (int) (getResources().getDisplayMetrics().density * 12);
+
+        for (int presetNumber : new int[]{ PresetModel.PRESET_1, PresetModel.PRESET_2 }) {
+            String name = presetManager.presetExists(presetNumber)
+                    ? presetManager.getPresetName(presetNumber)
+                    : getString(R.string.preset_title, presetNumber);
+
+            android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+            row.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT));
+
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setText(name);
+            rb.setId(1000 + presetNumber);
+            rb.setPadding(dp12, dp12, dp12, dp12);
+            rb.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                    0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            if (tint != null) rb.setButtonTintList(tint);
+            row.addView(rb);
+
+            if (activePreset == presetNumber) {
+                TextView badge = new TextView(this);
+                badge.setText(getString(R.string.preset_badge_active));
+                badge.setTextSize(11);
+                badge.setTextColor(Color.WHITE);
+                badge.setBackground(buildBadgeBackground());
+                badge.setPadding(dp8, dp8 / 2, dp8, dp8 / 2);
+                android.widget.LinearLayout.LayoutParams badgeLp =
+                        new android.widget.LinearLayout.LayoutParams(
+                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                badgeLp.setMarginEnd(dp12);
+                badge.setLayoutParams(badgeLp);
+                row.addView(badge);
+            }
+
+            group.addView(row);
+        }
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(view)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .create();
+
+        for (int i = 0; i < group.getChildCount(); i++) {
+            android.view.View row = group.getChildAt(i);
+            android.widget.RadioButton rb = findRadioButton(row);
+            if (rb == null) continue;
+            int presetNumber = rb.getId() - 1000;
+
+            android.view.View.OnClickListener openPreset = v -> {
+                dialog.dismiss();
+                Intent intent = new Intent(this, PresetSettingsActivity.class);
+                intent.putExtra(PresetSettingsActivity.EXTRA_PRESET_NUMBER, presetNumber);
+                startActivity(intent);
+            };
+            row.setOnClickListener(openPreset);
+            rb.setOnClickListener(openPreset);
+        }
+
+        dialog.show();
+        resetDialogButtonColors(dialog);
+    }
+
+    private android.widget.RadioButton findRadioButton(android.view.View view) {
+        if (view instanceof android.widget.RadioButton) return (android.widget.RadioButton) view;
+        if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                android.widget.RadioButton found = findRadioButton(group.getChildAt(i));
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    private android.graphics.drawable.GradientDrawable buildBadgeBackground() {
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(32f);
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            bg.setColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
+        } else {
+            bg.setColor(0xFF388E3C);
+        }
+        return bg;
+    }
+
+    private void showAdditionalScenariosDialog() {
+        int dp4 = (int) (getResources().getDisplayMetrics().density * 4);
+        int dp8 = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
+        int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
+
+        LinearLayout.LayoutParams cbParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        cbParams.setMarginStart(dp16);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean isCustomAccent = accent == ACCENT_CUSTOM;
+        int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        android.content.res.ColorStateList checkboxTint = isCustomAccent
+                ? android.content.res.ColorStateList.valueOf(customColor) : null;
+        int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        int buttonTextColor = isCustomAccent
+                ? ((onColor == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE)
+                : ContextCompat.getColor(this, R.color.dialog_button_text);
+
+        TypedValue tv = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.textColorPrimary, tv, true);
+        int colorPrimary = ContextCompat.getColor(this, tv.resourceId);
+        getTheme().resolveAttribute(android.R.attr.textColorSecondary, tv, true);
+        int colorSecondary = ContextCompat.getColor(this, tv.resourceId);
+        getTheme().resolveAttribute(com.google.android.material.R.attr.colorSecondary, tv, true);
+        int colorAccent = isCustomAccent ? customColor : tv.data;
+        getTheme().resolveAttribute(android.R.attr.colorControlHighlight, tv, true);
+        int colorDivider = tv.data;
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp8, 0, dp8);
+
+        TextView headerHw = new TextView(this);
+        headerHw.setText(getString(R.string.scenarios_hardware_events_title));
+        headerHw.setTextSize(12);
+        headerHw.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerHw.setTextColor(colorAccent);
+        headerHw.setPadding(dp24, dp8, dp24, dp4);
+        root.addView(headerHw);
+
+        CheckBox cbHeadset = new CheckBox(this);
+        cbHeadset.setText(getString(R.string.scenarios_hw_headset));
+        cbHeadset.setChecked(additionalScenariosManager.isHeadsetTriggerEnabled());
+        cbHeadset.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbHeadset.setButtonTintList(checkboxTint);
+        root.addView(cbHeadset);
+
+        CheckBox cbUsb = new CheckBox(this);
+        cbUsb.setText(getString(R.string.scenarios_hw_usb));
+        cbUsb.setChecked(additionalScenariosManager.isUsbTriggerEnabled());
+        cbUsb.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbUsb.setButtonTintList(checkboxTint);
+        root.addView(cbUsb);
+
+        CheckBox cbCharger = new CheckBox(this);
+        cbCharger.setText(getString(R.string.scenarios_hw_charger));
+        cbCharger.setChecked(additionalScenariosManager.isChargerTriggerEnabled());
+        cbCharger.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbCharger.setButtonTintList(checkboxTint);
+        root.addView(cbCharger);
+
+        CheckBox cbWifi = new CheckBox(this);
+        cbWifi.setText(getString(R.string.scenarios_hw_wifi));
+        cbWifi.setChecked(additionalScenariosManager.isWifiTriggerEnabled());
+        cbWifi.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbWifi.setButtonTintList(checkboxTint);
+        root.addView(cbWifi);
+
+        CheckBox cbBluetooth = new CheckBox(this);
+        cbBluetooth.setText(getString(R.string.scenarios_hw_bluetooth));
+        cbBluetooth.setChecked(additionalScenariosManager.isBluetoothTriggerEnabled());
+        cbBluetooth.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbBluetooth.setButtonTintList(checkboxTint);
+        root.addView(cbBluetooth);
+
+        CheckBox cbGps = new CheckBox(this);
+        cbGps.setText(getString(R.string.scenarios_hw_gps));
+        cbGps.setChecked(additionalScenariosManager.isGpsTriggerEnabled());
+        cbGps.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbGps.setButtonTintList(checkboxTint);
+        root.addView(cbGps);
+
+        CheckBox cbHotspot = new CheckBox(this);
+        cbHotspot.setText(getString(R.string.scenarios_hw_hotspot));
+        cbHotspot.setChecked(additionalScenariosManager.isHotspotTriggerEnabled());
+        cbHotspot.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbHotspot.setButtonTintList(checkboxTint);
+        root.addView(cbHotspot);
+
+        TextView noteHw = new TextView(this);
+        noteHw.setText(getString(R.string.scenarios_hw_delay_note));
+        noteHw.setTextSize(12);
+        noteHw.setTextColor(colorSecondary);
+        noteHw.setPadding(dp24, dp4, dp24, dp16);
+        root.addView(noteHw);
+
+        View divider = new View(this);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        dividerParams.setMargins(dp16, 0, dp16, dp16);
+        divider.setLayoutParams(dividerParams);
+        divider.setBackgroundColor(colorDivider);
+        root.addView(divider);
+
+        TextView headerLaunch = new TextView(this);
+        headerLaunch.setText(getString(R.string.scenarios_app_launch_title));
+        headerLaunch.setTextSize(12);
+        headerLaunch.setTypeface(null, android.graphics.Typeface.BOLD);
+        headerLaunch.setTextColor(colorAccent);
+        headerLaunch.setPadding(dp24, dp4, dp24, dp4);
+        root.addView(headerLaunch);
+
+        CheckBox cbAppLaunch = new CheckBox(this);
+        cbAppLaunch.setText(getString(R.string.scenarios_app_launch_enable));
+        cbAppLaunch.setChecked(additionalScenariosManager.isAppLaunchTriggerEnabled());
+        cbAppLaunch.setPadding(dp24, dp8, dp24, dp8);
+        if (checkboxTint != null) cbAppLaunch.setButtonTintList(checkboxTint);
+        root.addView(cbAppLaunch);
+
+        LinearLayout layoutTargetApps = new LinearLayout(this);
+        layoutTargetApps.setOrientation(LinearLayout.VERTICAL);
+        layoutTargetApps.setVisibility(cbAppLaunch.isChecked() ? View.VISIBLE : View.GONE);
+
+        TextView tvTargetAppsLabel = new TextView(this);
+        tvTargetAppsLabel.setText(getString(R.string.scenarios_app_launch_target_apps));
+        tvTargetAppsLabel.setTextSize(14);
+        tvTargetAppsLabel.setTextColor(colorPrimary);
+        tvTargetAppsLabel.setPadding(dp24, dp8, dp24, 0);
+        layoutTargetApps.addView(tvTargetAppsLabel);
+
+        TextView tvTargetAppsList = new TextView(this);
+        tvTargetAppsList.setTextSize(12);
+        tvTargetAppsList.setTextColor(colorSecondary);
+        tvTargetAppsList.setPadding(dp24, dp4, dp24, dp8);
+        TypedValue outValue = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.selectableItemBackground, outValue, true);
+        layoutTargetApps.setBackgroundResource(outValue.resourceId);
+        updateDialogTargetAppsList(tvTargetAppsList);
+        layoutTargetApps.addView(tvTargetAppsList);
+
+        CheckBox cbClearCache = new CheckBox(this);
+        cbClearCache.setText(getString(R.string.scenarios_app_launch_clear_cache));
+        cbClearCache.setChecked(additionalScenariosManager.isAppLaunchClearCacheEnabled());
+        cbClearCache.setPadding(dp4, dp8, dp24, dp8);
+        cbClearCache.setLayoutParams(cbParams);
+        if (checkboxTint != null) cbClearCache.setButtonTintList(checkboxTint);
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            cbClearCache.setEnabled(false);
+            cbClearCache.setAlpha(0.4f);
+        }
+        layoutTargetApps.addView(cbClearCache);
+
+        root.addView(layoutTargetApps);
+
+        cbAppLaunch.setOnCheckedChangeListener((btn, isChecked) ->
+                layoutTargetApps.setVisibility(isChecked ? View.VISIBLE : View.GONE));
+
+        layoutTargetApps.setOnClickListener(v -> showTargetAppsPickerDialog(() ->
+                updateDialogTargetAppsList(tvTargetAppsList)));
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(root);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.section_additional_scenarios))
+                .setView(scrollView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(buttonTextColor);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(buttonTextColor);
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            additionalScenariosManager.setHeadsetTriggerEnabled(cbHeadset.isChecked());
+            additionalScenariosManager.setUsbTriggerEnabled(cbUsb.isChecked());
+            additionalScenariosManager.setChargerTriggerEnabled(cbCharger.isChecked());
+            additionalScenariosManager.setWifiTriggerEnabled(cbWifi.isChecked());
+            additionalScenariosManager.setBluetoothTriggerEnabled(cbBluetooth.isChecked());
+            additionalScenariosManager.setGpsTriggerEnabled(cbGps.isChecked());
+            additionalScenariosManager.setHotspotTriggerEnabled(cbHotspot.isChecked());
+            additionalScenariosManager.updateHardwareReceiverState();
+
+            boolean appLaunchWasOff = !additionalScenariosManager.isAppLaunchTriggerEnabled();
+            additionalScenariosManager.setAppLaunchTriggerEnabled(cbAppLaunch.isChecked());
+            additionalScenariosManager.setAppLaunchClearCacheEnabled(cbClearCache.isChecked());
+
+            if (cbAppLaunch.isChecked() && appLaunchWasOff && !isAccessibilityServiceEnabled()) {
+                showAccessibilityServiceRequiredDialog();
+            }
+
+            updateAdditionalScenariosSummary();
+            dialog.dismiss();
+        });
+    }
+
+    private void updateDialogTargetAppsList(TextView tvTargetAppsList) {
+        Set<String> packages = additionalScenariosManager.getAppLaunchTriggerPackages();
+        if (packages.isEmpty()) {
+            tvTargetAppsList.setText(getString(R.string.scenarios_app_launch_empty));
+            return;
+        }
+        PackageManager pm = getPackageManager();
+        List<String> names = new ArrayList<>();
+        for (String pkg : packages) {
+            try {
+                android.content.pm.ApplicationInfo info = pm.getApplicationInfo(pkg, 0);
+                names.add(pm.getApplicationLabel(info).toString());
+            } catch (PackageManager.NameNotFoundException ignored) {
+                names.add(pkg);
+            }
+        }
+        tvTargetAppsList.setText(android.text.TextUtils.join(", ", names));
+    }
+
+    private void showTargetAppsPickerDialog(Runnable onSaved) {
+        View dialogView = getLayoutInflater().inflate(R.layout.dialog_filter, null);
+        ListView listView = dialogView.findViewById(R.id.filter_list_view);
+        ProgressBar progressBar = dialogView.findViewById(R.id.filter_loading_progress);
+        EditText searchBox = dialogView.findViewById(R.id.filter_search);
+        LinearLayout filterOptions = dialogView.findViewById(R.id.filter_options_container);
+        filterOptions.setVisibility(View.GONE);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.scenarios_app_launch_add_title))
+                .setView(dialogView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dialog_save), (d, w) -> {});
+
+        progressBar.setVisibility(View.VISIBLE);
+        listView.setVisibility(View.GONE);
+        searchBox.setVisibility(View.GONE);
+        dialog.show();
+        int pickerAccent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int pickerButtonColor = (pickerAccent == ACCENT_CUSTOM)
+                ? ((sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE)
+                : ContextCompat.getColor(this, R.color.dialog_button_text);
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(pickerButtonColor);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(pickerButtonColor);
+
+        appManager.loadAllApps(allApps -> {
+            Set<String> currentTargets = additionalScenariosManager.getAppLaunchTriggerPackages();
+            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, currentTargets);
+            if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
+                filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
+            listView.setAdapter(filterAdapter);
+            listView.setOnItemClickListener(null);
+
+            progressBar.setVisibility(View.GONE);
+            listView.setVisibility(View.VISIBLE);
+            searchBox.setVisibility(View.VISIBLE);
+
+            searchBox.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { filterAdapter.getFilter().filter(s); }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                additionalScenariosManager.saveAppLaunchTriggerPackages(filterAdapter.getSelectedPackages());
+                if (onSaved != null) onSaved.run();
+                dialog.dismiss();
+            });
+        });
+    }
+
+    private boolean isAccessibilityServiceEnabled() {
+        String expectedService = getPackageName() + "/" + AppLaunchAccessibilityService.class.getName();
+        String enabledServices = android.provider.Settings.Secure.getString(
+                getContentResolver(), android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+        return enabledServices != null && enabledServices.contains(expectedService);
+    }
+
+    private void showAccessibilityServiceRequiredDialog() {
+        resetDialogButtonColors(new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.scenarios_accessibility_required_title))
+                .setMessage(getString(R.string.scenarios_accessibility_required_message))
+                .setPositiveButton(getString(R.string.scenarios_accessibility_open_settings), (dialog, which) -> {
+                    dialog.dismiss();
+                    startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                })
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .show());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding == null) return;
+        boolean autoKill = getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
+        boolean periodic = getAutoKillPref(KEY_PERIODIC_KILL_ENABLED, false);
+        boolean screenOff = getAutoKillPref(KEY_KILL_ON_SCREEN_OFF, false);
+        boolean ramEnabled = getAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, false);
+        binding.switchAutoKill.setChecked(autoKill);
+        binding.switchPeriodicKill.setChecked(periodic);
+        binding.switchKillScreenOff.setChecked(screenOff);
+        binding.switchRamThreshold.setChecked(ramEnabled);
+        updateAutomationOptionsVisibility(autoKill, periodic);
+        applyServiceDependentState(autoKill);
+        updateRamThresholdLimitVisibility(ramEnabled && autoKill);
     }
 
     @Override

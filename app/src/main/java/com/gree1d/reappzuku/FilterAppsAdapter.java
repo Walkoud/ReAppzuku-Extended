@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,10 +40,13 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     private CharSequence lastConstraint = "";
 
     private final boolean restrictionMode;
+    private final boolean sleepMode;
 
     private final Map<String, BackgroundAppManager.RestrictionType> restrictionTypeMap;
+    private final Map<String, SleepModeManager.FreezeType> freezeTypeMap;
 
     private final Map<String, Integer> manualOpsMaskMap;
+    private final Map<String, Integer> manualBucketMap;
 
     private OnSelectionChangedListener selectionChangedListener;
     private int accentColor = 0;
@@ -56,12 +60,50 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps, Set<String> selectedApps) {
-        this(context, apps, selectedApps, null, null, null, false);
+        this(context, apps, selectedApps, null, null, null, null, null, false, false);
+    }
+
+    public FilterAppsAdapter(Context context, List<AppModel> apps,
+                             Set<String> timerApps, Set<String> permanentApps,
+                             boolean isSleepMode) {
+        this.context = context;
+        this.inflater = LayoutInflater.from(context);
+        this.restrictionMode = false;
+        this.sleepMode = true;
+        this.restrictionTypeMap = new HashMap<>();
+        this.freezeTypeMap = new HashMap<>();
+        this.manualOpsMaskMap = new HashMap<>();
+        this.manualBucketMap = new HashMap<>();
+
+        for (AppModel app : apps) {
+            String pkg = app.getPackageName();
+            if (permanentApps.contains(pkg)) {
+                app.setSelected(true);
+                freezeTypeMap.put(pkg, SleepModeManager.FreezeType.PERMANENT);
+            } else if (timerApps.contains(pkg)) {
+                app.setSelected(true);
+                freezeTypeMap.put(pkg, SleepModeManager.FreezeType.TIMER);
+            }
+        }
+
+        Collections.sort(apps, (app1, app2) -> {
+            if (app1.isSelected() != app2.isSelected()) {
+                return app1.isSelected() ? -1 : 1;
+            }
+            if (app1.isSystemApp() != app2.isSystemApp()) {
+                return app1.isSystemApp() ? 1 : -1;
+            }
+            return app1.getAppName().compareToIgnoreCase(app2.getAppName());
+        });
+
+        this.allApps = apps;
+        this.filteredApps = new ArrayList<>();
+        filterInitialList();
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
                              Set<String> selectedApps, Set<String> hardRestrictedApps) {
-        this(context, apps, selectedApps, hardRestrictedApps, null, null, true);
+        this(context, apps, selectedApps, hardRestrictedApps, null, null, null, null, true, false);
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
@@ -69,20 +111,36 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                              Set<String> hardRestrictedApps,
                              Set<String> manualRestrictedApps,
                              Map<String, Integer> initialMasks) {
-        this(context, apps, selectedApps, hardRestrictedApps, manualRestrictedApps, initialMasks, true);
+        this(context, apps, selectedApps, hardRestrictedApps, null, manualRestrictedApps, initialMasks, null, true, false);
+    }
+
+    public FilterAppsAdapter(Context context, List<AppModel> apps,
+                             Set<String> selectedApps,
+                             Set<String> hardRestrictedApps,
+                             Set<String> mediumRestrictedApps,
+                             Set<String> manualRestrictedApps,
+                             Map<String, Integer> initialMasks,
+                             Map<String, Integer> initialBuckets) {
+        this(context, apps, selectedApps, hardRestrictedApps, mediumRestrictedApps, manualRestrictedApps, initialMasks, initialBuckets, true, false);
     }
 
     private FilterAppsAdapter(Context context, List<AppModel> apps,
                                Set<String> selectedApps,
                                Set<String> hardRestrictedApps,
+                               Set<String> mediumRestrictedApps,
                                Set<String> manualRestrictedApps,
                                Map<String, Integer> initialMasks,
-                               boolean restrictionMode) {
+                               Map<String, Integer> initialBuckets,
+                               boolean restrictionMode,
+                               boolean sleepMode) {
         this.context = context;
         this.inflater = LayoutInflater.from(context);
         this.restrictionMode = restrictionMode;
+        this.sleepMode = sleepMode;
         this.restrictionTypeMap = new HashMap<>();
+        this.freezeTypeMap = new HashMap<>();
         this.manualOpsMaskMap = new HashMap<>();
+        this.manualBucketMap = new HashMap<>();
 
         for (AppModel app : apps) {
             if (selectedApps.contains(app.getPackageName())) {
@@ -96,6 +154,11 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     restrictionTypeMap.put(pkg, BackgroundAppManager.RestrictionType.HARD);
                 }
             }
+            if (mediumRestrictedApps != null) {
+                for (String pkg : mediumRestrictedApps) {
+                    restrictionTypeMap.put(pkg, BackgroundAppManager.RestrictionType.MEDIUM);
+                }
+            }
             if (manualRestrictedApps != null) {
                 for (String pkg : manualRestrictedApps) {
                     restrictionTypeMap.put(pkg, BackgroundAppManager.RestrictionType.MANUAL);
@@ -103,6 +166,9 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             }
             if (initialMasks != null) {
                 manualOpsMaskMap.putAll(initialMasks);
+            }
+            if (initialBuckets != null) {
+                manualBucketMap.putAll(initialBuckets);
             }
         }
 
@@ -131,6 +197,45 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             if (app.isSelected()) selected.add(app.getPackageName());
         }
         return selected;
+    }
+
+    public Set<String> getTimerPackages() {
+        Set<String> result = new HashSet<>();
+        for (AppModel app : allApps) {
+            if (app.isSelected() && freezeTypeMap.getOrDefault(
+                    app.getPackageName(), SleepModeManager.FreezeType.TIMER)
+                    == SleepModeManager.FreezeType.TIMER) {
+                result.add(app.getPackageName());
+            }
+        }
+        return result;
+    }
+
+    public Set<String> getPermanentPackages() {
+        Set<String> result = new HashSet<>();
+        for (AppModel app : allApps) {
+            if (app.isSelected() && freezeTypeMap.get(app.getPackageName())
+                    == SleepModeManager.FreezeType.PERMANENT) {
+                result.add(app.getPackageName());
+            }
+        }
+        return result;
+    }
+
+    public Set<String> getMediumRestrictedPackages() {
+        Set<String> medium = new HashSet<>();
+        for (AppModel app : allApps) {
+            if (app.isSelected()
+                    && restrictionTypeMap.get(app.getPackageName())
+                       == BackgroundAppManager.RestrictionType.MEDIUM) {
+                medium.add(app.getPackageName());
+            }
+        }
+        return medium;
+    }
+
+    public Map<String, Integer> getManualBuckets() {
+        return new HashMap<>(manualBucketMap);
     }
 
     public Set<String> getHardRestrictedPackages() {
@@ -227,48 +332,43 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     android.content.res.ColorStateList.valueOf(accentColor));
         }
 
-        if (restrictionMode && holder.restrictionType != null) {
-            if (app.isSelected()) {
+        if (holder.restrictionType != null) {
+            if (restrictionMode && app.isSelected()) {
                 BackgroundAppManager.RestrictionType type =
                         restrictionTypeMap.getOrDefault(app.getPackageName(),
                                 BackgroundAppManager.RestrictionType.SOFT);
                 holder.restrictionType.setVisibility(View.VISIBLE);
                 holder.restrictionType.setText(badgeLabel(type));
-                if (hasAccent()) {
-                    holder.restrictionType.setTextColor(accentColor);
-                    android.graphics.drawable.Drawable bg = holder.restrictionType.getBackground();
-                    if (bg != null) {
-                        android.graphics.drawable.Drawable mutated = bg.mutate();
-                        if (mutated instanceof android.graphics.drawable.GradientDrawable) {
-                            ((android.graphics.drawable.GradientDrawable) mutated).setStroke(
-                                    (int) (holder.restrictionType.getContext().getResources()
-                                            .getDisplayMetrics().density * 1.5f),
-                                    accentColor);
-                            ((android.graphics.drawable.GradientDrawable) mutated)
-                                    .setColor(android.graphics.Color.argb(30,
-                                            android.graphics.Color.red(accentColor),
-                                            android.graphics.Color.green(accentColor),
-                                            android.graphics.Color.blue(accentColor)));
-                        }
-                    }
-                }
+                applyBadgeAccent(holder.restrictionType);
                 holder.restrictionType.setOnClickListener(
                         v -> showRestrictionTypeDialog(app, holder.restrictionType));
+            } else if (sleepMode && app.isSelected()) {
+                SleepModeManager.FreezeType ft = freezeTypeMap.getOrDefault(
+                        app.getPackageName(), SleepModeManager.FreezeType.TIMER);
+                holder.restrictionType.setVisibility(View.VISIBLE);
+                holder.restrictionType.setText(badgeLabelFreeze(ft));
+                applyBadgeAccent(holder.restrictionType);
+                holder.restrictionType.setOnClickListener(
+                        v -> showFreezeTypeDialog(app, holder.restrictionType));
             } else {
                 holder.restrictionType.setVisibility(View.GONE);
                 holder.restrictionType.setOnClickListener(null);
             }
-        } else if (holder.restrictionType != null) {
-            holder.restrictionType.setVisibility(View.GONE);
         }
 
         final ViewHolder h = holder;
 
         holder.checkBox.setOnClickListener(v -> {
             app.setSelected(h.checkBox.isChecked());
-            if (restrictionMode && !app.isSelected()) {
-                restrictionTypeMap.remove(app.getPackageName());
-                manualOpsMaskMap.remove(app.getPackageName());
+            if (!app.isSelected()) {
+                if (restrictionMode) {
+                    restrictionTypeMap.remove(app.getPackageName());
+                    manualOpsMaskMap.remove(app.getPackageName());
+                    manualBucketMap.remove(app.getPackageName());
+                }
+                if (sleepMode) {
+                    freezeTypeMap.remove(app.getPackageName());
+                }
             }
             notifyDataSetChanged();
             notifySelectionChanged();
@@ -278,9 +378,15 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             boolean newState = !h.checkBox.isChecked();
             h.checkBox.setChecked(newState);
             app.setSelected(newState);
-            if (restrictionMode && !newState) {
-                restrictionTypeMap.remove(app.getPackageName());
-                manualOpsMaskMap.remove(app.getPackageName());
+            if (!newState) {
+                if (restrictionMode) {
+                    restrictionTypeMap.remove(app.getPackageName());
+                    manualOpsMaskMap.remove(app.getPackageName());
+                    manualBucketMap.remove(app.getPackageName());
+                }
+                if (sleepMode) {
+                    freezeTypeMap.remove(app.getPackageName());
+                }
             }
             notifyDataSetChanged();
             notifySelectionChanged();
@@ -292,8 +398,88 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     private String badgeLabel(BackgroundAppManager.RestrictionType type) {
         switch (type) {
             case HARD:   return context.getString(R.string.restriction_badge_hard);
+            case MEDIUM: return context.getString(R.string.restriction_badge_medium);
             case MANUAL: return context.getString(R.string.restriction_badge_manual);
             default:     return context.getString(R.string.restriction_badge_soft);
+        }
+    }
+
+    private String badgeLabelFreeze(SleepModeManager.FreezeType type) {
+        if (type == SleepModeManager.FreezeType.PERMANENT) {
+            return context.getString(R.string.freeze_badge_permanent);
+        }
+        return context.getString(R.string.freeze_badge_timer);
+    }
+
+    private void applyBadgeAccent(TextView badge) {
+        if (!hasAccent()) return;
+        badge.setTextColor(accentColor);
+        android.graphics.drawable.Drawable bg = badge.getBackground();
+        if (bg != null) {
+            android.graphics.drawable.Drawable mutated = bg.mutate();
+            if (mutated instanceof android.graphics.drawable.GradientDrawable) {
+                ((android.graphics.drawable.GradientDrawable) mutated).setStroke(
+                        (int) (badge.getContext().getResources()
+                                .getDisplayMetrics().density * 1.5f),
+                        accentColor);
+                ((android.graphics.drawable.GradientDrawable) mutated)
+                        .setColor(android.graphics.Color.argb(30,
+                                android.graphics.Color.red(accentColor),
+                                android.graphics.Color.green(accentColor),
+                                android.graphics.Color.blue(accentColor)));
+            }
+        }
+    }
+
+    private void showFreezeTypeDialog(AppModel app, TextView chipView) {
+        SleepModeManager.FreezeType current = freezeTypeMap.getOrDefault(
+                app.getPackageName(), SleepModeManager.FreezeType.TIMER);
+
+        android.widget.LinearLayout container = new android.widget.LinearLayout(context);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setPadding(0, 16, 0, 8);
+
+        android.widget.RadioGroup radioGroup = new android.widget.RadioGroup(context);
+        radioGroup.setOrientation(android.widget.RadioGroup.VERTICAL);
+        int paddingH = (int) (context.getResources().getDisplayMetrics().density * 24);
+
+        android.widget.RadioButton timerBtn = new android.widget.RadioButton(context);
+        timerBtn.setId(View.generateViewId());
+        timerBtn.setText(context.getString(R.string.filter_freeze_timer_option));
+        timerBtn.setPadding(paddingH, 24, paddingH, 24);
+        timerBtn.setChecked(current == SleepModeManager.FreezeType.TIMER);
+        radioGroup.addView(timerBtn);
+
+        radioGroup.addView(makeDivider(paddingH));
+
+        android.widget.RadioButton permanentBtn = new android.widget.RadioButton(context);
+        permanentBtn.setId(View.generateViewId());
+        permanentBtn.setText(context.getString(R.string.filter_freeze_permanent_option));
+        permanentBtn.setPadding(paddingH, 24, paddingH, 24);
+        permanentBtn.setChecked(current == SleepModeManager.FreezeType.PERMANENT);
+        radioGroup.addView(permanentBtn);
+
+        container.addView(radioGroup);
+
+        new MaterialAlertDialogBuilder(context)
+                .setTitle(context.getString(R.string.filter_freeze_type_dialog_title))
+                .setView(container)
+                .setNegativeButton(context.getString(R.string.dialog_cancel), null)
+                .setPositiveButton(context.getString(R.string.dialog_apply), (dialog, which) -> {
+                    SleepModeManager.FreezeType chosen = permanentBtn.isChecked()
+                            ? SleepModeManager.FreezeType.PERMANENT
+                            : SleepModeManager.FreezeType.TIMER;
+                    freezeTypeMap.put(app.getPackageName(), chosen);
+                    chipView.setText(badgeLabelFreeze(chosen));
+                    notifySelectionChanged();
+                })
+                .show();
+
+        if (hasAccent()) {
+            android.content.res.ColorStateList tint =
+                    android.content.res.ColorStateList.valueOf(accentColor);
+            timerBtn.setButtonTintList(tint);
+            permanentBtn.setButtonTintList(tint);
         }
     }
 
@@ -319,6 +505,15 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
         radioGroup.addView(makeDivider(paddingH));
 
+        android.widget.RadioButton mediumBtn = new android.widget.RadioButton(context);
+        mediumBtn.setId(View.generateViewId());
+        mediumBtn.setText(context.getString(R.string.filter_restriction_medium_option));
+        mediumBtn.setPadding(paddingH, 24, paddingH, 24);
+        mediumBtn.setChecked(current == BackgroundAppManager.RestrictionType.MEDIUM);
+        radioGroup.addView(mediumBtn);
+
+        radioGroup.addView(makeDivider(paddingH));
+
         android.widget.RadioButton hardBtn = new android.widget.RadioButton(context);
         hardBtn.setId(View.generateViewId());
         hardBtn.setText(context.getString(R.string.filter_restriction_hard_option));
@@ -337,7 +532,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
         container.addView(radioGroup);
 
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(context.getString(R.string.filter_restriction_type_dialog_title))
                 .setView(container)
                 .setNegativeButton(context.getString(R.string.dialog_cancel), null)
@@ -347,6 +542,14 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                         chosen = BackgroundAppManager.RestrictionType.HARD;
                         restrictionTypeMap.put(app.getPackageName(), chosen);
                         manualOpsMaskMap.remove(app.getPackageName());
+                        manualBucketMap.remove(app.getPackageName());
+                        chipView.setText(badgeLabel(chosen));
+                        notifySelectionChanged();
+                    } else if (mediumBtn.isChecked()) {
+                        chosen = BackgroundAppManager.RestrictionType.MEDIUM;
+                        restrictionTypeMap.put(app.getPackageName(), chosen);
+                        manualOpsMaskMap.remove(app.getPackageName());
+                        manualBucketMap.remove(app.getPackageName());
                         chipView.setText(badgeLabel(chosen));
                         notifySelectionChanged();
                     } else if (manualBtn.isChecked()) {
@@ -354,11 +557,14 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                         restrictionTypeMap.put(app.getPackageName(), chosen);
                         int existingMask = manualOpsMaskMap.getOrDefault(
                                 app.getPackageName(), 0x01);
-                        showManualOpsDialog(app, chipView, existingMask);
+                        int existingBucket = manualBucketMap.getOrDefault(
+                                app.getPackageName(), 0);
+                        showManualOpsDialog(app, chipView, existingMask, existingBucket);
                     } else {
                         chosen = BackgroundAppManager.RestrictionType.SOFT;
                         restrictionTypeMap.remove(app.getPackageName());
                         manualOpsMaskMap.remove(app.getPackageName());
+                        manualBucketMap.remove(app.getPackageName());
                         chipView.setText(badgeLabel(chosen));
                         notifySelectionChanged();
                     }
@@ -369,12 +575,13 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             android.content.res.ColorStateList tint =
                     android.content.res.ColorStateList.valueOf(accentColor);
             softBtn.setButtonTintList(tint);
+            mediumBtn.setButtonTintList(tint);
             hardBtn.setButtonTintList(tint);
             manualBtn.setButtonTintList(tint);
         }
     }
 
-    private void showManualOpsDialog(AppModel app, TextView chipView, int currentMask) {
+    private void showManualOpsDialog(AppModel app, TextView chipView, int currentMask, int currentBucket) {
         String[] ops = BackgroundAppManager.ALL_OPS;
 
         String[] labels = {
@@ -411,9 +618,49 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             listLayout.addView(cb);
         }
 
+        View divider = new View(context);
+        android.widget.LinearLayout.LayoutParams divParams =
+                new android.widget.LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        divParams.setMargins(paddingH, paddingV * 3, paddingH, paddingV * 3);
+        divider.setLayoutParams(divParams);
+        divider.setBackgroundColor(0x44888888);
+        listLayout.addView(divider);
+
+        final int[] selectedBucket = {currentBucket};
+
+        CheckBox cbRare = new CheckBox(context);
+        cbRare.setText(context.getString(R.string.manual_bucket_rare));
+        cbRare.setChecked(currentBucket == 40);
+        cbRare.setPadding(paddingH, paddingV * 3, paddingH, paddingV * 3);
+        listLayout.addView(cbRare);
+
+        CheckBox cbRestricted = new CheckBox(context);
+        cbRestricted.setText(context.getString(R.string.manual_bucket_restricted));
+        cbRestricted.setChecked(currentBucket == 45);
+        cbRestricted.setPadding(paddingH, paddingV * 3, paddingH, paddingV * 3);
+        listLayout.addView(cbRestricted);
+
+        cbRare.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked) {
+                selectedBucket[0] = 40;
+                cbRestricted.setChecked(false);
+            } else if (!cbRestricted.isChecked()) {
+                selectedBucket[0] = 0;
+            }
+        });
+        cbRestricted.setOnCheckedChangeListener((btn, isChecked) -> {
+            if (isChecked) {
+                selectedBucket[0] = 45;
+                cbRare.setChecked(false);
+            } else if (!cbRare.isChecked()) {
+                selectedBucket[0] = 0;
+            }
+        });
+
         scrollView.addView(listLayout);
 
-        new AlertDialog.Builder(context)
+        new MaterialAlertDialogBuilder(context)
                 .setTitle(context.getString(R.string.filter_manual_ops_dialog_title,
                         app.getAppName()))
                 .setView(scrollView)
@@ -432,9 +679,15 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     if (mask == 0) {
                         restrictionTypeMap.remove(app.getPackageName());
                         manualOpsMaskMap.remove(app.getPackageName());
+                        manualBucketMap.remove(app.getPackageName());
                         chipView.setText(badgeLabel(BackgroundAppManager.RestrictionType.SOFT));
                     } else {
                         manualOpsMaskMap.put(app.getPackageName(), mask);
+                        if (selectedBucket[0] != 0) {
+                            manualBucketMap.put(app.getPackageName(), selectedBucket[0]);
+                        } else {
+                            manualBucketMap.remove(app.getPackageName());
+                        }
                         chipView.setText(badgeLabel(BackgroundAppManager.RestrictionType.MANUAL));
                     }
                     notifySelectionChanged();
@@ -445,6 +698,8 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             android.content.res.ColorStateList tint =
                     android.content.res.ColorStateList.valueOf(accentColor);
             for (CheckBox cb : boxes) cb.setButtonTintList(tint);
+            cbRare.setButtonTintList(tint);
+            cbRestricted.setButtonTintList(tint);
         }
     }
 

@@ -269,42 +269,41 @@ public class AppTriggerAnalyzersExt {
                         inRunning=true; inPending=false; inPast=false; continue;
                     }
                     if (t.startsWith("Past jobs:") || t.startsWith("History:")
-                            || t.startsWith("Completed jobs:")) {
+                            || t.startsWith("Completed jobs:") || t.startsWith("Registered jobs:")) {
                         inPending=false; inRunning=false; inPast=true; continue;
                     }
 
-                    if ((inPending || inRunning) && t.contains(packageName)) {
+                    boolean isJobHeader = t.startsWith("JOB #") || t.startsWith("JobInfo{")
+                            || t.startsWith("Job{");
+
+                    if ((inPending || inRunning) && isJobHeader && t.contains(packageName)) {
                         boolean isWmLine = t.contains("androidx.work") || t.contains("WorkManager")
                                 || t.contains("systemjobscheduler");
                         boolean isUijLine = analyzer.apiLevel >= AppTriggersAnalyzer.API_BAL_PRIVILEGES
                                 && (t.contains("isUserInitiated=true")
                                     || t.contains("userInitiated=true")
                                     || t.contains("RUN_USER_INITIATED_JOBS"));
-
                         boolean isExpeditedLine = analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
-                                && analyzer.apiLevel <= android.os.Build.VERSION_CODES.TIRAMISU
                                 && (t.contains("EXPEDITED")
                                     || t.contains("isExpedited=true")
                                     || t.contains("isExpedited: true"));
-                        boolean isPrefetchLine = analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU
+                        boolean isPrefetchLine = analyzer.apiLevel >= android.os.Build.VERSION_CODES.S
                                 && (t.contains("isPrefetch=true") || t.contains("prefetch=true"));
 
                         if (inPending) {
                             pending++;
-                            if (isWmLine)       wmPending++;
-                            if (isUijLine)      uijPending++;
+                            if (isWmLine)        wmPending++;
+                            if (isUijLine)       uijPending++;
                             if (isExpeditedLine) expeditedPending++;
                             if (isPrefetchLine)  prefetchPending++;
                         }
                         if (inRunning) {
                             running++;
-                            if (isWmLine)       wmRunning++;
-                            if (isUijLine)      uijRunning++;
+                            if (isWmLine)        wmRunning++;
+                            if (isUijLine)       uijRunning++;
                             if (isExpeditedLine) expeditedRunning++;
                         }
-                        if (t.startsWith("JOB #") || t.startsWith("JobInfo{")
-                                || t.startsWith("Job{"))
-                            { inJobBlock=true; jobBlock.setLength(0); }
+                        inJobBlock=true; jobBlock.setLength(0);
                     }
                     if (inJobBlock) {
                         jobBlock.append(t).append("\n");
@@ -399,8 +398,12 @@ public class AppTriggerAnalyzersExt {
 
 
         Matcher mNet = Pattern.compile("required-network-type=([\\w_]+)").matcher(block);
-        if (!mNet.find()) mNet = Pattern.compile("networkType=([\\w_]+)").matcher(block);
-        if (mNet.find()) parts.add("net:" + mNet.group(1));
+        if (!mNet.find()) {
+            mNet = Pattern.compile("networkType=([\\w_]+)").matcher(block);
+            mNet.find();
+        }
+        try { if (mNet.group(1) != null) parts.add("net:" + mNet.group(1)); }
+        catch (IllegalStateException ignored) {}
 
 
         if (block.contains("charging=true")        || block.contains("requireCharging=true"))   parts.add("charging");
@@ -434,7 +437,7 @@ public class AppTriggerAnalyzersExt {
 
         Matcher mDL = Pattern.compile("latest-runtime=(\\d+)").matcher(block);
         if (mDL.find()) {
-            long diff = Long.parseLong(mDL.group(1)) - System.currentTimeMillis();
+            long diff = Long.parseLong(mDL.group(1)) - android.os.SystemClock.elapsedRealtime();
             if (diff > 0) parts.add("deadline:" + analyzer.formatInterval(diff));
         }
 
@@ -604,17 +607,29 @@ public class AppTriggerAnalyzersExt {
         int alarmW=0, jobW=0, gcmW=0, bcastW=0;
         List<String> alarmTags = new ArrayList<>();
 
-
         Pattern ap = Pattern.compile(
-                "Wakeup alarm\\s+([\\w./]+):\\s*(\\d+)\\s+times", Pattern.CASE_INSENSITIVE);
+                "(?:Wakeup alarm|wakeup_alarm)\\s+([\\w./]+)[^:]*:\\s*(\\d+)\\s+times", Pattern.CASE_INSENSITIVE);
         Pattern jp = Pattern.compile(
                 "Job\\s+\\S+:\\s+\\d+ms.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
         Pattern gp = Pattern.compile(
                 "(?:GCM|FCM|push).*?wakeup.*?:\\s*(\\d+)",        Pattern.CASE_INSENSITIVE);
         Pattern bp = Pattern.compile(
                 "Broadcast\\s+\\S+.*?\\((\\d+)\\s+times\\)",      Pattern.CASE_INSENSITIVE);
+        Pattern pkgSectionPat = Pattern.compile(
+                "^\\s{2}(?:u\\d+[a-z]\\d+|Package)\\s+" + Pattern.quote(packageName));
+
+        boolean inPkgSection = false;
 
         for (String line : output.split("\n")) {
+            if (pkgSectionPat.matcher(line).find()) {
+                inPkgSection = true;
+                continue;
+            }
+            if (inPkgSection && line.matches("^\\s{2}(?:u\\d+[a-z]\\d+|Package)\\s+\\S+.*")) {
+                break;
+            }
+            if (!inPkgSection && !line.contains(packageName)) continue;
+
             try {
                 Matcher m;
                 if ((m=ap.matcher(line)).find()) {
@@ -622,7 +637,6 @@ public class AppTriggerAnalyzersExt {
                     alarmW += cnt;
                     if (alarmTags.size() < 3) {
                         String tag = m.group(1);
-
                         if (tag.contains("/")) tag = tag.substring(tag.indexOf('/') + 1);
                         if (tag.startsWith(".")) tag = tag.substring(1);
                         if (tag.startsWith(packageName + ".")) tag = tag.substring(packageName.length() + 1);
@@ -1046,7 +1060,7 @@ public class AppTriggerAnalyzersExt {
 
         Pattern authPat      = Pattern.compile("authority=([\\w.]+)");
         Pattern acctPat      = Pattern.compile("accountType=([\\w.]+)");
-        Pattern periodPat    = Pattern.compile("period=(\\d+)s");
+        Pattern periodPat    = Pattern.compile("period=(\\d+)(ms|s)?");
         Pattern periodMsPat  = Pattern.compile("(?:mPeriod|periodMs)=(\\d+)");
         Pattern lastSuccPat  = Pattern.compile("lastSuccessTime=([\\d\\- :]+)");
         Pattern nextRunPat   = Pattern.compile("nextRunTime=([\\d\\- :]+)");
@@ -1103,8 +1117,11 @@ public class AppTriggerAnalyzersExt {
             if (mSy.find()) syncable = "true".equals(mSy.group(1));
 
             Matcher mP = periodPat.matcher(t);
-            if (mP.find() && periodSec == 0) periodSec = Long.parseLong(mP.group(1));
-            else {
+            if (mP.find() && periodSec == 0) {
+                long val    = Long.parseLong(mP.group(1));
+                String unit = mP.group(2);
+                periodSec = "ms".equals(unit) ? val / 1000 : val;
+            } else {
                 Matcher mPms = periodMsPat.matcher(t);
                 if (mPms.find() && periodSec == 0) periodSec = Long.parseLong(mPms.group(1)) / 1000;
             }
@@ -1381,10 +1398,10 @@ public class AppTriggerAnalyzersExt {
         long wlMs=0; int wlCnt=0, alarms=0, jobs=0, syncs=0;
         double powerMah = -1;
 
-        Pattern wp   = Pattern.compile("Wakelock\\s+\\S+:\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
-        Pattern ap   = Pattern.compile("Wakeup alarm.*?:\\s*(\\d+)\\s+times",                            Pattern.CASE_INSENSITIVE);
-        Pattern jp   = Pattern.compile("Job\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",        Pattern.CASE_INSENSITIVE);
-        Pattern sp   = Pattern.compile("Sync\\s+\\S+:\\s+\\d+ms realtime.*?\\((\\d+)\\s+times\\)",       Pattern.CASE_INSENSITIVE);
+        Pattern wp   = Pattern.compile("(?:Wakelock|wake_lock)\\s+\\S+[^:]*:\\s+(\\d+)ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)", Pattern.CASE_INSENSITIVE);
+        Pattern ap   = Pattern.compile("(?:Wakeup alarm|wakeup_alarm)[^:]*:\\s*(\\d+)\\s+times",                                          Pattern.CASE_INSENSITIVE);
+        Pattern jp   = Pattern.compile("Job\\s+\\S+[^:]*:\\s+\\d+ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",                     Pattern.CASE_INSENSITIVE);
+        Pattern sp   = Pattern.compile("Sync\\s+\\S+[^:]*:\\s+\\d+ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",                    Pattern.CASE_INSENSITIVE);
 
         Pattern pwrP = Pattern.compile("Uid\\s+u0a\\d+:\\s*([\\d.]+)(?:\\s*mAh)?", Pattern.CASE_INSENSITIVE);
 

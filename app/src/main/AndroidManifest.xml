@@ -4,19 +4,24 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <application 
-        android:allowBackup="true" 
-        android:icon="@mipmap/ic_launcher" 
-        android:roundIcon="@mipmap/ic_launcher_round" 
-        android:label="@string/app_name" 
-        android:supportsRtl="true" 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    
+    <application
+        android:name=".App"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
             android:name=".AppResourceDetailActivity"
@@ -38,7 +43,7 @@
         </activity>
         <activity
             android:name=".KillShortcutActivity"
-            android:exported="true"
+            android:exported="false"
             android:noHistory="true"
             android:excludeFromRecents="true"
             android:theme="@style/Theme.Transparent" />
@@ -52,6 +57,34 @@
             android:exported="false"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoAnimation" />
+        <activity
+            android:name=".PresetSettingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+  
+        <service
+            android:name=".ShappkyService"
+            android:foregroundServiceType="specialUse"
+            android:stopWithTask="false"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="System optimization tool for background process management via Shizuku" />
+        </service>
+
+        <service
+            android:name=".AppLaunchAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
         <service
             android:name=".ShappkyQuickTile"
             android:icon="@drawable/ic_force_stop"
@@ -65,7 +98,7 @@
                 android:name="android.service.quicksettings.ACTIVE_TILE"
                 android:value="true" />
         </service>
-        
+
         <service
             android:name=".ShappkyBackgroundKillTile"
             android:icon="@drawable/ic_force_stop"
@@ -80,11 +113,6 @@
                 android:value="true" />
         </service>
 
-        <service 
-            android:name=".ShappkyService" 
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
-
         <receiver android:name=".KillTriggerReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="com.gree1d.reappzuku.IDLE_FREEZE" />
@@ -94,13 +122,18 @@
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
 
         <receiver
+            android:name=".ShappkyService$RestartReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".RestrictionsScheduler$SchedulerReceiver"
             android:exported="false" />
-        
+
         <receiver
             android:name=".AppzukuWidgetReceiver"
             android:exported="true">
@@ -110,6 +143,15 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".PresetManager$PresetReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.gree1d.reappzuku.PRESET_ACTIVATE" />
+                <action android:name="com.gree1d.reappzuku.PRESET_DEACTIVATE" />
+            </intent-filter>
         </receiver>
 
         <provider

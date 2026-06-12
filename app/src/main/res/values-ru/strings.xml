@@ -10,19 +10,37 @@
     <string name="tile_background_kill_subtitle">Запускает настроенный Auto-Kill</string>
     <string name="shortcut_kill_short_label">Остановить приложение</string>
     <string name="shortcut_kill_long_label">Завершить работу приложения в фоновом режиме</string>
+    <string name="ram_kill_widget_description">Виджет загруженности ОЗУ. Нажмите для очистки от фоновых приложений.</string>
 
+    <string name="settings_add_ram_shortcut_title">RAM Kill ярлык</string>
+    <string name="settings_add_ram_shortcut_subtitle">Добавить ярлык на рабочий стол</string>
+    <plurals name="toast_killed_apps">
+        <item quantity="one">Закрыто %1$d приложение · %2$s освобождено</item>
+        <item quantity="few">Закрыто %1$d приложения · %2$s освобождено</item>
+        <item quantity="many">Закрыто %1$d приложений · %2$s освобождено</item>
+        <item quantity="other">Закрыто %1$d приложений · %2$s освобождено</item>
+    </plurals>
+    <plurals name="toast_killed_apps_no_ram">
+        <item quantity="one">Закрыто %d приложение</item>
+        <item quantity="few">Закрыто %d приложения</item>
+        <item quantity="many">Закрыто %d приложений</item>
+        <item quantity="other">Закрыто %d приложений</item>
+    </plurals>
+    
     <!-- ══════════════════════════════════════════════
          ОБЩЕЕ
          ══════════════════════════════════════════════ -->
     <string name="url_open_failed">Не удалось открыть ссылку</string>
 
     <!-- Кнопки диалогов -->
+    <string name="stats_top_offenders_reset">Сброс</string>
     <string name="dialog_cancel">Отмена</string>
     <string name="dialog_apply">Применить</string>
     <string name="dialog_save">Сохранить</string>
     <string name="dialog_close">Закрыть</string>
     <string name="dialog_ok">Ок</string>
     <string name="dialog_ok_got_it">Понятно</string>
+    <string name="filter_sort_button">Сортировка</string>
 
     <!-- Единицы измерения -->
     <string name="unit_kb">%d KB</string>
@@ -78,11 +96,6 @@
     <string name="main_restriction_menu_external">Фоновое ограничение (внешнее)</string>
     <string name="main_restriction_menu_saved">Фоновое ограничение (сохранено)</string>
     <string name="main_restriction_menu_default">Фоновое ограничение</string>
-    <string name="restriction_badge_manual">Ручное</string>
-    <string name="filter_restriction_manual_option">Ручное</string>
-    <string name="filter_manual_ops_dialog_title">Ограничения: %1$s</string>
-    <string name="bgrest_help_manual_title">РУЧНОЕ</string>
-    <string name="bgrest_help_manual_body">Позволяет выбрать конкретные appops вручную. Подходит когда нужно заблокировать только часть возможностей приложения.</string>
 
     <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
     <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
@@ -297,7 +310,7 @@
     <!-- ── Дополнительные инструменты ── -->
     <string name="settings_section_advanced_tools">Дополнительные инструменты</string>
     <string name="settings_background_restriction_title">Фоновые ограничения</string>
-    <string name="settings_background_restriction_subtitle">Оставляйте выбранные приложения в спящем режиме</string>
+    <string name="settings_background_restriction_subtitle">Ограничение фоновой активности выбранных приложений</string>
     <string name="settings_reapply_restrictions_title">Повторно применить настройки фоновых ограничений</string>
     <string name="settings_reapply_restrictions_subtitle">Восстановить сохраненные ограничения</string>
     <string name="settings_sleep_mode_title">Режим сна</string>
@@ -314,6 +327,11 @@
     <string name="settings_hidden_apps_title">Скрытые приложения</string>
     <string name="settings_hidden_apps_subtitle">Скрыть приложения из общего списка</string>
     <string name="settings_hidden_apps_dialog_title">Выберите приложения для скрытия из общего списка</string>
+    <string name="freeze_badge_timer">Временно</string>
+    <string name="freeze_badge_permanent">Постоянно</string>
+    <string name="filter_freeze_type_dialog_title">Тип заморозки</string>
+    <string name="filter_freeze_timer_option">Временно (при выключении экрана)</string>
+    <string name="filter_freeze_permanent_option">Постоянно (разморозка только вручную)</string>
 
     <string-array name="settings_sleep_mode_delay_labels">
         <item>5 минут</item>
@@ -347,6 +365,7 @@
     <string name="scheduler_action_launch_main">Запустить %s</string>
     <string name="scheduler_component_picker_title">Выберите компонент</string>
     <string name="scheduler_component_none_found">Экспортированные компоненты не найдены</string>
+    <string name="scheduler_set_bucket_active">Установить Bucket: Active</string>
 
     <!-- ── Предупреждение о системных приложениях ── -->
     <string name="settings_system_apps_warning_title">⚠️ Предупреждение: системные приложения</string>
@@ -364,10 +383,14 @@
     <string name="settings_bgrest_help_button">В чем разница?</string>
     <string name="dialog_backgroundrest_title">Типы фоновых ограничений</string>
     <string name="bgrest_help_soft_title">МЯГКОЕ</string>
-    <string name="bgrest_help_soft_body">Ограничивает фоновую активность, сохраняя базовую функциональность.\n\u2022 Запрещает запуск стандартных фоновых сервисов.\n\u2022 Позволяет приложению показывать важные уведомления.\n\u2022 Подходит для мессенджеров и почты.\n\nИспользуемые команды:\ncmd appops set RUN_ANY_IN_BACKGROUND ignore</string>
+    <string name="bgrest_help_soft_body">Ограничивает фоновую активность, сохраняя базовую функциональность.\n\u2022 Запрещает запуск стандартных фоновых сервисов.\n\u2022 Позволяет приложению показывать важные уведомления.\n\u2022 Подходит для мессенджеров и почты.</string>
+    <string name="bgrest_help_medium_title">СРЕДНЕЕ</string>
+    <string name="bgrest_help_medium_body">Переводит приложение в standby-bucket Rare и блокирует ключевые фоновые операции: запуск служб, планировщик задач и будильники. Приложение работает нормально пока открыто, но замирает как только уходишь из него.</string> 
     <string name="bgrest_help_hard_title">ЖЕСТКОЕ</string>
-    <string name="bgrest_help_hard_body">Максимальная изоляция. Приложение полностью \u00abзасыпает\u00bb.\n\u2022 Запрещает запуск даже приоритетных (Foreground) сервисов.\n\u2022 Блокирует пробуждение через Wake-locks.\n\u2022 Полностью исключает автозапуск после перезагрузки устройства.\n\u2022 Удаляет приложение из белого списка оптимизации батареи.\n\nИспользуемые команды:\ncmd appops set START_FOREGROUND ignore\ncmd appops set RECEIVE_BOOT_COMPLETED ignore\ncmd appops set ALARM_WAKEUP ignore\ncmd deviceidle whitelist\nINTERACT_ACROSS_PROFILES ignore</string>
-
+    <string name="bgrest_help_hard_body">Максимальная изоляция. Приложение полностью \u00abзасыпает\u00bb.\n\u2022 Запрещает запуск даже приоритетных (Foreground) сервисов.\n\u2022 Блокирует пробуждение через Wake-locks.\n\u2022 Полностью исключает автозапуск после перезагрузки устройства.\n\u2022 Удаляет приложение из белого списка оптимизации батареи.</string>
+    <string name="bgrest_help_manual_title">РУЧНОЕ</string>
+    <string name="bgrest_help_manual_body">Позволяет выбрать конкретные appops вручную. Подходит когда нужно заблокировать только часть возможностей приложения.</string>
+    
     <!-- ── Разные тосты ── -->
     <string name="settings_no_saved_restrictions">Нет сохраненных ограничений фонового режима, которые нужно было бы применять повторно.</string>
     <string name="settings_open_app_info_error">Невозможно открыть информацию о приложении</string>
@@ -407,13 +430,20 @@
     <!-- Бейджи типов ограничений -->
     <string name="restriction_badge_hard">Жёсткое</string>
     <string name="restriction_badge_soft">Мягкое</string>
+    <string name="restriction_badge_medium">Среднее</string>
+    <string name="restriction_badge_manual">Ручное</string>
     <string name="restriction_badge_removed">Снято</string>
     <string name="restriction_badge_retry">Повтор</string>
 
     <!-- Диалог типа ограничения -->
+    <string name="manual_bucket_rare">Standby Bucket: Rare</string>
+    <string name="manual_bucket_restricted">Standby Bucket: Restricted</string>
     <string name="filter_restriction_type_dialog_title">Тип ограничения</string>
-    <string name="filter_restriction_soft_option">Мягкое (по умолчанию) — запрет автозапуска (RUN_ANY_IN_BACKGROUND)</string>
-    <string name="filter_restriction_hard_option">Жёсткое — запрет любой работы в фоне (Мягкое + START_FOREGROUND + RECEIVE_BOOT_COMPLETED + INTERACT_ACROSS_PROFILES + удаление из whitelist оптимизации батареи)</string>
+    <string name="filter_restriction_soft_option">Мягкое (по умолчанию) — запрет автозапуска</string>
+    <string name="filter_restriction_medium_option">Среднее — запрет некоторой фоновой активности</string>
+    <string name="filter_restriction_hard_option">Жёсткое — запрет всей фоновой активности</string>
+    <string name="filter_restriction_manual_option">Ручное</string>
+    <string name="filter_manual_ops_dialog_title">Ограничения: %1$s</string>
 
     <!-- ══════════════════════════════════════════════
          ЭКРАН СТАТИСТИКИ И ЖУРНАЛОВ
@@ -457,7 +487,6 @@
     <string name="settings_restriction_log_dialog_subtitle">Результаты фоновых ограничений.</string>
     <string name="settings_restriction_log_clear">Очистить</string>
     <string name="settings_restriction_log_summary">Последние события: %1$d записей.</string>
-    <string name="settings_restriction_log_cleared">Журнал фоновых ограничений очищен</string>
     <string name="log_bg_restriction_empty">Записи о фоновых ограничениях отсутствуют.\n\nЗаписи хранятся в базе данных приложения и автоматически обрезаются.</string>
 
     <!-- ── Журнал режима сна ── -->
@@ -522,7 +551,7 @@
 
     <!-- Плитки статистики -->
     <string name="stats_battery_trace">&lt; 0.1%</string>
-    <string name="stats_chart_total_battery">Всего %.1f mAh</string>
+    <string name="stats_chart_total_battery">%.1f mAh</string>
     <string name="stats_chart_total_ram">Ср. %s</string>
     <string name="stats_self_overhead_label">Потребление ReAppzuku:</string>
     <string name="stats_self_overhead">Потребление ReAppzuku: %1$s · %2$s · %3$s</string>
@@ -873,7 +902,7 @@
     <string name="triggers_bt_permissions_explanation">Android 12+: приложение имеет разрешения на BT-сканирование и/или подключение. Может инициировать сканирование при broadcast.</string>
     <string name="triggers_kernel_wakelock_explanation">Приложение удерживает kernel-уровень wakelock (/sys/power/wake_lock). Крайне редкий случай, указывает на нестандартный драйвер или системный компонент.</string>
 
-    <string name="triggers_alarm_throttled_explanation">Система отменяет аларм из-за app_standby или battery_saver. Приложение пытается запустить себя по таймеру, но HyperOS блокирует.</string>
+    <string name="triggers_alarm_throttled_explanation">Система отменяет аларм из-за app_standby или battery_saver. Приложение пытается запустить себя по таймеру, но система блокирует.</string>
     <string name="triggers_bal_privilege_explanation">Android 14+: приложение получило токен на запуск из фона. Обычно выдаётся системой при FCM high-priority, точном аларме, или PendingIntent от видимого приложения.</string>
     <string name="triggers_bal_blocked_detail_prefix">BAL blocked by system · caller=</string>
     <string name="triggers_bal_blocked_explanation">Android 14+: система заблокировала попытку запуска из фона. Приложение пытается стартовать Activity или FGS без разрешения.</string>
@@ -906,6 +935,12 @@
     <string name="triggers_status_active">Активное</string>
     <string name="triggers_status_background">Фоновое</string>
     <string name="triggers_status_cached">Кэшированное</string>
+    <string name="app_status_hint_foreground">на экране</string>
+    <string name="app_status_hint_fgs">активная служба</string>
+    <string name="app_status_hint_cached_service">держит службу</string>
+    <string name="app_status_hint_cached_recent">недавно использовалось</string>
+    <string name="app_status_hint_cached_idle">неактивно</string>
+    <string name="app_status_hint_not_running">не запущено</string>
     <string name="triggers_aggression_label_prefix">Агрессивность:</string>
     
     <!-- ══════════════════════════════════════════════
@@ -916,5 +951,107 @@
     <string name="update_dialog_close">Закрыть</string>
     <string name="update_up_to_date">Последняя версия (%s)</string>
     <string name="update_check_failed">Ошибка проверки обновления</string>
+    <string name="easter_egg_hunter">🐱 Поздравляю, вы нашли пасхалку!</string>
 
+    <!-- Scan System -->
+    <string name="scansystem_menu_title">Сканировать</string>
+    <string name="scansystem_dialog_title">Текущая нагрузка</string>
+    <string name="scansystem_scanning">Сканирование…</string>
+    <string name="scansystem_no_load">Нет приложений с активной нагрузкой</string>    
+    <string name="scansystem_cat_wakelock">Удерживает CPU</string>
+    <string name="scansystem_cat_network">Удерживает сеть</string>
+    <string name="scansystem_cat_fgs">Foreground Service</string>
+    <string name="scansystem_cat_alarm">Будит устройство</string>
+    <string name="scansystem_cat_sensor">Держит датчики</string>
+    <string name="scansystem_cat_location">Держит геолокацию</string>
+    <string name="scansystem_wakelock_history">WakeLock History</string>
+    <string name="scan_button_label">Скан</string>
+
+    <!-- Background Restrictions Log Detail -->
+    <string name="settings_open_app_info">Инфо о приложении</string>
+    <string name="log_detail_action">Действие</string>
+    <string name="log_detail_outcome">Результат</string>
+    <string name="log_detail_appops">AppOps</string>
+    <string name="log_detail_force_stop">Принудительная остановка</string>
+    <string name="log_detail_ops_missing">Сброшенные ops</string>
+    <string name="log_detail_ops_repaired">Восстановлено</string>
+    <string name="log_detail_ops_failed">Не применились</string>
+    <string name="log_detail_bucket_was">Bucket был</string>
+    <string name="log_detail_bucket_set">Bucket установлен</string>
+    <string name="log_detail_bucket_restored">Bucket восстановлен</string>
+
+    <!-- Auto-Kill Advanced -->
+    <string name="section_additional_scenarios">Дополнительные условия</string>
+    <string name="scenarios_summary_none">Отключено</string>
+    <string name="scenarios_hw_headset_short">Наушники</string>
+    <string name="scenarios_hw_usb_short">USB</string>
+    <string name="scenarios_hw_charger_short">Зарядка</string>
+    <string name="scenarios_hw_wifi_short">WiFi/Моб Сеть</string>
+    <string name="scenarios_hw_bluetooth_short">Bluetooth</string>
+    <string name="scenarios_hw_gps_short">Геолокация</string>
+    <string name="scenarios_hw_hotspot_short">Точка доступа</string>
+    <string name="scenarios_app_launch_short">Запуск приложения</string>
+
+    <!-- Hardware events -->
+    <string name="scenarios_hardware_events_title">Аппаратные события</string>
+    <string name="scenarios_hw_headset">Подключение/Отключение наушников</string>
+    <string name="scenarios_hw_usb">Подключение/Отключение USB</string>
+    <string name="scenarios_hw_charger">Подключение/Отключение зарядки</string>
+    <string name="scenarios_hw_wifi">WiFi или Мобильная сеть вкл/выкл</string>
+    <string name="scenarios_hw_bluetooth">Bluetooth вкл/выкл</string>
+    <string name="scenarios_hw_gps">Геолокация вкл/выкл</string>
+    <string name="scenarios_hw_hotspot">Точка доступа вкл/выкл</string>
+    <string name="scenarios_hw_delay_note">Auto-Kill запускается через 10 секунд после события, чтобы фоновые приложения успели запуститься</string>
+
+    <!-- App launch trigger -->
+    <string name="scenarios_app_launch_title">Запуск приложения</string>
+    <string name="scenarios_app_launch_enable">Запускать Auto-Kill при открытии целевого приложения</string>
+    <string name="scenarios_app_launch_clear_cache">Очищать ОЗУ при запуске</string>
+    <string name="scenarios_app_launch_target_apps">Целевые приложения</string>
+    <string name="scenarios_app_launch_add">Добавить</string>
+    <string name="scenarios_app_launch_add_title">Выбор целевых приложений</string>
+    <string name="scenarios_app_launch_empty">Приложения не выбраны</string>
+    <string name="scenarios_remove_target_app">Удалить</string>
+
+    <!-- Accessibility service -->
+    <string name="accessibility_service_description">Определяет запуск целевых приложений для запуска Auto-Kill и освобождения RAM</string>
+    <string name="scenarios_accessibility_required_title">Требуется служба специальных возможностей</string>
+    <string name="scenarios_accessibility_required_message">Для работы триггера «Запуск приложения» включите ReAppzuku в настройках специальных возможностей. Настройка сохранена и активируется после включения службы.</string>
+    <string name="scenarios_accessibility_open_settings">Открыть настройки</string>
+
+    <!-- Auto-Kill Presets -->
+    <string name="settings_presets_title">Пресеты Auto-Kill</string>
+    <string name="settings_presets_subtitle">До 2 наборов правил по расписанию</string>
+    <string name="preset_title">Пресет %d</string>
+    <string name="preset_section_title">Пресеты Auto-Kill</string>
+    <string name="preset_enabled_title">Включить пресет</string>
+    <string name="preset_enabled_subtitle">Пресет активируется автоматически по расписанию</string>
+    <string name="preset_name_title">Название пресета</string>
+    <string name="preset_name_dialog_title">Название пресета</string>
+    <string name="preset_time_range_title">Время работы</string>
+    <string name="preset_time_range_dialog_title">Время работы</string>
+    <string name="preset_time_from_label">С</string>
+    <string name="preset_time_to_label">До</string>
+    <string name="preset_time_range_error_same">Время начала и конца должны различаться</string>
+    <string name="preset_app_list_mode_title">Источник списка приложений</string>
+    <string name="preset_app_list_mode_dialog_title">Источник списка приложений</string>
+    <string name="preset_app_list_mode_current">Использовать текущий whitelist / blacklist</string>
+    <string name="preset_app_list_mode_own">Использовать собственный список пресета</string>
+    <string name="preset_app_list_mode_switch_hint">Переключитесь на «Собственный список» для редактирования</string>
+    <string name="preset_list_count_current">%d прил. (из текущих настроек)</string>
+    <string name="preset_list_count_own">%d прил. выбрано</string>
+    <string name="preset_save_button">Сохранить пресет</string>
+    <string name="preset_saved">Пресет %d сохранён</string>
+    <string name="preset_export_json_button">Экспорт в JSON</string>
+    <string name="preset_export_success">Пресет успешно экспортирован</string>
+    <string name="preset_badge_active">Активный</string>
+    <string name="preset_overlap_title">Пересечение времени</string>
+    <string name="preset_overlap_message">Диапазон пересекается с другим пресетом (%1$d:%2$02d – %3$d:%4$02d). Измените время, чтобы пресеты не пересекались.</string>
+    <string name="preset_import_json_button">Импорт из JSON</string>
+    <string name="preset_import_success">Пресет успешно импортирован</string>
+    <string name="preset_import_failed">Не удалось импортировать пресет</string>
+    <string name="preset_reset_button">Сбросить пресет</string>
+    <string name="preset_reset_dialog_title">Сбросить настройки пресета?</string>
+    <string name="preset_reset_dialog_message">Все настройки пресета %d будут сброшены до значений по умолчанию. Изменения применятся только после нажатия «Сохранить».</string>
+    <string name="preset_reset_success">Настройки пресета %d сброшены — нажмите «Сохранить»</string>
 </resources>

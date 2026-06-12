@@ -10,25 +10,31 @@ import androidx.core.content.ContextCompat;
 
 import static com.gree1d.reappzuku.PreferenceKeys.KEY_AUTO_KILL_ENABLED;
 import static com.gree1d.reappzuku.PreferenceKeys.PREFERENCES_NAME;
+
 public class BootReceiver extends BroadcastReceiver {
     private static final String TAG = "BootReceiver";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
-            SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-            boolean automationEnabled = prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+        String action = intent.getAction();
+        if (action == null) return;
+
+        if (Intent.ACTION_BOOT_COMPLETED.equals(action)
+                || "android.intent.action.LOCKED_BOOT_COMPLETED".equals(action)) {
+
+            Intent serviceIntent = new Intent(context, ShappkyService.class);
+            ContextCompat.startForegroundService(context, serviceIntent);
 
             RestrictionsScheduler.scheduleNextStatic(context);
 
-            if (automationEnabled) {
-                Intent serviceIntent = new Intent(context, ShappkyService.class);
-                ContextCompat.startForegroundService(context, serviceIntent);
+            SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+            boolean autoKillEnabled = prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+            if (autoKillEnabled) {
                 AutoKillWorker.schedule(context);
-                Log.d(TAG, "Boot restore complete: automation resumed");
+                Log.d(TAG, "Boot complete (" + action + "): service started, worker scheduled");
             } else {
                 AutoKillWorker.cancel(context);
-                Log.d(TAG, "Boot restore skipped: automation disabled");
+                Log.d(TAG, "Boot complete (" + action + "): service started, worker skipped");
             }
         }
     }

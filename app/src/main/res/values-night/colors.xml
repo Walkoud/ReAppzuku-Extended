@@ -1,4 +1,6 @@
 <resources>
+    <color name="sheet_delete_color">#FF8A80</color>
+    
     <color name="list_item_selected_color">#534BAE</color>
     <color name="list_item_default_color">#17181C</color>
     <color name="button_background_color">#17181C</color>

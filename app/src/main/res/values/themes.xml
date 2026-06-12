@@ -23,16 +23,12 @@
 
     <style name="AppTheme.Amoled" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:windowAnimationStyle">@style/NoAnimationWindow</item>
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorSecondary">@color/colorAccent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/amoled_background</item>
         <item name="android:colorBackground">@color/amoled_background</item>
         <item name="colorSurface">@color/amoled_background</item>
         <item name="colorSurfaceVariant">@color/amoled_surface_variant</item>
         <item name="colorOnSurface">@android:color/white</item>
-        <item name="android:colorControlActivated">@color/colorAccent</item>
-        <item name="colorControlActivated">@color/colorAccent</item>
         <item name="checkboxStyle">@style/Widget.App.CheckBox</item>
     </style>
 
@@ -451,4 +447,22 @@
     <style name="ThemeOverlay.LightToolbarIcons" parent="ThemeOverlay.AppCompat.Dark">
         <item name="colorControlNormal">#FFFFFFFF</item>
     </style>
+
+    <style name="AppBottomSheetDialogTheme" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/AppBottomSheetStyle</item>
+    </style>
+
+    <style name="AppBottomSheetStyle" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/AppBottomSheetShape</item>
+        <item name="gestureInsetBottomIgnored">true</item>
+    </style>
+
+    <style name="AppBottomSheetShape" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeTopRight">16dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
 </resources>

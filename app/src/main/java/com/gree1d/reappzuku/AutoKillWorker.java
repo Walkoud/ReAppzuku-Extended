@@ -31,8 +31,12 @@ public class AutoKillWorker extends Worker {
     }
 
     public static void schedule(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        int intervalMinutes = prefs.getInt(KEY_KILL_INTERVAL, 15);
+        long clampedInterval = Math.max(intervalMinutes, 15);
+
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
-                AutoKillWorker.class, 15, TimeUnit.MINUTES).build();
+                AutoKillWorker.class, clampedInterval, TimeUnit.MINUTES).build();
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request);
     }
@@ -46,7 +50,9 @@ public class AutoKillWorker extends Worker {
     public Result doWork() {
         SharedPreferences prefs = getApplicationContext().getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
 
-        if (!prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false)) return Result.success();
+        boolean autoKillEnabled = prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+        boolean presetActive = prefs.getInt(KEY_ACTIVE_PRESET, 0) != 0;
+        if (!autoKillEnabled && !presetActive) return Result.success();
         if (!prefs.getBoolean(KEY_PERIODIC_KILL_ENABLED, false)) return Result.success();
         if (ShappkyService.isRunning()) return Result.success();
 

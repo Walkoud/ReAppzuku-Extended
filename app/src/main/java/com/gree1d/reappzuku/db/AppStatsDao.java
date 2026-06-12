@@ -48,4 +48,7 @@ public interface AppStatsDao {
            "ORDER BY (CASE WHEN lastKillTime > lastRelaunchTime THEN lastKillTime ELSE lastRelaunchTime END) ASC " +
            "LIMIT :deleteCount)")
     void deleteOldestStats(int deleteCount);
+
+    @Query("DELETE FROM app_stats")
+    void deleteAll();
 }

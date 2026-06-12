@@ -4,8 +4,8 @@
 
 ![Logo](https://github.com/gree1d/ReAppzuku/blob/main/docs/images/logo.png)
 <p align="center">
-<img src="https://img.shields.io/github/v/release/gree1d/ReAppzuku?label=Release&logo=github" alt="Latest Release">
-<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=Downloads&logo=github&color=a855f7" alt="Downloads">
+<img src="https://img.shields.io/github/v/release/gree1d/ReAppzuku?label=Release&" alt="Latest Release">
+<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=Downloads&color=a855f7" alt="Downloads">
 <img src="https://img.shields.io/badge/License-GPLv3-64748b.svg" alt="License">
 <img src="https://img.shields.io/badge/Android-6.0%2B-f97316.svg" alt="Android">
 <img src="https://img.shields.io/badge/Root-Supported-brightgreen.svg"/>
@@ -25,18 +25,21 @@ Root or Shizuku privileges are required.
   * Periodic Auto-Kill: intervals from 10 seconds to 5 minutes.
   * Kill on screen lock: force-stop background processes immediately after screen turns off.
   * RAM threshold: Kill triggers only when RAM usage reaches a set limit (75%–100%).
-* **Manual controls** *(no background service required)*:
+  * Kill on hardware events/launch app: Kill is triggered by selected hardware events or when target application is launched, with option to additionally clear RAM.
+  * Auto-Kill presets: Customize and schedule Auto-Kill behavior at specific times. 
+* **Manual controls:**
   * Main screen: view all active background processes with RAM usage, select and kill in bulk.
   * Quick Tiles: "Stop app" kills current foreground app; "Stop background apps" runs Auto-Kill with your lists.
-  * Home screen widget: one tap runs Auto-Kill and shows current RAM state.
+  * Home screen widget: displays current RAM usage and Auto-Kill statistics for last 12 hours. 
   * App shortcut: long-press app icon to kill current foreground app instantly.
 * **Background restrictions** (Android 11+):
   * Soft mode: blocks auto-start at OS level — app keeps running if you opened it, but won't wake up on its own.
+  *  Medium mode: partial restriction background app activity.
   * Hard mode: immediately terminates process when minimized, prevents it from staying in memory even for a second.
   * Manual mode: manually select and apply required restrictions to app.
 * **Restriction Scheduler:** set a time window to temporarily lift restrictions, with optional component launch on activation.
 * **Sleep Mode:** full freeze of selected apps after a set inactivity timer (5–60 min), automatic unfreeze on screen unlock.
-* **App Triggers:** deep diagnostic tool analyzing real causes of background activity — foreground services, sticky services, wakelocks, alarms, job scheduler, network connections, boot receivers, and 32 more factors.
+* **App Triggers:** deep diagnostic tool analyzing real causes of background activity — foreground services, sticky services, wakelocks, alarms, job scheduler, network connections, boot receivers, and 54 more factors (Depends on Android version).
 * **Analytics & Logs:**
   * Auto-Kill log for last 12 hours: kills, restarts, freed RAM per app.
   * Top offenders ranking by RAM consumption and restart frequency (12h / 24h / 7d / all time).
@@ -95,3 +98,8 @@ ReAppzuku is licensed under [GNU General Public License v3.0](LICENSE).
 ## Credits
 
 Forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
+<br><br>
+>![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)
+![Grok / xAI](https://img.shields.io/badge/Grok-000000?logo=xai&logoColor=white)
+> ReAppzuku was built using vibecoding — an approach where a significant part of code was generated with help of AI (LLM).

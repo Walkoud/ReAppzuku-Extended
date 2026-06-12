@@ -5,15 +5,27 @@
          QUICK SETTINGS TILES & SHORTCUTS
          ══════════════════════════════════════════════ -->
     <string name="tile_kill_app_label">Stop app</string>
-    <string name="tile_kill_app_subtitle">Close an app running in the background</string>
+    <string name="tile_kill_app_subtitle">Close background app</string>
     <string name="tile_background_kill_label">Stop background apps</string>
-    <string name="tile_background_kill_subtitle">Triggers the configured Auto-Kill</string>
+    <string name="tile_background_kill_subtitle">Runs configured Auto-Kill</string>
     <string name="shortcut_kill_short_label">Stop app</string>
-    <string name="shortcut_kill_long_label">Force-stop an app running in the background</string>
+    <string name="shortcut_kill_long_label">Force-stop background app</string>
     <string name="widget_kills">Kills 12h</string>
     <string name="widget_freed">RAM Freed</string>
     <string name="widget_last_kill">Last Kill</string>
     <string name="widget_ram">RAM</string>
+    <string name="settings_add_ram_shortcut_title">RAM Kill shortcut</string>
+    <string name="settings_add_ram_shortcut_subtitle">Add shortcut to home screen</string>
+    <string name="ram_kill_widget_description">RAM usage widget. Tap to kill background apps.</string>
+    
+    <plurals name="toast_killed_apps">
+        <item quantity="one">%1$d app closed · %2$s freed</item>
+        <item quantity="other">%1$d apps closed · %2$s freed</item>
+    </plurals>
+    <plurals name="toast_killed_apps_no_ram">
+        <item quantity="one">%d app closed</item>
+        <item quantity="other">%d apps closed</item>
+    </plurals>
     
     <!-- ══════════════════════════════════════════════
          COMMON / SHARED
@@ -21,12 +33,14 @@
     <string name="url_open_failed">Unable to open link</string>
 
     <!-- Common dialog buttons -->
+    <string name="stats_top_offenders_reset">Reset</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="dialog_apply">Apply</string>
     <string name="dialog_save">Save</string>
     <string name="dialog_close">Close</string>
     <string name="dialog_ok">OK</string>
     <string name="dialog_ok_got_it">Got it</string>
+    <string name="filter_sort_button">Sort</string>
 
     <!-- Units -->
     <string name="unit_kb">%d KB</string>
@@ -57,25 +71,25 @@
     <string name="main_added_to_blacklist">Added to blacklist</string>
     <string name="main_removed_from_blacklist">Removed from blacklist</string>
     <string name="main_app_hidden">App hidden</string>
-    <string name="main_app_visible">App is visible again</string>
-    <string name="main_open_app_info_error">Could not open app info</string>
+    <string name="main_app_visible">App visible again</string>
+    <string name="main_open_app_info_error">Can\'t open app info</string>
 
     <!-- Uninstall dialog -->
     <string name="main_uninstall_title">Uninstall %1$s</string>
-    <string name="main_uninstall_message">Shell commands (Shizuku/Root) will be used to uninstall this app.\n\nNote: System apps may not be removable on all devices.</string>
+    <string name="main_uninstall_message">Shizuku/Root shell commands will be used to uninstall this app.\n\nNote: System apps may not be removable on all devices.</string>
     <string name="main_uninstall_confirm">Uninstall</string>
 
     <!-- System app warning -->
     <string name="main_system_app_warning_title">System app warning</string>
-    <string name="main_system_app_restriction_warning">Restricting background activity for a system app may cause issues with notifications, widgets, VPN, keyboard, accessibility features, or device instability.\n\nBy continuing you proceed at your own risk.</string>
+    <string name="main_system_app_restriction_warning">Restricting background activity for a system app may cause issues with notifications, widgets, VPN, keyboard, accessibility features, or device instability.\n\nProceed at your own risk.</string>
 
     <!-- Background restriction sync dialogs -->
     <string name="main_restriction_out_of_sync_title">Background restriction out of sync</string>
-    <string name="main_restriction_out_of_sync_message">%1$s is still in ReAppzuku\'s saved restriction list, but Android is not currently restricting it.\n\nResume the restriction or remove the app from ReAppzuku\'s list?</string>
+    <string name="main_restriction_out_of_sync_message">%1$s is in ReAppzuku\'s restriction list, but Android isn\'t restricting it.\n\nResume restriction or remove from list?</string>
     <string name="main_restriction_resume">Resume</string>
     <string name="main_restriction_remove_from_list">Remove from list</string>
     <string name="main_restriction_external_title">Restriction not applied by ReAppzuku</string>
-    <string name="main_restriction_external_message">%1$s is currently restricted by Android, but it is not in ReAppzuku\'s saved app list.\n\nAdd to ReAppzuku or lift the current restriction?</string>
+    <string name="main_restriction_external_message">%1$s is restricted by Android, but not in ReAppzuku\'s app list.\n\nAdd to ReAppzuku or lift restriction?</string>
     <string name="main_restriction_add_to_reappzuku">Add to ReAppzuku</string>
     <string name="main_restriction_remove">Lift restriction</string>
     <string name="main_restriction_menu_out_of_sync">Background restriction (out of sync)</string>
@@ -86,7 +100,7 @@
     <string name="filter_restriction_manual_option">Manual</string>
     <string name="filter_manual_ops_dialog_title">Restrictions: %1$s</string>
     <string name="bgrest_help_manual_title">MANUAL</string>
-    <string name="bgrest_help_manual_body">You can choose required restrictions for app yourself.</string>
+    <string name="bgrest_help_manual_body">Choose required restrictions for each app manually.</string>
 
     <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
     <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
@@ -133,9 +147,9 @@
 
     <!-- Unsafe whitelist dialog -->
     <string name="dialog_unsafe_whitelist_title">Unsafe Configuration</string>
-    <string name="dialog_unsafe_whitelist_message">You have selected Whitelist mode, but your list is empty. In Root mode, this will attempt to terminate all system processes, causing a device reboot (Kernel/System panic). Please add essential apps to the whitelist first.</string>
+    <string name="dialog_unsafe_whitelist_message">Whitelist mode is selected, but whitelist is empty. In Root mode this will kill all system processes, causing a reboot (Kernel/System panic). Add essential apps to whitelist first.</string>
     <string name="dialog_unsafe_whitelist_ok">Got it</string>
-    <string name="toast_error_whitelist_empty">Auto-Kill aborted: Whitelist is empty</string>
+    <string name="toast_error_whitelist_empty">Auto-Kill aborted — whitelist is empty</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_main">Main</string>
@@ -173,7 +187,7 @@
     <string name="service_notification_title" translatable="false">ReAppzuku Service</string>
     <string name="service_notification_text">Monitoring background apps</string>
     <string name="service_shizuku_lost_title">ReAppzuku services</string>
-    <string name="service_shizuku_lost_text">No Shizuku access. The app cannot continue running.</string>
+    <string name="service_shizuku_lost_text">No Shizuku access — app can\'t continue.</string>
     <string name="service_channel_foreground_name" translatable="false">ReAppzuku Foreground Service</string>
     <string name="service_channel_actions_name">ReAppzuku Notifications</string>
 
@@ -188,8 +202,8 @@
     <string name="settings_shell_root_ok" translatable="false">Root access ✅</string>
     <string name="settings_shell_no_access">No access ❌</string>
     <string name="settings_shell_mode_title">Access mode</string>
-    <string name="settings_requires_privilege">Required Root or Shizuku access</string>
-    <string name="settings_requires_service_enabled">First, enable background service</string>
+    <string name="settings_requires_privilege">Requires Root or Shizuku</string>
+    <string name="settings_requires_service_enabled">Enable background service first</string>
 
     <!-- ── Appearance ── -->
     <string name="settings_section_appearance">Appearance</string>
@@ -199,9 +213,9 @@
     <string name="settings_theme_dark">Dark</string>
     <string name="settings_theme_amoled">AMOLED (black)</string>
     <string name="settings_theme_amoled_short" translatable="false">AMOLED</string>
-    <string name="settings_theme_dialog_title">Select app theme</string>
+    <string name="settings_theme_dialog_title">Select theme</string>
     <string name="settings_accent_title">Accent color</string>
-    <string name="settings_accent_subtitle">Primary interface color</string>
+    <string name="settings_accent_subtitle">Main interface color</string>
     <string name="settings_notification_mode_title">Notifications</string>
     <string name="settings_notification_mode_all">All</string>
     <string name="settings_notification_mode_important_only">Important only</string>
@@ -246,14 +260,14 @@
     <string name="settings_background_service_title">Background service</string>
     <string name="settings_background_service_subtitle">Required for all app features to work correctly.</string>
     <string name="settings_periodic_kill_title">Periodic Auto-Kill</string>
-    <string name="settings_periodic_kill_subtitle">Run Auto-Kill on a set interval</string>
+    <string name="settings_periodic_kill_subtitle">Run Auto-Kill at set interval</string>
     <string name="settings_check_frequency_title">Auto-Kill interval</string>
     <string name="settings_check_frequency_default">Every 18 seconds</string>
     <string name="settings_interval_fallback">Every %1$d seconds</string>
     <string name="settings_screen_lock_title">Auto-Kill on screen off</string>
-    <string name="settings_screen_lock_subtitle">Run Auto-Kill when the screen turns off</string>
+    <string name="settings_screen_lock_subtitle">Run Auto-Kill on screen off</string>
     <string name="settings_ram_threshold_title">RAM threshold</string>
-    <string name="settings_ram_threshold_subtitle">Auto-Kill when selected RAM usage exceeds</string>
+    <string name="settings_ram_threshold_subtitle">Run Auto-Kill when RAM usage exceeds</string>
     <string name="settings_ram_threshold_summary">Selected: %1$d%%</string>
     <string name="settings_ram_threshold_dialog_title">Select RAM usage limit</string>
     <string name="settings_ram_threshold_limit_title">RAM usage limit</string>
@@ -282,10 +296,10 @@
     <string name="settings_mode_blacklist">Blacklist</string>
     <string name="settings_kill_mode_dialog_title">Select Auto-Kill mode</string>
     <string name="settings_whitelist_title">Whitelist</string>
-    <string name="settings_whitelist_subtitle">Selected apps are never force-stopped</string>
+    <string name="settings_whitelist_subtitle">Selected apps are never killed</string>
     <string name="settings_whitelist_dialog_title">Whitelisted apps (protected from Auto-Kill)</string>
     <string name="settings_blacklist_title">Blacklist</string>
-    <string name="settings_blacklist_subtitle">Selected apps are force-stopped</string>
+    <string name="settings_blacklist_subtitle">Selected apps will be force-stopped</string>
     <string name="settings_blacklist_dialog_title">Blacklisted apps (Auto-Kill targets)</string>
     <string name="settings_show_system_apps_title">Show system apps</string>
     <string name="settings_show_persistent_apps_title">Show persistent apps</string>
@@ -296,28 +310,33 @@
     <string name="settings_auto_kill_type_kill">am kill</string>
     <string name="settings_auto_kill_type_help_button">What is this?</string>
     <string name="settings_auto_kill_type_help_title">Auto-Kill Type</string>
-    <string name="settings_auto_kill_type_help_message">On certain ROMs, using the am force-stop command may be interpreted by the system as a signal to immediately reclaim RAM. In such cases, the system will force-close all apps every time Auto-Kill runs, regardless of ReAppzuku settings.\n\nIf you encounter this issue, simply switch to the am kill command. This is a «softer» command that is less aggressive toward the system.</string>
+    <string name="settings_auto_kill_type_help_message">On some ROMs, am force-stop may be interpreted by the system as a signal to reclaim RAM immediately — forcing all apps to close on every Auto-Kill run, regardless of settings.\n\nIf you hit this issue, switch to am kill. It\'s a softer command, less aggressive toward the system.</string>
 
     <!-- ── Advanced tools ── -->
     <string name="settings_section_advanced_tools">Advanced tools</string>
     <string name="settings_background_restriction_title">Background restrictions</string>
-    <string name="settings_background_restriction_subtitle">Keep selected apps in a dormant state</string>
+    <string name="settings_background_restriction_subtitle">Restrict background activity for selected apps</string>
     <string name="settings_reapply_restrictions_title">Re-apply background restriction settings</string>
     <string name="settings_reapply_restrictions_subtitle">Restore saved restrictions</string>
     <string name="settings_sleep_mode_title">Sleep mode</string>
-    <string name="settings_sleep_mode_subtitle">Freeze apps during sleep mode</string>
+    <string name="settings_sleep_mode_subtitle">Freeze apps in sleep mode</string>
     <string name="settings_sleep_mode_apps_title">Sleep mode app list</string>
-    <string name="settings_sleep_mode_apps_subtitle">Select apps to freeze during sleep mode</string>
+    <string name="settings_sleep_mode_apps_subtitle">Apps to freeze in sleep mode</string>
     <string name="settings_sleep_mode_apps_dialog_title">Sleep mode apps</string>
     <string name="settings_sleep_mode_delay_title">Time until freeze</string>
-    <string name="settings_sleep_mode_delay_subtitle">Idle period before apps are frozen</string>
+    <string name="settings_sleep_mode_delay_subtitle">Idle time before apps are frozen</string>
     <string name="settings_sleep_mode_delay_fallback">After %1$d minutes</string>
-    <string name="settings_sleep_mode_restart_message">ReAppzuku needs to restart for this feature to work correctly. The app will now be force-closed.</string>
+    <string name="settings_sleep_mode_restart_message">ReAppzuku needs to restart for this to work. App will be force-closed now.</string>
     <string name="settings_clear_cache_title">Clear app caches</string>
-    <string name="settings_clear_cache_subtitle">Free RAM by clearing all app caches</string>
+    <string name="settings_clear_cache_subtitle">Free RAM by clearing app caches</string>
     <string name="settings_hidden_apps_title">Hidden apps</string>
-    <string name="settings_hidden_apps_subtitle">Hide apps from the main list</string>
-    <string name="settings_hidden_apps_dialog_title">Select apps to hide from the main list</string>
+    <string name="settings_hidden_apps_subtitle">Hide apps from main list</string>
+    <string name="settings_hidden_apps_dialog_title">Select apps to hide from main list</string>
+    <string name="freeze_badge_timer">Temporary</string>
+    <string name="freeze_badge_permanent">Permanent</string>
+    <string name="filter_freeze_type_dialog_title">Freeze type</string>
+    <string name="filter_freeze_timer_option">Temporary (when screen off)</string>
+    <string name="filter_freeze_permanent_option">Permanent (manual unfreeze only)</string>
 
     <string-array name="settings_sleep_mode_delay_labels">
         <item>5 minutes</item>
@@ -330,7 +349,7 @@
 
     <!-- ── Restrictions Scheduler ── -->
     <string name="settings_restrictions_scheduler_title">Restrictions Scheduler</string>
-    <string name="settings_restrictions_scheduler_subtitle">Schedule time windows to protect apps from restrictions</string>
+    <string name="settings_restrictions_scheduler_subtitle">Schedule time windows to protect apps</string>
     <string name="scheduler_no_eligible_apps">No apps with active restrictions or sleep mode</string>
     <string name="scheduler_btn_remove">Remove</string>
     <string name="scheduler_error_no_flags">Select at least one restriction type</string>
@@ -350,35 +369,38 @@
     <string name="scheduler_component_not_selected">Not selected</string>
     <string name="scheduler_action_launch_main">Launch %s</string>
     <string name="scheduler_component_picker_title">Select component</string>
-    <string name="scheduler_component_none_found">No exported components found</string>
+    <string name="scheduler_component_none_found">No exported components</string>
+    <string name="scheduler_set_bucket_active">Set Bucket: Active</string>
 
     <!-- ── System apps warning dialog ── -->
     <string name="settings_system_apps_warning_title">⚠️ Warning: system apps</string>
-    <string name="settings_system_apps_warning_message">System apps are critical to device stability. Blocking or stopping system apps (e.g. Security on Xiaomi devices) may cause crashes, boot loops, or device malfunction.\n\nOnly modify system apps if you know what you are doing.</string>
+    <string name="settings_system_apps_warning_message">System apps are critical for device stability. Blocking or stopping them (e.g. Security on Xiaomi) may cause crashes, boot loops, or malfunction.\n\nOnly do this if you know what you\'re doing.</string>
     <string name="settings_system_apps_i_understand">I understand</string>
 
     <!-- ── Background restriction warnings ── -->
     <string name="settings_restriction_system_apps_title">System apps selected</string>
-    <string name="settings_restriction_system_apps_message">You have selected %1$d system app(s) for background restriction.\n\nThis may break notifications, widgets, VPN, keyboards, accessibility services, device pairing, or cause device instability.\n\nDo you want to continue?</string>
+    <string name="settings_restriction_system_apps_message">You\'ve selected %1$d system app(s) for background restriction.\n\nThis may break notifications, widgets, VPN, keyboards, accessibility, device pairing, or cause instability.\n\nContinue?</string>
     <string name="settings_restriction_system_apps_confirm">Yes, apply</string>
     <string name="settings_restriction_warning_title">Background restriction warning</string>
-    <string name="settings_restriction_warning_message">Apps with background restrictions may stop syncing, miss notifications, stop updating widgets, or fail to run background tasks until you open them again.\n\nDo you want to continue?</string>
+    <string name="settings_restriction_warning_message">Apps with background restrictions may stop syncing, miss notifications, stop updating widgets, or fail background tasks until opened again.\n\nContinue?</string>
 
     <!-- Background restriction mode explanation -->
-    <string name="settings_bgrest_help_button">What is difference?</string>
+    <string name="settings_bgrest_help_button">What\'s the difference?</string>
     <string name="dialog_backgroundrest_title">Background restriction types</string>
     <string name="bgrest_help_soft_title">SOFT</string>
-    <string name="bgrest_help_soft_body">Limits background activity while maintaining basic functionality.\n\u2022 Prevents standard background services from starting.\n\u2022 Allows the app to show important notifications.\n\u2022 Best for messengers and email clients.\n\nCommands used:\ncmd appops set RUN_ANY_IN_BACKGROUND ignore</string>
+    <string name="bgrest_help_soft_body">Limits background activity while keeping basic functionality.\n\u2022 Prevents standard background services from starting.\n\u2022 App can still show important notifications.\n\u2022 Good for messengers and email.</string>
+    <string name="bgrest_help_medium_title">Medium</string>
+    <string name="bgrest_help_medium_body">Moves the app to the Rare standby bucket and blocks key background operations: launching services, scheduling jobs, and triggering alarms. The app works normally while on screen, but freezes as soon as you leave it.</string>
     <string name="bgrest_help_hard_title">HARD</string>
-    <string name="bgrest_help_hard_body">Maximum isolation. The app completely \u201csleeps\u201d.\n\u2022 Blocks even priority (Foreground) services.\n\u2022 Prevents the device from being woken up via Wake-locks.\n\u2022 Disables automatic startup after device reboot.\n\u2022 Removes the app from the battery optimization whitelist.\n\nCommands used:\ncmd appops set START_FOREGROUND ignore\ncmd appops set RECEIVE_BOOT_COMPLETED ignore\ncmd appops set ALARM_WAKEUP ignore\ncmd deviceidle whitelist\nINTERACT_ACROSS_PROFILES ignore</string>
+    <string name="bgrest_help_hard_body">Maximum isolation. App goes fully \u201casleep\u201d.\n\u2022 Blocks even Foreground services.\n\u2022 Blocks Wake-locks.\n\u2022 Disables autostart on reboot.\n\u2022 Removes app from battery optimization whitelist.</string>
 
     <!-- ── Misc toasts ── -->
     <string name="settings_no_saved_restrictions">No saved background restrictions to re-apply.</string>
-    <string name="settings_open_app_info_error">Unable to open app info</string>
+    <string name="settings_open_app_info_error">Can\'t open app info</string>
 
     <!-- ── Backup &amp; Restore ── -->
     <string name="settings_backup_restore_title">Backup &amp; Restore</string>
-    <string name="settings_backup_restore_subtitle">Save and restore ReAppzuku settings</string>
+    <string name="settings_backup_restore_subtitle">Save and restore settings</string>
     <string name="settings_backup_option_save">Save settings</string>
     <string name="settings_backup_option_restore">Restore settings</string>
     <string name="settings_backup_create_failed">Failed to create backup data</string>
@@ -393,7 +415,7 @@
     <!-- ── Information section ── -->
     <string name="settings_section_information">Information</string>
     <string name="settings_help_title">Help</string>
-    <string name="settings_help_subtitle">Setup and usage guide</string>
+    <string name="settings_help_subtitle">Setup guide</string>
     <string name="settings_telegram_title">Telegram</string>
     <string name="settings_telegram_subtitle">Contact the developer</string>
     <string name="settings_source_code_title">Source code</string>
@@ -413,11 +435,15 @@
     <string name="restriction_badge_soft">Soft</string>
     <string name="restriction_badge_removed">Removed</string>
     <string name="restriction_badge_retry">Retry</string>
+    <string name="restriction_badge_medium">Medium</string>
 
     <!-- Restriction type dialog -->
+    <string name="manual_bucket_rare">Standby Bucket: Rare</string>
+    <string name="manual_bucket_restricted">Standby Bucket: Restricted</string>
     <string name="filter_restriction_type_dialog_title">Restriction type</string>
-    <string name="filter_restriction_soft_option">Soft (default) — blocks auto-start (RUN_ANY_IN_BACKGROUND)</string>
-    <string name="filter_restriction_hard_option">Hard — blocks all background activity (Soft + START_FOREGROUND + RECEIVE_BOOT_COMPLETED + INTERACT_ACROSS_PROFILES + removal from battery optimization whitelist)</string>
+    <string name="filter_restriction_soft_option">Soft (default) — blocks auto-start</string>
+    <string name="filter_restriction_medium_option">Medium — blocks some background activity</string>
+    <string name="filter_restriction_hard_option">Hard — blocks all background activity</string>
 
     <!-- ══════════════════════════════════════════════
          STATISTICS & LOGS SCREEN
@@ -430,15 +456,15 @@
     <string name="stats_last_relaunch_time"> (Last %1$s)</string>
     <string name="stats_recovered_ram">RAM freed %1$s</string>
     <string name="stats_summary_12h">Last 12 hours: %1$d apps | Auto-Kills %2$d | Relaunches %3$d | RAM freed %4$s</string>
-    <string name="stats_no_activity_12h">No activity in the last 12 hours.</string>
+    <string name="stats_no_activity_12h">No activity in last 12 hours.</string>
     <string name="stats_dialog_subtitle">Last 12 hours</string>
     <string name="stats_loading">Loading…</string>
 
     <!-- ── Top offenders ── -->
     <string name="settings_top_offenders_title">Top offenders</string>
     <string name="settings_top_offenders_subtitle">Apps with the highest Auto-Kill or relaunch count</string>
-    <string name="stats_top_offenders_empty">No offenders found for this period.</string>
-    <string name="stats_top_offenders_dialog_subtitle">Sort apps by Auto-Kill count, relaunch count, and RAM freed.</string>
+    <string name="stats_top_offenders_empty">No offenders for this period.</string>
+    <string name="stats_top_offenders_dialog_subtitle">Sort by Auto-Kill count, relaunches, RAM freed.</string>
     <string name="stats_top_offenders_summary">%1$s: %2$d apps | Auto-Kills %3$d | Relaunches %4$d | RAM freed %5$s</string>
     <string name="stats_offender_metrics">Auto-Killed: %1$dx | Relaunches: %2$dx | RAM freed: %3$s</string>
     <string name="stats_offender_score">Score %1$s</string>
@@ -457,12 +483,11 @@
     <!-- ── Background restriction log ── -->
     <string name="settings_restriction_log_title">Background restriction log</string>
     <string name="settings_restriction_log_subtitle">Recent restriction results and errors</string>
-    <string name="settings_restriction_log_empty">No background restriction events recorded yet.</string>
-    <string name="settings_restriction_log_dialog_subtitle">Recent background restriction results.</string>
+    <string name="settings_restriction_log_empty">No background restriction events yet.</string>
+    <string name="settings_restriction_log_dialog_subtitle">Recent restriction results.</string>
     <string name="settings_restriction_log_clear">Clear</string>
     <string name="settings_restriction_log_summary">Recent events: %1$d entries.</string>
-    <string name="settings_restriction_log_cleared">Background restriction log cleared</string>
-    <string name="log_bg_restriction_empty">No background restriction events logged yet.\n\nEntries are stored in the app database and trimmed automatically.</string>
+    <string name="log_bg_restriction_empty">No background restriction events yet.\n\nEntries are stored in app database and trimmed automatically.</string>
 
     <!-- ── Sleep Mode Log ── -->
     <string name="log_sleep_mode_title">Sleep Mode Log</string>
@@ -496,14 +521,14 @@
     <!-- ── Charts ── -->
     <string name="stats_tab_title_charts">Statistics</string>
     <string name="stats_loading_charts">Loading data…</string>
-    <string name="stats_no_data_hint">Not enough data yet.\nSnapshots are collected every 30–60 min.\nCome back later.</string>
+    <string name="stats_no_data_hint">Not enough data yet.\nSnapshots collected every 30–60 min.\nCheck back later.</string>
     <string name="stats_no_data_hint_short">Collecting data…</string>
     <string name="stats_no_data_hint_no_snapshot">No data collected yet. Please wait ~30 mins.</string>
-    <string name="stats_no_data_hint_no_history">Not enough history. Data is accumulating — check back later.</string>
+    <string name="stats_no_data_hint_no_history">Not enough history yet — check back later.</string>
     <string name="stats_no_data_hint_too_close">Snapshots are too close. Try again later.</string>
     <string name="stats_partial_data_warning">⚠ Incomplete data: history is still accumulating</string>
-    <string name="stats_disclaimer">Estimated data based on Android batterystats / procstats. Actual values may differ. Battery statistics may be inaccurate if the phone has been charging for a long time. .</string>
-    <string name="stats_service_inactive_hint">Statistics are only collected while the background service is active. Enable the service in the app settings.</string>
+    <string name="stats_disclaimer">Estimated data from Android batterystats / procstats. Actual values may differ. Battery stats may be inaccurate after long charging sessions.</string>
+    <string name="stats_service_inactive_hint">Stats are only collected while background service is active. Enable it in settings.</string>
 
     <string name="chart_period_labels" translatable="false">2h,6h,12h,24h</string>
     <string-array name="chart_period_labels">
@@ -528,7 +553,7 @@
 
     <!-- Stats info tiles -->
     <string name="stats_battery_trace">&lt; 0.1%</string>
-    <string name="stats_chart_total_battery">Total %.1f mAh</string>
+    <string name="stats_chart_total_battery">%.1f mAh</string>
     <string name="stats_chart_total_ram">Avg. %s</string>
     <string name="stats_self_overhead_label">ReAppzuku overhead:</string>
     <string name="stats_self_overhead">ReAppzuku overhead: %1$s · %2$s · %3$s</string>
@@ -551,7 +576,7 @@
     <string name="detail_activity_low">low</string>
     <string name="detail_activity_medium">med</string>
     <string name="detail_activity_high">high</string>
-    <string name="hint_12_24_scroll">Chart can be scrolled left/right</string>
+    <string name="hint_12_24_scroll">Chart scrolls left/right</string>
 
     <!-- ══════════════════════════════════════════════
          APP TRIGGERS DIALOG
@@ -559,7 +584,7 @@
     <string name="triggers_loading">Analyzing…</string>
     <string name="triggers_none_title">No triggers found</string>
     <string name="triggers_none_detail">No active background triggers detected</string>
-    <string name="triggers_none_explanation">The app may be in memory but is not actively keeping itself alive.</string>
+    <string name="triggers_none_explanation">App may be in memory but isn\'t actively keeping itself alive.</string>
 
     <!-- Category names -->
     <string name="triggers_cat_fg_service">Foreground Service</string>
@@ -580,11 +605,11 @@
     <string name="triggers_cat_bindings">Held by bindings (%1$d)</string>
 
     <!-- Foreground Service -->
-    <string name="triggers_fg_service_explanation">The app launched a background service with a persistent notification. This is the most reliable way to avoid being killed — Android won\'t touch such processes while the notification is visible.</string>
+    <string name="triggers_fg_service_explanation">App launched a background service with a persistent notification. Most reliable way to avoid being killed — Android won\'t touch such processes while notification is visible.</string>
 
     <!-- Broadcast Receivers -->
     <string name="triggers_receivers_detail_overflow"> (+%1$d more)</string>
-    <string name="triggers_receivers_explanation_base">The app is subscribed to system events — it will start automatically when they occur.</string>
+    <string name="triggers_receivers_explanation_base">App is subscribed to system events — starts automatically when they fire.</string>
     <string name="triggers_receivers_explanation_boot"> Includes launch at device boot (BOOT).</string>
     <string name="triggers_receivers_explanation_network"> Watches for network changes — wakes up when internet becomes available.</string>
 
@@ -596,24 +621,24 @@
     <string name="triggers_alarms_interval_sec">every %1$d sec</string>
     <string name="triggers_alarms_interval_min">every %1$d min</string>
     <string name="triggers_alarms_interval_hour">every %1$d h</string>
-    <string name="triggers_alarms_wakeup_explanation">Wake-up alarms (RTC_WAKEUP) pull the device out of sleep mode, even when the screen is off.</string>
+    <string name="triggers_alarms_wakeup_explanation">Wake-up alarms (RTC_WAKEUP) pull device out of sleep, even with screen off.</string>
     <string name="triggers_alarms_wakeup_aggressive"> Interval under 1 minute — very aggressive, heavy battery impact.</string>
     <string name="triggers_alarms_wakeup_frequent"> Interval under 5 minutes — noticeable battery impact.</string>
-    <string name="triggers_alarms_normal_explanation">Regular alarms only fire when the device is active — they don\'t wake it from sleep.</string>
-    <string name="triggers_alarms_exact_explanation"> setExactAndAllowWhileIdle — the most aggressive type: fires even in Doze mode.</string>
+    <string name="triggers_alarms_normal_explanation">Regular alarms only fire when device is active — won\'t wake it from sleep.</string>
+    <string name="triggers_alarms_exact_explanation"> setExactAndAllowWhileIdle — most aggressive type: fires even in Doze mode.</string>
 
     <!-- Jobs -->
     <string name="triggers_jobs_detail_running">%1$d running now</string>
     <string name="triggers_jobs_detail_pending">%1$d queued</string>
-    <string name="triggers_jobs_running_and_pending_explanation">JobScheduler / WorkManager — Android\'s deferred task system. The app is running %1$d tasks right now and has queued %2$d more. Typical reasons: sync, data download, analytics. Android decides when to run them — usually while charging or on Wi-Fi.</string>
-    <string name="triggers_jobs_running_explanation">JobScheduler / WorkManager — the app is currently running %1$d background tasks. Typical reasons: sync, data download, analytics.</string>
-    <string name="triggers_jobs_pending_explanation">JobScheduler / WorkManager — %1$d tasks are waiting to run. Android will execute them when conditions are right (network, charging, etc.). This is the modern replacement for wake-up alarms.</string>
+    <string name="triggers_jobs_running_and_pending_explanation">JobScheduler / WorkManager. App is running %1$d tasks now, %2$d more queued. Typical: sync, downloads, analytics. Android runs them when conditions are right — usually charging or Wi-Fi.</string>
+    <string name="triggers_jobs_running_explanation">JobScheduler / WorkManager — app is running %1$d background tasks. Typical reasons: sync, downloads, analytics.</string>
+    <string name="triggers_jobs_pending_explanation">JobScheduler / WorkManager — %1$d tasks waiting to run. Android executes them when conditions are right (network, charging). Modern replacement for wake-up alarms.</string>
 
     <!-- Doze Exemption -->
     <string name="triggers_doze_sys_detail">System whitelist</string>
     <string name="triggers_doze_user_detail">User whitelist</string>
-    <string name="triggers_doze_sys_explanation">Added by the device manufacturer — this app always bypasses Doze. Cannot be removed.</string>
-    <string name="triggers_doze_user_explanation">The app requested a Doze exemption ("don\'t optimize battery"). It can run in the background at any time. Can be revoked: Settings → Battery → Battery optimization.</string>
+    <string name="triggers_doze_sys_explanation">Added by device manufacturer — always bypasses Doze. Cannot be removed.</string>
+    <string name="triggers_doze_user_explanation">App requested Doze exemption ("don\'t optimize battery"). Can run in background anytime. Revoke at: Settings → Battery → Battery optimization.</string>
 
     <!-- WakeLocks -->
     <string name="triggers_wakelock_partial_type">PARTIAL</string>
@@ -623,61 +648,61 @@
     <string name="triggers_wakelock_full_explain">keeps screen and CPU on</string>
     <string name="triggers_wakelock_generic_explain">keeps the system active</string>
     <string name="triggers_wakelock_detail_held">, held %1$s</string>
-    <string name="triggers_wakelock_explanation">WakeLock (%1$s) — the app explicitly asked the system to "stay awake". Directly drains the battery while held.</string>
+    <string name="triggers_wakelock_explanation">WakeLock (%1$s) — app asked system to stay awake. Drains battery while held.</string>
 
     <!-- Sticky Service -->
-    <string name="triggers_sticky_explanation">The service is declared START_STICKY — Android will automatically restart it after it\'s killed. The app cannot be permanently stopped without disabling it.</string>
+    <string name="triggers_sticky_explanation">Service is declared START_STICKY — Android restarts it after kill. App can\'t be permanently stopped without disabling it.</string>
 
     <!-- Content Provider -->
-    <string name="triggers_provider_explanation">The app exposes a Content Provider — it will be started automatically by any other app that accesses its data (contacts, files, settings, etc.).</string>
+    <string name="triggers_provider_explanation">App exposes a Content Provider — starts automatically when any other app accesses its data (contacts, files, settings, etc.).</string>
 
     <!-- Sync Adapter -->
     <string name="triggers_sync_detail">%1$d account(s)</string>
-    <string name="triggers_sync_explanation">The app has a Sync Adapter registered with the system. Android periodically launches it to synchronize account data, even if the app itself is not running.</string>
+    <string name="triggers_sync_explanation">App has a Sync Adapter registered with system. Android periodically launches it to sync account data, even when app isn\'t running.</string>
 
     <!-- Chain Launch -->
     <string name="triggers_chain_direct_detail">Direct call from %s</string>
-    <string name="triggers_chain_direct_explanation">Application %1$s directly launched this process via a service or activity call (callingPackage / clientPackage).</string>
+    <string name="triggers_chain_direct_explanation">%1$s directly launched this process via service or activity call (callingPackage / clientPackage).</string>
     <string name="triggers_chain_broadcast_detail">Broadcast from %1$s → %2$s</string>
-    <string name="triggers_chain_broadcast_explanation">Application %1$s sent a broadcast with action %2$s, which started this process.</string>
+    <string name="triggers_chain_broadcast_explanation">%1$s sent a broadcast with action %2$s, which started this process.</string>
     <string name="triggers_chain_overflow">\n…and %d more</string>
 
     <!-- PendingIntents -->
     <string name="triggers_pending_activity">%1$d Activity</string>
     <string name="triggers_pending_service">%1$d Service</string>
     <string name="triggers_pending_broadcast">%1$d Broadcast</string>
-    <string name="triggers_pending_explanation">The app holds registered PendingIntents. The system or other apps can activate them at any moment — via a notification, AlarmManager, or a system event — which will start the process.</string>
+    <string name="triggers_pending_explanation">App holds registered PendingIntents. System or other apps can activate them anytime — via notification, AlarmManager, or system event — starting the process.</string>
 
     <!-- Boot Receivers -->
     <string name="triggers_boot_detail_normal">BOOT_COMPLETED</string>
     <string name="triggers_boot_detail_locked">LOCKED_BOOT_COMPLETED</string>
     <string name="triggers_boot_detail_both">BOOT_COMPLETED + LOCKED_BOOT_COMPLETED</string>
-    <string name="triggers_boot_explanation_normal">The app starts on every device boot via a BOOT_COMPLETED receiver. It launches after storage is unlocked.</string>
-    <string name="triggers_boot_explanation_locked">The app starts before the lock screen appears (LOCKED_BOOT_COMPLETED) — at a very early boot stage, before PIN/password entry.</string>
-    <string name="triggers_boot_explanation_both">The app starts twice on boot: immediately after the system starts (LOCKED_BOOT) and again after storage is unlocked (BOOT_COMPLETED).</string>
+    <string name="triggers_boot_explanation_normal">App starts on every boot via BOOT_COMPLETED. Launches after storage is unlocked.</string>
+    <string name="triggers_boot_explanation_locked">App starts before lock screen (LOCKED_BOOT_COMPLETED) — very early boot, before PIN/password entry.</string>
+    <string name="triggers_boot_explanation_both">App starts twice on boot: right after system starts (LOCKED_BOOT) and again after storage is unlocked (BOOT_COMPLETED).</string>
 
     <!-- App Standby Bucket -->
-    <string name="triggers_bucket_active_explanation">The app is in the ACTIVE bucket — the system applies no background restrictions. If you haven\'t used it recently, this is suspicious: something is keeping it active.</string>
-    <string name="triggers_bucket_working_set_explanation">WORKING_SET bucket — the app is used frequently or the system considers it important. Restrictions are minimal; jobs and alarms run on schedule.</string>
-    <string name="triggers_bucket_frequent_explanation">FREQUENT bucket — the app is used regularly. Some restrictions on rare background operations apply.</string>
-    <string name="triggers_bucket_rare_explanation">RARE or RESTRICTED bucket — the system has limited this app\'s background activity. Jobs and alarms are heavily delayed or blocked.</string>
+    <string name="triggers_bucket_active_explanation">App is in ACTIVE bucket — no background restrictions applied. If you haven\'t used it recently, something is keeping it active.</string>
+    <string name="triggers_bucket_working_set_explanation">WORKING_SET bucket — app is used frequently or system considers it important. Minimal restrictions; jobs and alarms run on schedule.</string>
+    <string name="triggers_bucket_frequent_explanation">FREQUENT bucket — app used regularly. Some restrictions on rare background operations.</string>
+    <string name="triggers_bucket_rare_explanation">RARE or RESTRICTED bucket — system has limited background activity. Jobs and alarms are heavily delayed or blocked.</string>
 
     <!-- Battery Stats -->
     <string name="triggers_batterystats_wakelock">WakeLock: %1$d times / %2$s</string>
     <string name="triggers_batterystats_alarms">%1$d alarm wake-ups</string>
     <string name="triggers_batterystats_jobs">%1$d job runs</string>
     <string name="triggers_batterystats_syncs">%1$d syncs</string>
-    <string name="triggers_batterystats_explanation">Battery usage history since the last charge reset.</string>
+    <string name="triggers_batterystats_explanation">Battery usage since last charge reset.</string>
 
     <!-- Network Activity -->
     <string name="triggers_network_active_connections">Active TCP connections</string>
     <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s traffic</string>
-    <string name="triggers_network_explanation">The app has active background network activity. Open TCP connections indicate ongoing data exchange with a server — typical for messengers, push clients, and real-time sync apps.</string>
+    <string name="triggers_network_explanation">App has active background network activity. Open TCP connections mean ongoing data exchange with server — typical for messengers, push clients, sync apps.</string>
 
     <!-- Bindings -->
-    <string name="triggers_bindings_explanation_base">One or more processes hold an active binding to this app\'s service. While the binding is held, Android cannot kill the process.</string>
-    <string name="triggers_bindings_gms_note"> Google Play Services (GMS) is a common culprit: it holds push connections and account sync bindings.</string>
-    <string name="triggers_bindings_push_note"> A push/FCM binding was detected: the app is waiting for incoming notifications in real time.</string>
+    <string name="triggers_bindings_explanation_base">One or more processes hold a binding to this app\'s service. While held, Android can\'t kill the process.</string>
+    <string name="triggers_bindings_gms_note"> Google Play Services (GMS) is a common culprit — holds push connections and sync bindings.</string>
+    <string name="triggers_bindings_push_note"> Push/FCM binding detected — app is waiting for incoming notifications.</string>
     <string name="triggers_bindings_overflow"> and %1$d more</string>
     <!-- Foreground Service: killable hint -->
     <string name="triggers_fg_service_killable">can be killed</string>
@@ -715,7 +740,7 @@
     
     <!-- ── 16. Sensors ── -->
     <string name="triggers_cat_sensors">Sensors (%1$d)</string>
-    <string name="triggers_sensors_explanation">The app is actively polling hardware sensors. Continuous sensor use drains the battery even when the screen is off.</string>
+    <string name="triggers_sensors_explanation">App is actively polling hardware sensors. Continuous use drains battery even with screen off.</string>
     
     <!-- ── 17. Location ── -->
     <string name="triggers_cat_location">Location</string>
@@ -725,8 +750,8 @@
     <string name="triggers_location_fg_bg">fg + bg</string>
     <string name="triggers_location_interval">, interval %1$s</string>
     <string name="triggers_location_active_gps">, GPS active %1$s</string>
-    <string name="triggers_location_fg_explanation">The app is requesting location in the foreground. Normal for navigation or fitness apps while in use.</string>
-    <string name="triggers_location_bg_explanation">The app is requesting location in the background. This keeps GPS/network active and drains battery significantly.</string>
+    <string name="triggers_location_fg_explanation">App is requesting location in foreground. Normal for navigation or fitness apps.</string>
+    <string name="triggers_location_bg_explanation">App is requesting location in background. Keeps GPS/network active, drains battery significantly.</string>
     
     <!-- ── 18. Excessive Wakeups ── -->
     <string name="triggers_cat_wakeups">Excessive Wakeups</string>
@@ -743,16 +768,16 @@
     <string name="triggers_bcast_eff_hour">, last hour: %1$d</string>
     <string name="triggers_bcast_eff_day">, last day: %1$d</string>
     <string name="triggers_bcast_eff_launched">, process launched: %1$d (%2$d%%)</string>
-    <string name="triggers_bcast_eff_explanation">Shows how many broadcasts were delivered to this app and how many of them forced a cold process start. A high launch rate means the app is repeatedly killed and restarted by the system.</string>
+    <string name="triggers_bcast_eff_explanation">Shows broadcasts delivered to app and how many forced a cold start. High launch rate means app is repeatedly killed and restarted.</string>
     <!-- Process State -->
     <string name="triggers_cat_proc_state">Process State</string>
-    <string name="triggers_proc_state_explanation">Current process priority: %1$s. The lower the adj value, the harder the system tries to keep this process alive.</string>
+    <string name="triggers_proc_state_explanation">Process priority: %1$s. Lower adj value = system works harder to keep it alive.</string>
     <string name="triggers_proc_persistent">persistent</string>
     
     <!-- WakeLock extras -->
     <string name="triggers_wakelock_held_by_system">(held by system)</string>
     <string name="triggers_wakelock_fallback_detail">%1$s · held %2$s · %3$d times</string>
-    <string name="triggers_wakelock_fallback_explanation">Historical wakelock data from battery stats. The app has held a wakelock multiple times since the last charge.</string>
+    <string name="triggers_wakelock_fallback_explanation">Historical wakelock data from battery stats. App held a wakelock multiple times since last charge.</string>
     
     <!-- Network -->
     <string name="triggers_network_established">%1$d ESTABLISHED connection(s)</string>
@@ -763,36 +788,36 @@
 
     <!-- Triggers dialog section headers -->
     <string name="triggers_section_active_now">• Actual</string>
-    <string name="triggers_section_can_wake">• Can wake up app at any time </string>
-    <string name="triggers_section_other">• Others triggers</string>
+    <string name="triggers_section_can_wake">• Can wake app anytime</string>
+    <string name="triggers_section_other">• Other triggers</string>
 
     <!-- Foreground Service Notification -->
     <string name="triggers_cat_fg_notification">FG Notification Channel</string>
-    <string name="triggers_fg_notification_explanation">The foreground service is showing a notification. The channel importance determines how visible and interruptive it is.</string>
-    <string name="triggers_fg_notification_high_explanation">The foreground service notification has HIGH or URGENT importance — it shows as a heads-up banner and is very difficult for the system to suppress. This makes the app nearly impossible to kill automatically.</string>
+    <string name="triggers_fg_notification_explanation">Foreground service is showing a notification. Channel importance determines how visible and intrusive it is.</string>
+    <string name="triggers_fg_notification_high_explanation">Foreground service notification has HIGH or URGENT importance — shows as heads-up banner, very hard for system to suppress. App is nearly impossible to kill automatically.</string>
 
     <!-- ====================================================== -->
     <!-- AudioFocus / MediaSession                              -->
     <!-- ====================================================== -->
     <string name="triggers_cat_audio_focus">Audio Focus</string>
-    <string name="triggers_audio_focus_gain_explanation">The app holds audio focus and is actively playing or recording audio. This keeps the process alive until focus is released.</string>
-    <string name="triggers_audio_focus_duck_explanation">The app holds a transient audio focus (duck/transient). It is temporarily suppressing other audio sources.</string>
+    <string name="triggers_audio_focus_gain_explanation">App holds audio focus and is playing or recording audio. Keeps process alive until focus is released.</string>
+    <string name="triggers_audio_focus_duck_explanation">App holds transient audio focus (duck/transient) — temporarily suppressing other audio.</string>
 
     <string name="triggers_cat_media_session">Media Session</string>
-    <string name="triggers_media_session_playing_explanation">The app has an active MediaSession in PLAYING state. The system keeps the process alive to handle media controls and notifications.</string>
-    <string name="triggers_media_session_paused_explanation">The app has a MediaSession that is paused or stopped but not released. The session still keeps the process in memory until explicitly abandoned.</string>
+    <string name="triggers_media_session_playing_explanation">App has active MediaSession in PLAYING state. System keeps process alive to handle media controls and notifications.</string>
+    <string name="triggers_media_session_paused_explanation">App has a MediaSession that is paused/stopped but not released. Still keeps process in memory until explicitly abandoned.</string>
 
     <!-- ====================================================== -->
     <!-- Bluetooth / BLE                                        -->
     <!-- ====================================================== -->
     <string name="triggers_cat_ble_scan">BLE Scan</string>
     <string name="triggers_ble_scan_count">%d active BLE scan(s)</string>
-    <string name="triggers_ble_scan_explanation">The app is performing a Bluetooth Low Energy scan. BLE scanning acquires a wake lock internally and keeps the process running in the background.</string>
-    <string name="triggers_ble_scan_low_latency_explanation">The app is scanning for BLE devices in LOW_LATENCY mode. This is the most power-intensive scan mode and prevents the CPU from sleeping.</string>
+    <string name="triggers_ble_scan_explanation">App is performing BLE scan. Scanning acquires wake lock internally and keeps process running in background.</string>
+    <string name="triggers_ble_scan_low_latency_explanation">App is scanning BLE in LOW_LATENCY mode — most power-intensive scan mode, prevents CPU from sleeping.</string>
 
     <string name="triggers_cat_gatt">GATT Connection</string>
     <string name="triggers_gatt_conn_count">%d active GATT connection(s)</string>
-    <string name="triggers_gatt_explanation">The app has an active Bluetooth GATT connection to a peripheral device. The connection is maintained by the system and keeps the process alive.</string>
+    <string name="triggers_gatt_explanation">App has active GATT connection to peripheral. Connection is maintained by system and keeps process alive.</string>
 
     <!-- ====================================================== -->
     <!-- ContentObserver                                        -->
@@ -800,7 +825,7 @@
     <string name="triggers_cat_content_obs">Content Observers</string>
     <string name="triggers_content_obs_count">%d registered observer(s)</string>
     <string name="triggers_content_obs_overflow"> (+%d more)</string>
-    <string name="triggers_content_obs_explanation">The app registered ContentObservers for one or more content URIs (contacts, media, settings, etc.). Any change to these URIs will wake the app to deliver the callback.</string>
+    <string name="triggers_content_obs_explanation">App registered ContentObservers for content URIs (contacts, media, settings, etc.). Any change to these URIs wakes app to deliver callback.</string>
 
     <!-- ====================================================== -->
     <!-- FCM / Firebase                                         -->
@@ -809,25 +834,25 @@
     <string name="triggers_fcm_service_detail">FirebaseMessagingService registered</string>
     <string name="triggers_fcm_receiver_detail">FCM broadcast receiver registered</string>
     <string name="triggers_fcm_generic_detail">Firebase dependency detected</string>
-    <string name="triggers_fcm_explanation">The app is registered to receive Firebase Cloud Messaging (FCM) push notifications. Google Play Services (GMS) can wake this app at any time when a push message arrives.</string>
+    <string name="triggers_fcm_explanation">App is registered for Firebase Cloud Messaging (FCM). GMS can wake app anytime a push message arrives.</string>
 
     <!-- ====================================================== -->
     <!-- Multiple Processes                                     -->
     <!-- ====================================================== -->
     <string name="triggers_cat_multiproc">Multiple Processes</string>
     <string name="triggers_multiproc_count">%d processes running</string>
-    <string name="triggers_multiproc_explanation">The app is running in more than one OS process. Sub-processes (e.g. :sync, :remote) can remain alive independently and are not always stopped when the main process is killed.</string>
+    <string name="triggers_multiproc_explanation">App is running in multiple OS processes. Sub-processes (e.g. :sync, :remote) can stay alive independently and aren\'t always stopped when main process is killed.</string>
 
     <!-- ====================================================== -->
     <!-- Accessibility / IME                                    -->
     <!-- ====================================================== -->
     <string name="triggers_cat_accessibility">Accessibility Service</string>
     <string name="triggers_a11y_detail_generic">Active accessibility service</string>
-    <string name="triggers_a11y_explanation">The app is registered as an active Accessibility Service. The system keeps accessibility services running at all times while they are enabled, regardless of battery optimization settings.</string>
+    <string name="triggers_a11y_explanation">App is registered as active Accessibility Service. System keeps it running at all times while enabled, regardless of battery optimization.</string>
 
     <string name="triggers_cat_ime">Input Method (IME)</string>
     <string name="triggers_ime_detail_generic">Active input method</string>
-    <string name="triggers_ime_explanation">The app is the currently selected input method (keyboard). The system keeps the active IME process alive permanently as long as it is selected by the user.</string>
+    <string name="triggers_ime_explanation">App is currently selected input method (keyboard). System keeps active IME alive permanently while selected.</string>
 
     <!-- ====================================================== -->
     <!-- Device Admin                                           -->
@@ -836,19 +861,19 @@
     <string name="triggers_device_admin_owner_device">Device Owner</string>
     <string name="triggers_device_admin_owner_profile">Profile Owner</string>
     <string name="triggers_device_admin_active">Active device admin</string>
-    <string name="triggers_device_admin_owner_explanation">The app is the Device Owner or Profile Owner. Apps with this privilege cannot be force-stopped or uninstalled by normal means and run with elevated system permissions.</string>
-    <string name="triggers_device_admin_explanation">The app is an active Device Administrator. It has elevated privileges and the system protects it from being force-stopped via standard battery restriction mechanisms.</string>
+    <string name="triggers_device_admin_owner_explanation">App is Device Owner or Profile Owner. Can\'t be force-stopped or uninstalled by normal means, runs with elevated permissions.</string>
+    <string name="triggers_device_admin_explanation">App is active Device Administrator. Has elevated privileges — protected from force-stop via standard battery restriction mechanisms.</string>
 
     <!-- AppOps -->
     <string name="triggers_cat_appops">AppOps</string>
     <string name="triggers_appops_last_used">%1$s ago</string>
-    <string name="triggers_appops_wakelock_explanation">App acquired a WakeLock via AppOps — the CPU was kept awake on its behalf.</string>
-    <string name="triggers_appops_fg_explanation">App started a Foreground Service recently — it was explicitly brought to an active state.</string>
-    <string name="triggers_appops_run_bg_explanation">App is permitted to run in the background by the system battery policy.</string>
-    <string name="triggers_appops_run_any_bg_explanation">App has unrestricted background execution — it is fully exempted from battery optimization.</string>
-    <string name="triggers_appops_exact_alarm_explanation">App has permission to schedule exact alarms, which can wake the device at precise times regardless of Doze.</string>
-    <string name="triggers_appops_user_interaction_explanation">App received an explicit user interaction signal recently, which may have triggered a background launch.</string>
-    <string name="triggers_appops_activity_recognition_explanation">App is using the Activity Recognition API — it periodically receives motion updates in the background.</string>
+    <string name="triggers_appops_wakelock_explanation">App acquired WakeLock via AppOps — CPU was kept awake on its behalf.</string>
+    <string name="triggers_appops_fg_explanation">App started a Foreground Service recently — was explicitly brought to active state.</string>
+    <string name="triggers_appops_run_bg_explanation">App is permitted to run in background by system battery policy.</string>
+    <string name="triggers_appops_run_any_bg_explanation">App has unrestricted background execution — fully exempted from battery optimization.</string>
+    <string name="triggers_appops_exact_alarm_explanation">App can schedule exact alarms — wakes device at precise times regardless of Doze.</string>
+    <string name="triggers_appops_user_interaction_explanation">App received user interaction signal recently — may have triggered background launch.</string>
+    <string name="triggers_appops_activity_recognition_explanation">App uses Activity Recognition API — periodically receives motion updates in background.</string>
 
     <!-- UsageStats -->
     <string name="triggers_cat_receivers_dynamic">Dynamic Receivers (%d)</string>
@@ -859,56 +884,63 @@
     <string name="triggers_usagestats_explanation">App was active recently but was not in the foreground — indicates a hidden background wake triggered by an alarm, job, push notification, or chain launch.</string>
 
     <string name="triggers_proc_frozen_detail">Process Frozen (cgroup freezer)</string>
-    <string name="triggers_proc_frozen_explanation">The process is frozen by the system (Android 11+): execution is paused, but the process is not killed. It unfreezes automatically upon access.</string>
+    <string name="triggers_proc_frozen_explanation">Process is frozen by system (Android 11+): execution is paused but not killed. Unfreezes automatically on access.</string>
     <string name="triggers_cat_fgs_timeout_exceeded">FGS Timeout Exceeded</string>
-    <string name="triggers_fgs_timeout_exceeded_explanation">Android 15: a service of type dataSync or mediaProcessing exceeded the 6-hour limit. The system should have triggered onTimeout() and stopped the service.</string>
+    <string name="triggers_fgs_timeout_exceeded_explanation">Android 15: service of type dataSync or mediaProcessing exceeded 6-hour limit. System should have triggered onTimeout() and stopped it.</string>
     <string name="triggers_cat_fgs_near_timeout">FGS Near Timeout</string>
     <string name="triggers_fgs_near_timeout_explanation">Android 15: the service has less than 30 minutes remaining out of the 6-hour limit (dataSync/mediaProcessing).</string>
     <string name="triggers_wakelock_wakeup_sources_explanation">Wakeup source from /sys/kernel/wakeup_sources (fallback for Android 14+ when dumpsys power does not show the wakelock).</string>
     <string name="triggers_fgs_blocked_detail">FGS blocked when starting from background</string>
-    <string name="triggers_fgs_blocked_explanation">Android 12+: an attempt to start a Foreground Service from the background without an allowed exemption. The service did not start.</string>
+    <string name="triggers_fgs_blocked_explanation">Android 12+: attempt to start FGS from background without allowed exemption. Service did not start.</string>
     <string name="triggers_network_bg_blocked_detail">Background network access blocked (Data Saver)</string>
-    <string name="triggers_network_bg_blocked_explanation">The user enabled Data Saver or restricted background network access. The application cannot use the network in the background on mobile data.</string>
+    <string name="triggers_network_bg_blocked_explanation">User enabled Data Saver or restricted background network. App can\'t use network in background on mobile data.</string>
     <string name="triggers_network_bg_allowed_detail">Background network access: explicitly allowed (Data Saver exemption)</string>
-    <string name="triggers_network_bg_allowed_explanation">The application has been whitelisted by the user in Data Saver settings — it has unrestricted network access in the background.</string>
+    <string name="triggers_network_bg_allowed_explanation">App was whitelisted in Data Saver settings — has unrestricted network access in background.</string>
     <string name="triggers_bg_location_detail">ACCESS_BACKGROUND_LOCATION granted</string>
-    <string name="triggers_bg_location_explanation">Android 11+: the application has permission to receive location data from the background at any time, even when the user is not actively using it. Requires separate user approval.</string>
-    <string name="triggers_bt_permissions_explanation">Android 12+: the application has permissions for Bluetooth scanning and/or connection. It can initiate scanning upon receiving a broadcast.</string>
-    <string name="triggers_kernel_wakelock_explanation">The application is holding a kernel-level wakelock (/sys/power/wake_lock). An extremely rare case that indicates a non-standard driver or system component.</string>
-    <string name="triggers_alarm_throttled_explanation">The system cancels the alarm due to app_standby or battery_saver. The application attempts to launch itself via a timer, but HyperOS blocks it.</string>
-    <string name="triggers_bal_privilege_explanation">Android 14+: the application received a token to launch from the background. Usually granted by the system for high-priority FCM, exact alarms, or a PendingIntent from a visible app.</string>
+    <string name="triggers_bg_location_explanation">Android 11+: app has permission to receive location data from background at any time, even when not in use. Requires separate user approval.</string>
+    <string name="triggers_bt_permissions_explanation">Android 12+: app has permissions for Bluetooth scanning and/or connection. Can initiate scanning on broadcast.</string>
+    <string name="triggers_kernel_wakelock_explanation">App is holding kernel-level wakelock (/sys/power/wake_lock). Extremely rare — indicates non-standard driver or system component.</string>
+    <string name="triggers_alarm_throttled_explanation">System cancelled alarm due to app_standby or battery_saver. App tries to launch via timer but system blocks it.</string>
+    <string name="triggers_bal_privilege_explanation">Android 14+: app received token to launch from background. Usually granted for high-priority FCM, exact alarms, or PendingIntent from visible app.</string>
     <string name="triggers_bal_blocked_detail_prefix">BAL blocked by system · caller=</string>
-    <string name="triggers_bal_blocked_explanation">Android 14+: the system blocked a background launch attempt. The application is trying to start an Activity or FGS without permission.</string>
+    <string name="triggers_bal_blocked_explanation">Android 14+: system blocked background launch attempt. App tried to start Activity or FGS without permission.</string>
     <string name="triggers_receiver_exported_detail">exported=true · Android 13 requires explicit flag</string>
-    <string name="triggers_receiver_exported_explanation">Android 13+: a dynamically registered receiver with exported=true is accessible to other applications. It can receive broadcasts from any senders.</string>
+    <string name="triggers_receiver_exported_explanation">Android 13+: dynamically registered receiver with exported=true is accessible to other apps. Can receive broadcasts from any sender.</string>
     <string name="triggers_fgs_boot_blocked_detail">FGS blocked at boot · FGS_BOOT_COMPLETED_RESTRICTIONS</string>
-    <string name="triggers_fgs_boot_blocked_explanation">Android 14+: a BOOT_COMPLETED receiver cannot start an FGS of type MICROPHONE (API 34) or PHONE_CALL (API 35). The application is attempting to bypass this restriction.</string>
+    <string name="triggers_fgs_boot_blocked_explanation">Android 14+: BOOT_COMPLETED receiver can\'t start FGS of type MICROPHONE (API 34) or PHONE_CALL (API 35). App is trying to bypass this restriction.</string>
     <string name="triggers_fgs_boot_exception_detail">ForegroundServiceStartNotAllowedException at boot</string>
-    <string name="triggers_fgs_boot_exception_explanation">Android 15: an attempt to start an FGS from BOOT_COMPLETED resulted in an exception. The service type (dataSync/mediaProcessing/phoneCall) is forbidden from launching at boot.</string>
+    <string name="triggers_fgs_boot_exception_explanation">Android 15: attempt to start FGS from BOOT_COMPLETED resulted in exception. Service type (dataSync/mediaProcessing/phoneCall) is forbidden from launching at boot.</string>
     <string name="triggers_doze_battery_opt_detail">Battery optimization disabled · RUN_ANY_IN_BACKGROUND=allow</string>
-    <string name="triggers_doze_battery_opt_explanation">The application has been excluded from battery optimization by the user or the system. It can run in the background without Doze/App Standby restrictions.</string>
+    <string name="triggers_doze_battery_opt_explanation">App was excluded from battery optimization by user or system. Can run in background without Doze/App Standby restrictions.</string>
     <string name="triggers_doze_battery_exempt_detail">Battery exempt (dumpsys battery)</string>
-    <string name="triggers_doze_battery_exempt_explanation">The application is in the battery manager exemptions list.</string>
-    <string name="triggers_bucket_restricted_explanation">RESTRICTED bucket (Android 12+): Jobs and Alarms are completely blocked. On Android 14, even ALLOW_WHILE_IDLE alarms are ignored. The application has been restricted due to excessive background consumption.</string>
-    <string name="triggers_bucket_never_explanation">NEVER bucket: background execution is entirely disabled by the system.</string>
-    <string name="triggers_restricted_confirmed_explanation">Android 12+: the system confirmed RESTRICTED bucket constraints via appops. Jobs and Alarms are blocked. The application cannot launch itself independently.</string>
-    <string name="triggers_doze_state_prefix">Android 11+: the device is in Doze mode (%1$s). </string>
-    <string name="triggers_doze_state_suffix">Wakelocks, Network, Jobs, and Alarms (except ALLOW_WHILE_IDLE) are blocked. Applications without a doze-exemption cannot run in the background.</string>
-    <string name="triggers_appops_schedule_exact_alarm_explanation">Permission to schedule exact alarm triggers. Android 14: deny by default for new installations. If allow — the application can precisely wake up the device via a timer.</string>
-    <string name="triggers_appops_full_screen_intent_explanation">Permission to display notifications over the lock screen. Android 14+: allowed only for alarm/call applications. Presence in a third-party application is an anomaly.</string>
-    <string name="triggers_appops_manage_media_explanation">Management of media sessions of other applications. Associated with the mediaProcessing FGS type on Android 15.</string>
-    <string name="triggers_appops_user_initiated_jobs_explanation">Permission to run User-Initiated Jobs (long tasks initiated by the user). Android 14: replacement for \'long jobs\'. Can be executed when the screen is locked.</string>
-    <string name="triggers_appops_start_fgs_blocked_explanation">The system has blocked the right to launch a Foreground Service. The application is trying to operate in the background but is restricted.</string>
+    <string name="triggers_doze_battery_exempt_explanation">App is in battery manager exemptions list.</string>
+    <string name="triggers_bucket_restricted_explanation">RESTRICTED bucket (Android 12+): Jobs and Alarms are completely blocked. On Android 14, even ALLOW_WHILE_IDLE alarms are ignored. App restricted due to excessive background consumption.</string>
+    <string name="triggers_bucket_never_explanation">NEVER bucket: background execution entirely disabled by system.</string>
+    <string name="triggers_restricted_confirmed_explanation">Android 12+: system confirmed RESTRICTED bucket via appops. Jobs and Alarms blocked. App can\'t launch itself independently.</string>
+    <string name="triggers_doze_state_prefix">Android 11+: device is in Doze mode (%1$s). </string>
+    <string name="triggers_doze_state_suffix">Wakelocks, Network, Jobs, and Alarms (except ALLOW_WHILE_IDLE) are blocked. Apps without Doze exemption can\'t run in background.</string>
+    <string name="triggers_appops_schedule_exact_alarm_explanation">Permission to schedule exact alarm triggers. Android 14: denied by default for new installs. If allowed — app can precisely wake device via timer.</string>
+    <string name="triggers_appops_full_screen_intent_explanation">Permission to display notifications over lock screen. Android 14+: allowed only for alarm/call apps. Presence in a third-party app is suspicious.</string>
+    <string name="triggers_appops_manage_media_explanation">Management of media sessions of other apps. Associated with mediaProcessing FGS type on Android 15.</string>
+    <string name="triggers_appops_user_initiated_jobs_explanation">Permission to run User-Initiated Jobs (long user-initiated tasks). Android 14: replacement for \'long jobs\'. Can run with screen locked.</string>
+    <string name="triggers_appops_start_fgs_blocked_explanation">System blocked launch of Foreground Service. App is trying to operate in background but is restricted.</string>
     <string name="trigger_manage_media_label">MANAGE_MEDIA · allow</string>
-    <string name="trigger_manage_media_desc">Android 12+: the app can manage media sessions of other apps. On Android 15, linked to the mediaProcessing foreground service type.</string>
+    <string name="trigger_manage_media_desc">Android 12+: app can manage media sessions of other apps. On Android 15, linked to mediaProcessing foreground service type.</string>
     <string name="trigger_exact_alarm_label">%1$s granted (Android 12+)</string>
-    <string name="trigger_exact_alarm_desc_use">Android 12+: the app holds permission for exact alarm triggers regardless of App Standby bucket. USE_EXACT_ALARM is granted only to system/privileged apps.</string>
-    <string name="trigger_exact_alarm_desc_schedule">Android 12+: the app holds permission for exact alarm triggers regardless of App Standby bucket. SCHEDULE_EXACT_ALARM requires explicit user approval.</string>
-    
+    <string name="trigger_exact_alarm_desc_use">Android 12+: app holds permission for exact alarm triggers regardless of App Standby bucket. USE_EXACT_ALARM is granted only to system/privileged apps.</string>
+    <string name="trigger_exact_alarm_desc_schedule">Android 12+: app holds permission for exact alarm triggers regardless of App Standby bucket. SCHEDULE_EXACT_ALARM requires explicit user approval.</string>
+
+    <!-- App Status + Aggression Score -->
     <string name="triggers_status_label_prefix">App status:</string>
     <string name="triggers_status_active">Active</string>
     <string name="triggers_status_background">Background</string>
     <string name="triggers_status_cached">Cached</string>
+    <string name="app_status_hint_foreground">on screen</string>
+    <string name="app_status_hint_fgs">active service</string>
+    <string name="app_status_hint_cached_service">holds service</string>
+    <string name="app_status_hint_cached_recent">recently used</string>
+    <string name="app_status_hint_cached_idle">inactive</string>
+    <string name="app_status_hint_not_running">not running</string>
     <string name="triggers_aggression_label_prefix">Aggression score:</string>
     
     <!-- ══════════════════════════════════════════════
@@ -918,6 +950,108 @@
     <string name="update_dialog_download">Download</string>
     <string name="update_dialog_close">Close</string>
     <string name="update_up_to_date">Latest version (%s)</string>
-    <string name="update_check_failed">Failed to check for updates</string>
+    <string name="update_check_failed">Update check failed</string>
+    <string name="easter_egg_hunter">🐱 Easter Egg Hunter!</string>
+    
+    <!-- Scan System -->
+    <string name="scansystem_menu_title">Scan</string>
+    <string name="scansystem_dialog_title">Current Load</string>
+    <string name="scansystem_scanning">Scanning…</string>
+    <string name="scansystem_no_load">No apps with active load</string>
+    <string name="scansystem_cat_wakelock">Keeping CPU awake</string>
+    <string name="scansystem_cat_network">Holding network</string>
+    <string name="scansystem_cat_fgs">Foreground Service</string>
+    <string name="scansystem_cat_alarm">Waking the device</string>
+    <string name="scansystem_cat_sensor">Holding sensors</string>
+    <string name="scansystem_cat_location">Holding location</string>
+    <string name="scansystem_wakelock_history">WakeLock History</string>
+    <string name="scan_button_label">Scan</string>
 
+    <!-- Background Restrictions Detail Log -->
+    <string name="settings_open_app_info">App Info</string>
+    <string name="log_detail_action">Action</string>
+    <string name="log_detail_outcome">Result</string>
+    <string name="log_detail_appops">AppOps</string>
+    <string name="log_detail_force_stop">Force-stop</string>
+    <string name="log_detail_ops_missing">Drifted ops</string>
+    <string name="log_detail_ops_repaired">Repaired</string>
+    <string name="log_detail_ops_failed">Failed ops</string>
+    <string name="log_detail_bucket_was">Bucket was</string>
+    <string name="log_detail_bucket_set">Bucket set</string>
+    <string name="log_detail_bucket_restored">Bucket restored</string>
+
+    <!-- Auto-Kill Advanced -->
+    <string name="section_additional_scenarios">Advanced Conditions</string>
+    <string name="scenarios_summary_none">Disabled</string>
+    <string name="scenarios_hw_headset_short">Headphones</string>
+    <string name="scenarios_hw_usb_short">USB</string>
+    <string name="scenarios_hw_charger_short">Charger</string>
+    <string name="scenarios_hw_wifi_short">WiFi/Mobile Data</string>
+    <string name="scenarios_hw_bluetooth_short">Bluetooth</string>
+    <string name="scenarios_hw_gps_short">GPS</string>
+    <string name="scenarios_hw_hotspot_short">Hotspot</string>
+    <string name="scenarios_app_launch_short">App Launch</string>
+
+    <!-- Hardware events -->
+    <string name="scenarios_hardware_events_title">Hardware Events</string>
+    <string name="scenarios_hw_headset">Headphones connected/disconnected</string>
+    <string name="scenarios_hw_usb">USB connected/disconnected</string>
+    <string name="scenarios_hw_charger">Charger connected/disconnected</string>
+    <string name="scenarios_hw_wifi">WiFi or Mobile network on/off</string>
+    <string name="scenarios_hw_bluetooth">Bluetooth on/off</string>
+    <string name="scenarios_hw_gps">GPS on/off</string>
+    <string name="scenarios_hw_hotspot">Hotspot on/off</string>
+    <string name="scenarios_hw_delay_note">Auto-Kill runs 10 seconds after the event to allow background apps to start</string>
+
+    <!-- App launch trigger -->
+    <string name="scenarios_app_launch_title">App Launch Trigger</string>
+    <string name="scenarios_app_launch_enable">Run Auto-Kill when target app launches</string>
+    <string name="scenarios_app_launch_clear_cache">Clear RAM on launch</string>
+    <string name="scenarios_app_launch_target_apps">Target apps</string>
+    <string name="scenarios_app_launch_add">Add app</string>
+    <string name="scenarios_app_launch_add_title">Select target apps</string>
+    <string name="scenarios_app_launch_empty">No apps selected</string>
+    <string name="scenarios_remove_target_app">Remove</string>
+
+    <!-- Accessibility service -->
+    <string name="accessibility_service_description">Detects when target apps are launched to trigger Auto-Kill and free RAM</string>
+    <string name="scenarios_accessibility_required_title">Accessibility Service Required</string>
+    <string name="scenarios_accessibility_required_message">For the App Launch trigger to work, enable ReAppzuku in Accessibility Settings. The setting has been saved and will activate once the service is enabled.</string>
+    <string name="scenarios_accessibility_open_settings">Open Settings</string>
+
+    <!-- Auto-Kill Presets-->
+    <string name="settings_presets_title">Auto-Kill Presets</string>
+    <string name="settings_presets_subtitle">Schedule up to 2 rule sets by time</string>
+    <string name="preset_title">Preset %d</string>
+    <string name="preset_section_title">Auto-Kill Presets</string>
+    <string name="preset_enabled_title">Enable preset</string>
+    <string name="preset_enabled_subtitle">Preset activates automatically by schedule</string>
+    <string name="preset_name_title">Preset name</string>
+    <string name="preset_name_dialog_title">Preset name</string>
+    <string name="preset_time_range_title">Active time</string>
+    <string name="preset_time_range_dialog_title">Active time</string>
+    <string name="preset_time_from_label">From</string>
+    <string name="preset_time_to_label">To</string>
+    <string name="preset_time_range_error_same">Start and end time must differ</string>
+    <string name="preset_app_list_mode_title">App list source</string>
+    <string name="preset_app_list_mode_dialog_title">App list source</string>
+    <string name="preset_app_list_mode_current">Use current whitelist / blacklist</string>
+    <string name="preset_app_list_mode_own">Use preset\'s own list</string>
+    <string name="preset_app_list_mode_switch_hint">Switch to "Own list" to edit</string>
+    <string name="preset_list_count_current">%d apps (from current settings)</string>
+    <string name="preset_list_count_own">%d apps selected</string>
+    <string name="preset_save_button">Save preset</string>
+    <string name="preset_saved">Preset %d saved</string>
+    <string name="preset_export_json_button">Export to JSON</string>
+    <string name="preset_export_success">Preset exported successfully</string>
+    <string name="preset_badge_active">Active</string>
+    <string name="preset_overlap_title">Time overlap</string>
+    <string name="preset_overlap_message">This range overlaps with another preset (%1$d:%2$02d – %3$d:%4$02d). Adjust times so presets don\'t overlap.</string>
+    <string name="preset_import_json_button">Import from JSON</string>
+    <string name="preset_import_success">Preset imported successfully</string>
+    <string name="preset_import_failed">Failed to import preset</string>
+    <string name="preset_reset_button">Reset preset</string>
+    <string name="preset_reset_dialog_title">Reset preset settings?</string>
+    <string name="preset_reset_dialog_message">All settings of preset %d will be reset to defaults. Changes only apply after you tap Save.</string>
+    <string name="preset_reset_success">Preset %d settings reset — tap Save to apply</string>
 </resources>

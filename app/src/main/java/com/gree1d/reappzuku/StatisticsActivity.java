@@ -10,7 +10,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.AdapterView;
+import android.widget.AutoCompleteTextView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.FrameLayout;
@@ -18,11 +18,11 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
-import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.core.content.ContextCompat;
 
 import com.github.mikephil.charting.animation.Easing;
@@ -225,19 +225,15 @@ public class StatisticsActivity extends BaseActivity {
     }
 
     private void updateChartPagerUI() {
-
         switch (currentChartIdx) {
             case CHART_BATTERY:
                 binding.tvChartTitle.setText(getString(R.string.chart_title_battery));
-                binding.ivChartIcon.setImageResource(R.drawable.ic_battery_chart);
                 break;
             case CHART_CPU:
                 binding.tvChartTitle.setText(getString(R.string.chart_title_cpu));
-                binding.ivChartIcon.setImageResource(R.drawable.ic_cpu);
                 break;
             case CHART_RAM:
                 binding.tvChartTitle.setText(getString(R.string.chart_title_ram));
-                binding.ivChartIcon.setImageResource(R.drawable.ic_ram);
                 break;
         }
     }
@@ -332,22 +328,30 @@ public class StatisticsActivity extends BaseActivity {
         binding.chartCpu.setVisibility(currentChartIdx == CHART_CPU     ? View.VISIBLE : View.GONE);
         binding.chartRam.setVisibility(currentChartIdx == CHART_RAM     ? View.VISIBLE : View.GONE);
 
-        double totalBat = 0, totalCpu = 0;
+        double totalBat = 0, totalCpu = 0, totalRam = 0;
         for (BatteryStatsManager.AppResourceStats s : sorted) {
             totalBat += s.batteryMah;
             totalCpu += s.cpuPct;
+            totalRam += s.ramMb;
         }
 
+        String centerText;
         switch (currentChartIdx) {
             case CHART_BATTERY:
-                binding.tvChartTotal.setText(
-                        getString(R.string.stats_chart_total_battery, totalBat));
+                centerText = getString(R.string.stats_chart_total_battery, totalBat);
                 break;
             case CHART_CPU:
-                binding.tvChartTotal.setText(
-                        String.format(Locale.US, "%.1f%%", Math.min(100.0, totalCpu)));
+                centerText = String.format(Locale.US, "%.1f%%", Math.min(100.0, totalCpu));
                 break;
+            case CHART_RAM:
+                centerText = formatRamMb(totalRam);
+                break;
+            default:
+                centerText = "";
         }
+        binding.tvChartCenterValue.setText(centerText);
+        // Keep hidden tv_chart_total in sync for any legacy references
+        binding.tvChartTotal.setText(centerText);
     }
 
     private void showChartsLoading(boolean loading) {
@@ -397,16 +401,17 @@ public class StatisticsActivity extends BaseActivity {
 
         PieDataSet dataSet = new PieDataSet(entries, "");
         dataSet.setColors(colors);
-        dataSet.setSliceSpace(2f);
-        dataSet.setSelectionShift(8f);
+        dataSet.setSliceSpace(0f);
+        dataSet.setSelectionShift(0f);
         dataSet.setValueTextSize(0f);
 
         PieData data = new PieData(dataSet);
         chart.setData(data);
+        chart.setRenderer(new PieChartRender(chart, chart.getAnimator(), chart.getViewPortHandler()));
         chart.setDrawHoleEnabled(true);
         chart.setHoleColor(Color.TRANSPARENT);
-        chart.setHoleRadius(48f);
-        chart.setTransparentCircleRadius(52f);
+        chart.setHoleRadius(62f);
+        chart.setTransparentCircleRadius(0f);
         chart.setDrawCenterText(false);
         chart.getDescription().setEnabled(false);
         chart.getLegend().setEnabled(false);
@@ -564,11 +569,11 @@ public class StatisticsActivity extends BaseActivity {
             sb.append(String.format(Locale.US, "• %s  %.1f%%\n",
                     s.appName, metricValue(s, metric) / total * 100));
         }
-        new AlertDialog.Builder(this)
+        applyCustomAccentToDialogButtons(new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.chart_others_dialog_title))
                 .setMessage(sb.toString().trim())
                 .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .show());
     }
 
     private void openAppDetail(String packageName, String appName) {
@@ -682,7 +687,13 @@ public class StatisticsActivity extends BaseActivity {
                         getString(R.string.stats_dialog_subtitle),
                         content.rootView);
                 dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
+                dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
                 dialog.show();
+                applyCustomAccentToDialogButtons(dialog);
+                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+                    executor.execute(() ->
+                            com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll());
+                });
             });
         });
     }
@@ -690,7 +701,6 @@ public class StatisticsActivity extends BaseActivity {
     private void showTopOffendersDialog() {
         SettingsListContent content = createSettingsListContent(
                 getString(R.string.stats_top_offenders_empty), true);
-        Spinner filterSpinner = content.filterSpinner;
         TextView summaryText = content.summaryText;
         ProgressBar loading = content.loading;
         ListView listView = content.listView;
@@ -707,24 +717,29 @@ public class StatisticsActivity extends BaseActivity {
         });
 
         ArrayAdapter<String> filterAdapter = new ArrayAdapter<>(
-                this, android.R.layout.simple_spinner_item, topOffenderFilterLabels);
-        filterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        filterSpinner.setAdapter(filterAdapter);
+                this, android.R.layout.simple_dropdown_item_1line, topOffenderFilterLabels);
+        content.filterSpinner.setAdapter(filterAdapter);
+        content.filterSpinner.setText(topOffenderFilterLabels[0], false);
 
         AlertDialog dialog = createSettingsSurfaceDialog(
                 getString(R.string.settings_top_offenders_title),
                 getString(R.string.stats_top_offenders_dialog_subtitle),
                 content.rootView);
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
+        dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.stats_top_offenders_reset), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
-        filterSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                loadTopOffenders(position, offendersAdapter, summaryText, loading, listView, emptyView);
-            }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
+        loadTopOffenders(0, offendersAdapter, summaryText, loading, listView, emptyView);
+
+        content.filterSpinner.setOnItemClickListener((parent, view, position, id) -> {
+            content.filterSpinner.setText(topOffenderFilterLabels[position], false);
+            loadTopOffenders(position, offendersAdapter, summaryText, loading, listView, emptyView);
+        });
+
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            executor.execute(() ->
+                    com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll());
         });
     }
 
@@ -809,12 +824,12 @@ public class StatisticsActivity extends BaseActivity {
         SettingsListContent content = createSettingsListContent(
                 getString(R.string.settings_restriction_log_empty), false);
         SettingsSurfaceAdapter adapter = new SettingsSurfaceAdapter();
+        final List<BackgroundRestrictionLog.LogEntry> logEntryRef = new ArrayList<>();
         content.listView.setAdapter(adapter);
         content.listView.setEmptyView(content.emptyView);
         content.listView.setOnItemClickListener((parent, view, position, id) -> {
-            SettingsSurfaceRow row = adapter.getItem(position);
-            if (row != null && row.packageName != null && row.packageName.contains(".")) {
-                openAppInfo(row.packageName);
+            if (position >= 0 && position < logEntryRef.size()) {
+                showRestrictionLogEntryDetails(logEntryRef.get(position));
             }
         });
         content.loading.setVisibility(View.VISIBLE);
@@ -828,11 +843,15 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
-            List<SettingsSurfaceRow> rows = buildRestrictionLogRows(BackgroundRestrictionLog.readEntries(this));
+            List<BackgroundRestrictionLog.LogEntry> entries = BackgroundRestrictionLog.readEntries(this);
+            List<SettingsSurfaceRow> rows = buildRestrictionLogRows(entries);
             String summary = getString(R.string.settings_restriction_log_summary, rows.size());
             handler.post(() -> {
+                logEntryRef.clear();
+                logEntryRef.addAll(entries);
                 adapter.setItems(rows);
                 content.summaryText.setText(summary);
                 content.loading.setVisibility(View.GONE);
@@ -845,8 +864,178 @@ public class StatisticsActivity extends BaseActivity {
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
             appManager.clearBackgroundRestrictionLog();
             reloadLog.run();
-            Toast.makeText(this, getString(R.string.settings_restriction_log_cleared), Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void showRestrictionLogEntryDetails(BackgroundRestrictionLog.LogEntry entry) {
+        StringBuilder body = new StringBuilder();
+        body.append(entry.timestamp).append("\n\n");
+
+        String actionLabel = humanizeLogAction(entry.action);
+        String outcomeLabel = humanizeLogOutcome(entry.outcome);
+        body.append(getString(R.string.log_detail_action)).append(": ").append(actionLabel).append("\n");
+        body.append(getString(R.string.log_detail_outcome)).append(": ").append(outcomeLabel).append("\n");
+
+        String detail = entry.detail != null ? entry.detail : "";
+
+        boolean isWatchdogBucket = "watchdog-bucket".equals(entry.action);
+        boolean isWatchdog = "watchdog".equals(entry.action);
+
+        if (isWatchdogBucket) {
+            body.append("\n");
+            String was = extractDetailValue(detail, "was");
+            String set = extractDetailValue(detail, "set");
+            if (was != null) body.append(getString(R.string.log_detail_bucket_was)).append(": ").append(bucketBucketName(was)).append("\n");
+            if (set != null) body.append(getString(R.string.log_detail_bucket_set)).append(": ").append(bucketBucketName(set)).append("\n");
+            body.append(getString(R.string.log_detail_bucket_restored)).append(": ")
+                    .append("ok".equals(entry.outcome) ? getString(R.string.log_outcome_ok) : getString(R.string.log_outcome_failed))
+                    .append("\n");
+        } else if (isWatchdog) {
+            body.append("\n");
+            String missing = extractDetailValue(detail, "missing");
+            String repaired = extractDetailValue(detail, "repaired");
+            if (missing != null) body.append(getString(R.string.log_detail_ops_missing)).append(": ").append(missing).append("\n");
+            if (repaired != null) body.append(getString(R.string.log_detail_ops_repaired)).append(": ").append(repaired).append("\n");
+            List<String> repairedOps = extractOpsList(detail, "repairedOps");
+            if (!repairedOps.isEmpty()) {
+                body.append("\n");
+                for (String op : repairedOps) {
+                    body.append("  ✓ ").append(op).append("\n");
+                }
+            }
+            List<String> failedOps = extractOpsList(detail, "failedOps");
+            if (!failedOps.isEmpty()) {
+                if (repairedOps.isEmpty()) body.append("\n");
+                body.append(getString(R.string.log_detail_ops_failed)).append(":\n");
+                for (String op : failedOps) {
+                    body.append("  ✗ ").append(op).append("\n");
+                }
+            }
+        } else {
+            boolean isSoftAction = "reapply-soft".equals(entry.action) || "restrict-soft".equals(entry.action) || "restrict".equals(entry.action);
+            boolean hasOpsInfo = !isSoftAction && detail.contains("appops=");
+            if (hasOpsInfo) {
+                body.append("\n");
+                List<String> failedOps = extractOpsList(detail, "failedOps");
+                boolean allOk     = detail.contains("appops=ok(");
+                boolean allFailed = detail.contains("appops=failed(0/");
+                boolean isManual  = "reapply-manual".equals(entry.action) || "restrict-manual".equals(entry.action);
+                body.append(getString(R.string.log_detail_appops)).append(":\n");
+                if (isManual) {
+                    int manualMask = appManager.getManualOpsMask(entry.packageName);
+                    if (manualMask != 0) {
+                        for (int i = 0; i < BackgroundAppManager.ALL_OPS.length; i++) {
+                            if ((manualMask & (1 << i)) == 0) continue;
+                            String op = BackgroundAppManager.ALL_OPS[i];
+                            boolean failed = failedOps.contains(op);
+                            if (allOk) {
+                                body.append("  ✓ ").append(op).append("\n");
+                            } else if (allFailed) {
+                                body.append("  ✗ ").append(op).append("\n");
+                            } else {
+                                body.append(failed ? "  ✗ " : "  ✓ ").append(op).append("\n");
+                            }
+                        }
+                    } else {
+                        for (String op : failedOps) body.append("  ✗ ").append(op).append("\n");
+                        String appopsRaw = extractDetailValue(detail, "appops");
+                        if (appopsRaw != null && !appopsRaw.isEmpty()) body.append("  ").append(appopsRaw).append("\n");
+                    }
+                } else {
+                    String[] opsForAction;
+                    switch (entry.action != null ? entry.action : "") {
+                        case "reapply-medium":
+                        case "restrict-medium":
+                            opsForAction = BackgroundAppManager.MEDIUM_OPS;
+                            break;
+                        default:
+                            opsForAction = BackgroundAppManager.ALL_OPS;
+                            break;
+                    }
+                    for (String op : opsForAction) {
+                        if (allOk) {
+                            body.append("  ✓ ").append(op).append("\n");
+                        } else if (allFailed) {
+                            body.append("  ✗ ").append(op).append("\n");
+                        } else {
+                            boolean failed = failedOps.contains(op);
+                            body.append(failed ? "  ✗ " : "  ✓ ").append(op).append("\n");
+                        }
+                    }
+                }
+            }
+            String forceStop = extractDetailValue(detail, "force-stop");
+            String bucketVal = extractDetailValue(detail, "bucket");
+            if (bucketVal != null) {
+                body.append("\n").append(getString(R.string.log_detail_bucket_set)).append(": ").append(bucketBucketName(bucketVal)).append("\n");
+            }
+            if (forceStop != null) {
+                body.append(getString(R.string.log_detail_force_stop)).append(": ").append(forceStop).append("\n");
+            }
+        }
+
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        TextView textView = new TextView(this);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        textView.setPadding(pad, pad, pad, pad);
+        textView.setTextSize(13f);
+        textView.setTypeface(android.graphics.Typeface.MONOSPACE);
+        textView.setText(body.toString().trim());
+        scrollView.addView(textView);
+
+        String title = (entry.packageName == null || entry.packageName.equals("-"))
+                ? humanizeLogAction(entry.action) : entry.packageName;
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setView(scrollView)
+                .setNegativeButton(getString(R.string.dialog_close), (d, w) -> d.dismiss());
+
+        if (entry.packageName != null && entry.packageName.contains(".")) {
+            builder.setPositiveButton(getString(R.string.settings_open_app_info), (d, w) -> openAppInfo(entry.packageName));
+        }
+
+        applyCustomAccentToDialogButtons(builder.show());
+    }
+
+    private String extractDetailValue(String detail, String key) {
+        if (detail == null) return null;
+        if (key == null) return null;
+        String prefix = key + "=";
+        int start = detail.indexOf(prefix);
+        if (start < 0) return null;
+        start += prefix.length();
+        int end = detail.indexOf(' ', start);
+        return end < 0 ? detail.substring(start) : detail.substring(start, end);
+    }
+
+    private List<String> extractOpsList(String detail, String key) {
+        List<String> result = new ArrayList<>();
+        if (detail == null) return result;
+        String prefix = key + "=[";
+        int start = detail.indexOf(prefix);
+        if (start < 0) return result;
+        start += prefix.length();
+        int end = detail.indexOf(']', start);
+        if (end < 0) return result;
+        String inner = detail.substring(start, end).trim();
+        if (inner.isEmpty()) return result;
+        for (String op : inner.split(",")) {
+            String trimmed = op.trim();
+            if (!trimmed.isEmpty()) result.add(trimmed);
+        }
+        return result;
+    }
+
+    private String bucketBucketName(String value) {
+        switch (value) {
+            case "40": return "RARE (40)";
+            case "45": return "RESTRICTED (45)";
+            case "30": return "WORKING_SET (30)";
+            case "20": return "FREQUENT (20)";
+            case "10": return "ACTIVE (10)";
+            default:   return value;
+        }
     }
 
     private void showSleepModeLogDialog() {
@@ -872,6 +1061,7 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSleepModeLogRows(SleepModeLogManager.readEntries(this));
@@ -889,7 +1079,6 @@ public class StatisticsActivity extends BaseActivity {
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
             SleepModeLogManager.clear(this);
             reloadLog.run();
-            Toast.makeText(this, getString(R.string.settings_restriction_log_cleared), Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -916,6 +1105,7 @@ public class StatisticsActivity extends BaseActivity {
         dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
         dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
         dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
 
         Runnable reloadLog = () -> executor.execute(() -> {
             List<SettingsSurfaceRow> rows = buildSchedulerLogRows(RestrictionsScheduler.SchedulerLog.readEntries(this));
@@ -931,9 +1121,10 @@ public class StatisticsActivity extends BaseActivity {
         reloadLog.run();
 
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
-            RestrictionsScheduler.SchedulerLog.clear(this);
-            reloadLog.run();
-            Toast.makeText(this, getString(R.string.settings_restriction_log_cleared), Toast.LENGTH_SHORT).show();
+            executor.execute(() -> {
+                RestrictionsScheduler.SchedulerLog.clear(this);
+                handler.post(reloadLog);
+            });
         });
     }
 
@@ -969,12 +1160,12 @@ public class StatisticsActivity extends BaseActivity {
 
     private static class SettingsListContent {
         final View rootView;
-        final Spinner filterSpinner;
+        final AutoCompleteTextView filterSpinner;
         final TextView summaryText;
         final ProgressBar loading;
         final ListView listView;
         final TextView emptyView;
-        SettingsListContent(View rootView, Spinner filterSpinner, TextView summaryText,
+        SettingsListContent(View rootView, AutoCompleteTextView filterSpinner, TextView summaryText,
                             ProgressBar loading, ListView listView, TextView emptyView) {
             this.rootView = rootView; this.filterSpinner = filterSpinner;
             this.summaryText = summaryText; this.loading = loading;
@@ -1008,12 +1199,28 @@ public class StatisticsActivity extends BaseActivity {
             bindOptionalText((TextView) view.findViewById(R.id.offender_score), item.badge);
 
             int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            TextView rank  = view.findViewById(R.id.offender_rank);
+            TextView score = view.findViewById(R.id.offender_score);
             if (accent == ACCENT_CUSTOM) {
                 int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-                TextView rank  = view.findViewById(R.id.offender_rank);
-                TextView score = view.findViewById(R.id.offender_score);
                 if (rank  != null) rank.setTextColor(color);
                 if (score != null) score.setTextColor(color);
+            }
+            if (score != null) {
+                if (item.badge != null && !item.badge.trim().isEmpty()) {
+                    int badgeColor = accent == ACCENT_CUSTOM
+                            ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                            : com.google.android.material.color.MaterialColors.getColor(score, com.google.android.material.R.attr.colorSecondary);
+                    android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+                    bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                    bg.setCornerRadius(6 * score.getResources().getDisplayMetrics().density);
+                    bg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 40));
+                    bg.setStroke(Math.round(score.getResources().getDisplayMetrics().density),
+                            androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 80));
+                    score.setBackground(bg);
+                } else {
+                    score.setBackground(null);
+                }
             }
 
             return view;
@@ -1027,7 +1234,7 @@ public class StatisticsActivity extends BaseActivity {
         view.setText(text);
     }
 
-    private AlertDialog createSettingsSurfaceDialog(String title, String subtitle, View contentView) {
+    private androidx.appcompat.app.AlertDialog createSettingsSurfaceDialog(String title, String subtitle, View contentView) {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_settings_surface, null);
         TextView subtitleView = dialogView.findViewById(R.id.dialog_surface_subtitle);
         FrameLayout contentContainer = dialogView.findViewById(R.id.dialog_surface_content);
@@ -1035,20 +1242,18 @@ public class StatisticsActivity extends BaseActivity {
         subtitleView.setVisibility(subtitle == null || subtitle.trim().isEmpty() ? View.GONE : View.VISIBLE);
         contentContainer.addView(contentView);
 
-        AlertDialog dialog = new AlertDialog.Builder(this).setTitle(title).setView(dialogView).create();
-        dialog.getWindow().setBackgroundDrawable(
-                new android.graphics.drawable.ColorDrawable(ContextCompat.getColor(this, R.color.background_primary)));
-        return dialog;
+        return new MaterialAlertDialogBuilder(this).setTitle(title).setView(dialogView).create();
     }
 
     private SettingsListContent createSettingsListContent(String emptyText, boolean showFilter) {
         View contentView = getLayoutInflater().inflate(R.layout.dialog_top_offenders, null);
-        Spinner filterSpinner = contentView.findViewById(R.id.top_offenders_filter);
+        AutoCompleteTextView filterSpinner = contentView.findViewById(R.id.top_offenders_filter);
         TextView summaryText = contentView.findViewById(R.id.top_offenders_summary);
         ProgressBar loading = contentView.findViewById(R.id.top_offenders_loading);
         ListView listView = contentView.findViewById(R.id.top_offenders_list);
         TextView emptyView = contentView.findViewById(R.id.top_offenders_empty);
-        filterSpinner.setVisibility(showFilter ? View.VISIBLE : View.GONE);
+        View filterLayout = contentView.findViewById(R.id.top_offenders_filter_layout);
+        filterLayout.setVisibility(showFilter ? View.VISIBLE : View.GONE);
         emptyView.setText(emptyText);
         return new SettingsListContent(contentView, filterSpinner, summaryText, loading, listView, emptyView);
     }
@@ -1086,13 +1291,35 @@ public class StatisticsActivity extends BaseActivity {
                         : subtitle + " | " + humanizeLogAction(entry.action);
             }
             String detail = humanizeLogOutcome(entry.outcome);
-            if (entry.detail != null && !entry.detail.trim().isEmpty()) {
-                detail = detail.isEmpty() ? entry.detail : detail + "  |  " + entry.detail;
+            String extraDetail = buildRestrictionLogRowDetail(entry);
+            if (!extraDetail.isEmpty()) {
+                detail = detail.isEmpty() ? extraDetail : detail + "  |  " + extraDetail;
             }
             rows.add(new SettingsSurfaceRow("#" + (i + 1), title, subtitle, detail,
                     resolveRestrictionTypeBadge(entry.action), entry.packageName));
         }
         return rows;
+    }
+
+    private String buildRestrictionLogRowDetail(BackgroundRestrictionLog.LogEntry entry) {
+        String raw = entry.detail != null ? entry.detail : "";
+        if (raw.isEmpty()) return "";
+        String action = entry.action != null ? entry.action : "";
+        if ("watchdog".equals(action)) {
+            String repaired = extractDetailValue(raw, "repaired");
+            return repaired != null ? "repaired=" + repaired : "";
+        }
+        if ("watchdog-bucket".equals(action)) {
+            String was = extractDetailValue(raw, "was");
+            String set = extractDetailValue(raw, "set");
+            if (was != null && set != null) return "was=" + was + " → " + set;
+            return "";
+        }
+        if (raw.contains("appops=")) {
+            String forceStop = extractDetailValue(raw, "force-stop");
+            return forceStop != null ? "force-stop=" + forceStop : "";
+        }
+        return raw;
     }
 
     private List<SettingsSurfaceRow> buildSleepModeLogRows(List<SleepModeLogManager.LogEntry> logEntries) {
@@ -1154,6 +1381,7 @@ public class StatisticsActivity extends BaseActivity {
         if (action == null) return "";
         switch (action.trim().toLowerCase()) {
             case "restrict-hard": case "reapply-hard": return getString(R.string.restriction_badge_hard);
+            case "restrict-medium": case "reapply-medium": return getString(R.string.restriction_badge_medium);
             case "restrict-soft": case "reapply-soft": case "restrict": return getString(R.string.restriction_badge_soft);
             case "restrict-manual": case "reapply-manual": return getString(R.string.restriction_badge_manual);
             case "allow": return getString(R.string.restriction_badge_removed);
@@ -1209,6 +1437,17 @@ public class StatisticsActivity extends BaseActivity {
             startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(this, getString(R.string.settings_open_app_info_error), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void applyCustomAccentToDialogButtons(AlertDialog dialog) {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent != ACCENT_CUSTOM) return;
+        int nightMode = getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+        int color = nightMode == android.content.res.Configuration.UI_MODE_NIGHT_YES ? Color.WHITE : Color.BLACK;
+        for (int which : new int[]{AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL}) {
+            android.widget.Button btn = dialog.getButton(which);
+            if (btn != null) btn.setTextColor(color);
         }
     }
 

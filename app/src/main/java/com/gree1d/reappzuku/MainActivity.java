@@ -41,6 +41,7 @@ import android.widget.PopupMenu;
 import android.widget.Toast;
 import android.net.Uri;
 import androidx.appcompat.app.AlertDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import android.widget.PopupWindow;
 import android.widget.ImageView;
@@ -110,7 +111,7 @@ public class MainActivity extends BaseActivity {
             if (binding.toolbar.getNavigationIcon() != null)
                 androidx.core.graphics.drawable.DrawableCompat.setTint(
                         binding.toolbar.getNavigationIcon(), onColor);
-        } else if (!isAmoled && accent == ACCENT_SYSTEM) {
+        } else if (accent == ACCENT_SYSTEM) {
             binding.toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.toolbar_navy));
             binding.toolbar.setTitleTextColor(Color.WHITE);
         } else {
@@ -235,6 +236,7 @@ public class MainActivity extends BaseActivity {
     private void setupListeners() {
         binding.swiperefreshlayout1.setOnRefreshListener(this::loadBackgroundApps);
         binding.killButton.setOnClickListener(view -> killSelectedApps());
+        binding.scanButtonLayout.setOnClickListener(v -> showSystemScanDialog());
 
         listAdapter.setOnAppActionListener(new BackgroundAppsRecyclerViewAdapter.OnAppActionListener() {
             @Override
@@ -275,140 +277,74 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showAppOptionsMenu(AppModel app, View anchor) {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        LinearLayout popupRoot = (LinearLayout) inflater.inflate(R.layout.popup_app_options, null);
+            String packageName = app.getPackageName();
     
-        boolean isDark = sharedPreferences.getBoolean(KEY_AMOLED, false)
-                || sharedPreferences.getInt(KEY_THEME,
-                        androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-                        == androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES;
+            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+            int accentColor = accent == ACCENT_CUSTOM
+                    ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                    : resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
     
-        String packageName = app.getPackageName();
+            AppOptionsBottomSheet sheet = AppOptionsBottomSheet.newInstance(
+                    app,
+                    appManager.getWhitelistedApps().contains(packageName),
+                    autoKillManager.getBlacklistedApps().contains(packageName),
+                    appManager.getHiddenApps().contains(packageName),
+                    appManager.supportsBackgroundRestriction(),
+                    getBackgroundRestrictionMenuTitle(app),
+                    accentColor
+            );
     
-        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_info), false, false, () -> {
-            openAppInfo(packageName);
-        });
+            try {
+                android.graphics.drawable.Drawable icon = getPackageManager()
+                        .getApplicationIcon(packageName);
+                sheet.setAppIcon(icon);
+            } catch (PackageManager.NameNotFoundException ignored) {}
     
-        addPopupItem(inflater, popupRoot, getString(R.string.menu_app_triggers), false, false, () -> {
-            showAppTriggersDialog(app);
-        });
+            sheet.setListener(new AppOptionsBottomSheet.Listener() {
+                @Override
+                public void onAppInfo() {
+                    openAppInfo(packageName);
+                }
     
-        if (app.isProtected()) {
-            addPopupItem(inflater, popupRoot, getString(R.string.menu_hidden), true,
-                    appManager.getHiddenApps().contains(packageName), () -> {
-                        toggleListMembership(app, "hidden");
-                    });
-        } else {
-            if (!app.isSystemApp()) {
-                addPopupItem(inflater, popupRoot, getString(R.string.menu_uninstall), false, false, () -> {
+                @Override
+                public void onAppTriggers() {
+                    showAppTriggersDialog(app);
+                }
+    
+                @Override
+                public void onUninstall() {
                     showUninstallConfirmation(app);
-                });
-            }
+                }
     
-            View groupHeader = inflater.inflate(R.layout.popup_menu_group_header, popupRoot, false);
-            TextView groupTitle = groupHeader.findViewById(R.id.group_title);
-            ImageView groupArrow = groupHeader.findViewById(R.id.group_arrow);
-            groupTitle.setText(getString(R.string.menu_add_to));
+                @Override
+                public void onToggleHiddenSingle() {
+                    toggleListMembership(app, "hidden");
+                }
     
-            LinearLayout subContainer = new LinearLayout(this);
-            subContainer.setOrientation(LinearLayout.VERTICAL);
-            subContainer.setVisibility(View.GONE);
+                @Override
+                public void onToggleWhitelist(boolean nowChecked) {
+                    toggleListMembership(app, "whitelist");
+                }
     
-            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_whitelist), true,
-                    appManager.getWhitelistedApps().contains(packageName), () -> {
-                        toggleListMembership(app, "whitelist");
-                    });
+                @Override
+                public void onToggleBlacklist(boolean nowChecked) {
+                    toggleListMembership(app, "blacklist");
+                }
     
-            addPopupItemToContainer(inflater, subContainer, getString(R.string.settings_mode_blacklist), true,
-                    autoKillManager.getBlacklistedApps().contains(packageName), () -> {
-                        toggleListMembership(app, "blacklist");
-                    });
+                @Override
+                public void onToggleHidden(boolean nowChecked) {
+                    toggleListMembership(app, "hidden");
+                }
     
-            addPopupItemToContainer(inflater, subContainer, getString(R.string.menu_hidden), true,
-                    appManager.getHiddenApps().contains(packageName), () -> {
-                        toggleListMembership(app, "hidden");
-                    });
-    
-            if (appManager.supportsBackgroundRestriction()) {
-                addPopupItemToContainer(inflater, subContainer, getBackgroundRestrictionMenuTitle(app), true,
-                        app.isBackgroundRestrictionDesired(), () -> {
-                            toggleBackgroundRestriction(app);
-                        });
-            }
-    
-            groupHeader.setOnClickListener(v -> {
-                if (subContainer.getVisibility() == View.GONE) {
-                    subContainer.setVisibility(View.VISIBLE);
-                    groupArrow.setRotation(180f);
-                } else {
-                    subContainer.setVisibility(View.GONE);
-                    groupArrow.setRotation(0f);
+                @Override
+                public void onToggleBackgroundRestriction(boolean nowChecked) {
+                    toggleBackgroundRestriction(app);
                 }
             });
     
-            popupRoot.addView(groupHeader);
-            popupRoot.addView(subContainer);
+            sheet.show(getSupportFragmentManager(), "app_options");
         }
-    
-        PopupWindow popupWindow = new PopupWindow(popupRoot,
-                (int) (220 * getResources().getDisplayMetrics().density),
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                true);
-        popupWindow.setElevation(12f);
-        popupWindow.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
-        popupWindow.setOutsideTouchable(true);
-    
-        popupRoot.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-    
-        int[] location = new int[2];
-        anchor.getLocationOnScreen(location);
-        int anchorX = location[0];
-        int anchorY = location[1];
-        int anchorHeight = anchor.getHeight();
-        int screenHeight = getResources().getDisplayMetrics().heightPixels;
-        int popupHeight = popupRoot.getMeasuredHeight();
-        int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        int popupWidth = (int) (220 * getResources().getDisplayMetrics().density);
-    
-        int x = Math.min(anchorX, screenWidth - popupWidth - 8);
-        int y;
-        if (anchorY + anchorHeight + popupHeight <= screenHeight) {
-            y = anchorY + anchorHeight;
-        } else {
-            y = anchorY - popupHeight;
-        }
-    
-        popupWindow.showAtLocation(anchor, android.view.Gravity.NO_GRAVITY, x, y);
-    }
-    
-    private void addPopupItem(LayoutInflater inflater, LinearLayout container,
-                               String title, boolean checkable, boolean checked, Runnable action) {
-        addPopupItemToContainer(inflater, container, title, checkable, checked, action);
-    }
-    
-    private void addPopupItemToContainer(LayoutInflater inflater, LinearLayout container,
-                                          String title, boolean checkable, boolean checked, Runnable action) {
-        View item = inflater.inflate(R.layout.popup_menu_item, container, false);
-        TextView tv = item.findViewById(R.id.item_title);
-        CheckBox cb = item.findViewById(R.id.item_checkbox);
-        tv.setText(title);
-        if (checkable) {
-            cb.setVisibility(View.VISIBLE);
-            cb.setChecked(checked);
-            int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-            if (accent == ACCENT_CUSTOM) {
-                int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
-                cb.setButtonTintList(android.content.res.ColorStateList.valueOf(color));
-            }
-        }
-        item.setOnClickListener(v -> {
-            if (checkable) {
-                cb.setChecked(!cb.isChecked());
-            }
-            action.run();
-        });
-        container.addView(item);
-    }
+
 
     private void openAppInfo(String packageName) {
         try {
@@ -421,18 +357,20 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showUninstallConfirmation(AppModel app) {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_uninstall_title, app.getAppName()))
                 .setMessage(getString(R.string.main_uninstall_message))
-                .setPositiveButton(getString(R.string.main_uninstall_confirm), (dialog, which) -> {
+                .setPositiveButton(getString(R.string.main_uninstall_confirm), (d, which) -> {
                     autoKillManager.uninstallPackage(app.getPackageName(), this::loadBackgroundApps);
                 })
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .show();
+                .create();
+        dialog.show();
+        tintDialogButtons(dialog);
     }
 
     private void showAppTriggersDialog(AppModel app) {
-        AlertDialog loadingDialog = new AlertDialog.Builder(this)
+        AlertDialog loadingDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.menu_app_triggers) + ": " + app.getAppName())
                 .setMessage(getString(R.string.triggers_loading))
                 .setCancelable(true)
@@ -453,6 +391,58 @@ public class MainActivity extends BaseActivity {
         });
     }
 
+    private void showSystemScanDialog() {
+        AlertDialog loadingDialog = new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.scansystem_dialog_title))
+                .setMessage(getString(R.string.scansystem_scanning))
+                .setCancelable(true)
+                .create();
+        loadingDialog.show();
+
+        List<AppModel> snapshot = fullAppsList.stream()
+                .filter(app -> !app.isProtected())
+                .filter(app -> !app.isPersistentApp())
+                .filter(app -> !app.isWhitelisted())
+                .filter(app -> !app.getPackageName().equals(getPackageName()))
+                .collect(Collectors.toList());
+
+        executor.execute(() -> {
+            ScanSystem scanner = new ScanSystem(MainActivity.this, shellManager);
+            List<ScanSystem.AppLoad> loads = scanner.scan(snapshot);
+
+            handler.post(() -> {
+                loadingDialog.dismiss();
+                if (isFinishing() || isDestroyed()) return;
+
+                if (loads.isEmpty()) {
+                    AlertDialog emptyDialog = new MaterialAlertDialogBuilder(this)
+                            .setTitle(getString(R.string.scansystem_dialog_title))
+                            .setMessage(getString(R.string.scansystem_no_load))
+                            .setPositiveButton(getString(R.string.dialog_close), null)
+                            .create();
+                    emptyDialog.show();
+                    tintDialogButtons(emptyDialog);
+                    return;
+                }
+
+                View dialogView = getLayoutInflater().inflate(R.layout.dialog_system_scan, null);
+                androidx.recyclerview.widget.RecyclerView recycler =
+                        dialogView.findViewById(R.id.scan_recycler);
+                recycler.setLayoutManager(
+                        new androidx.recyclerview.widget.LinearLayoutManager(this));
+                recycler.setAdapter(new ScanResultAdapter(this, loads));
+
+                AlertDialog resultDialog = new MaterialAlertDialogBuilder(this)
+                        .setTitle(getString(R.string.scansystem_dialog_title))
+                        .setView(dialogView)
+                        .setPositiveButton(getString(R.string.dialog_close), null)
+                        .create();
+                resultDialog.show();
+                tintDialogButtons(resultDialog);
+            });
+        });
+    }
+
     private void showTriggersResult(AppModel app, List<AppTriggersAnalyzer.TriggerInfo> triggers,
                                      AppTriggersAnalyzer.AppStatus status, int aggressionScore) {
 
@@ -461,15 +451,39 @@ public class MainActivity extends BaseActivity {
 
         if (status != null) {
             String statusLabel;
+            String statusHint;
             switch (status) {
-                case ACTIVE:     statusLabel = getString(R.string.triggers_status_active);     break;
-                case BACKGROUND: statusLabel = getString(R.string.triggers_status_background); break;
-                default:         statusLabel = getString(R.string.triggers_status_cached);     break;
+                case ACTIVE:
+                    statusLabel = getString(R.string.triggers_status_active);
+                    statusHint  = getString(R.string.app_status_hint_foreground);
+                    break;
+                case BACKGROUND_SERVICE:
+                    statusLabel = getString(R.string.triggers_status_background);
+                    statusHint  = getString(R.string.app_status_hint_fgs);
+                    break;
+                case BACKGROUND:
+                    statusLabel = getString(R.string.triggers_status_background);
+                    statusHint  = null;
+                    break;
+                case CACHED_WITH_SERVICE:
+                    statusLabel = getString(R.string.triggers_status_cached);
+                    statusHint  = getString(R.string.app_status_hint_cached_service);
+                    break;
+                case CACHED_RECENT:
+                    statusLabel = getString(R.string.triggers_status_cached);
+                    statusHint  = getString(R.string.app_status_hint_cached_recent);
+                    break;
+                default:
+                    statusLabel = getString(R.string.triggers_status_cached);
+                    statusHint  = getString(R.string.app_status_hint_cached_idle);
+                    break;
             }
 
             TextView statusView = new TextView(this);
             String labelPart = getString(R.string.triggers_status_label_prefix);
-            String fullText = labelPart + " " + statusLabel;
+            String fullText = statusHint != null
+                    ? labelPart + " " + statusLabel + "  •  " + statusHint
+                    : labelPart + " " + statusLabel;
             SpannableString spannable = new SpannableString(fullText);
             int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
             int primaryColor = (accent == ACCENT_CUSTOM)
@@ -528,11 +542,13 @@ public class MainActivity extends BaseActivity {
             for (AppTriggersAnalyzer.TriggerInfo t : other) addTriggerItem(container, t);
         }
 
-        new AlertDialog.Builder(this)
+        AlertDialog triggersDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.menu_app_triggers) + ": " + app.getAppName())
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_close), null)
-                .show();
+                .create();
+        triggersDialog.show();
+        tintDialogButtons(triggersDialog);
     }
 
     private void addSectionHeader(LinearLayout container, String title) {
@@ -584,6 +600,19 @@ public class MainActivity extends BaseActivity {
         android.util.TypedValue tv = new android.util.TypedValue();
         getTheme().resolveAttribute(attr, tv, true);
         return tv.data;
+    }
+
+    private void tintDialogButtons(AlertDialog dialog) {
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent != ACCENT_CUSTOM) return;
+        int color = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        ColorStateList tint = ColorStateList.valueOf(color);
+        Button positive = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+        Button negative = dialog.getButton(android.content.DialogInterface.BUTTON_NEGATIVE);
+        Button neutral  = dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL);
+        if (positive != null) positive.setTextColor(tint);
+        if (negative != null) negative.setTextColor(tint);
+        if (neutral  != null) neutral.setTextColor(tint);
     }
 
     private void toggleListMembership(AppModel app, String listType) {
@@ -655,35 +684,41 @@ public class MainActivity extends BaseActivity {
         }
         boolean enableRestriction = !app.isBackgroundRestrictionDesired();
         if (enableRestriction && app.isSystemApp()) {
-            new AlertDialog.Builder(this)
+            AlertDialog warnDialog = new MaterialAlertDialogBuilder(this)
                     .setTitle(getString(R.string.main_system_app_warning_title))
                     .setMessage(getString(R.string.main_system_app_restriction_warning))
                     .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> applyBackgroundRestriction(app, true))
                     .setNegativeButton(getString(R.string.dialog_cancel), null)
-                    .show();
+                    .create();
+            warnDialog.show();
+            tintDialogButtons(warnDialog);
             return;
         }
         applyBackgroundRestriction(app, enableRestriction);
     }
 
     private void showOutOfSyncRestrictionDialog(AppModel app) {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_restriction_out_of_sync_title))
                 .setMessage(getString(R.string.main_restriction_out_of_sync_message, app.getAppName()))
-                .setPositiveButton(getString(R.string.main_restriction_resume), (dialog, which) -> applyBackgroundRestriction(app, true))
-                .setNeutralButton(getString(R.string.main_restriction_remove_from_list), (dialog, which) -> applyBackgroundRestriction(app, false))
+                .setPositiveButton(getString(R.string.main_restriction_resume), (d, which) -> applyBackgroundRestriction(app, true))
+                .setNeutralButton(getString(R.string.main_restriction_remove_from_list), (d, which) -> applyBackgroundRestriction(app, false))
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .show();
+                .create();
+        dialog.show();
+        tintDialogButtons(dialog);
     }
 
     private void showExternalRestrictionDialog(AppModel app) {
-        new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.main_restriction_external_title))
                 .setMessage(getString(R.string.main_restriction_external_message, app.getAppName()))
-                .setPositiveButton(getString(R.string.main_restriction_add_to_reappzuku), (dialog, which) -> applyBackgroundRestriction(app, true))
-                .setNeutralButton(getString(R.string.main_restriction_remove), (dialog, which) -> applyBackgroundRestriction(app, false))
+                .setPositiveButton(getString(R.string.main_restriction_add_to_reappzuku), (d, which) -> applyBackgroundRestriction(app, true))
+                .setNeutralButton(getString(R.string.main_restriction_remove), (d, which) -> applyBackgroundRestriction(app, false))
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
-                .show();
+                .create();
+        dialog.show();
+        tintDialogButtons(dialog);
     }
 
     private void applyBackgroundRestriction(AppModel app, boolean enableRestriction) {
@@ -959,7 +994,7 @@ public class MainActivity extends BaseActivity {
         checkboxSystem.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked && !sharedPreferences.getBoolean("system_apps_warning_shown", false)) {
                 buttonView.setChecked(false);
-                new AlertDialog.Builder(this)
+                AlertDialog warnDialog = new MaterialAlertDialogBuilder(this)
                         .setTitle(getString(R.string.settings_system_apps_warning_title))
                         .setMessage(getString(R.string.settings_system_apps_warning_message))
                         .setPositiveButton(getString(R.string.settings_system_apps_i_understand), (d, w) -> {
@@ -969,11 +1004,13 @@ public class MainActivity extends BaseActivity {
                             buttonView.setChecked(true);
                         })
                         .setNegativeButton(getString(R.string.dialog_cancel), null)
-                        .show();
+                        .create();
+                warnDialog.show();
+                tintDialogButtons(warnDialog);
             }
         });
 
-        AlertDialog sortDialog = new AlertDialog.Builder(this)
+        AlertDialog sortDialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> {
                     int checkedId = radioGroup.getCheckedRadioButtonId();
@@ -1000,6 +1037,7 @@ public class MainActivity extends BaseActivity {
                 .create();
 
         sortDialog.show();
+        tintDialogButtons(sortDialog);
 
         int accentForDialog = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
         if (accentForDialog == ACCENT_CUSTOM) {

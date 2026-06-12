@@ -3,8 +3,7 @@
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="?android:attr/colorBackground">
+    android:padding="16dp">
 
     <EditText
         android:id="@+id/filter_search"
@@ -29,32 +28,16 @@
         android:visibility="gone"
         android:layout_marginBottom="8dp">
 
-        <CheckBox
-            android:id="@+id/filter_chk_system"
+        <TextView
+            android:id="@+id/filter_btn_sort"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="@string/filter_system"
-            android:textColor="@color/text_primary"
-            android:checked="false" />
-
-        <CheckBox
-            android:id="@+id/filter_chk_user"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/filter_user"
-            android:textColor="@color/text_primary"
-            android:checked="true" />
-
-        <CheckBox
-            android:id="@+id/filter_chk_running"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/filter_running"
-            android:textColor="@color/text_primary"
-            android:checked="false" />
+            android:textColor="@color/colorAccent"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:gravity="center_vertical"
+            android:foreground="?attr/selectableItemBackground" />
 
         <TextView
             android:id="@+id/filter_btn_clear"

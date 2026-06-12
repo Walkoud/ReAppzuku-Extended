@@ -17,7 +17,8 @@ public final class PreferenceKeys {
     public static final String KEY_WHITELISTED_APPS = "whitelisted_apps";
     public static final String KEY_BLACKLISTED_APPS = "blacklisted_apps";
     public static final String KEY_AUTOSTART_DISABLED_APPS = "autostart_disabled_apps";
-
+    public static final String KEY_MEDIUM_RESTRICTION_APPS = "medium_restriction_apps";
+    public static final String KEY_MANUAL_BUCKET_PREFIX = "manual_bucket_";
     public static final String KEY_HARD_RESTRICTION_APPS = "hard_restriction_apps";
     public static final String KEY_MANUAL_RESTRICTION_APPS = "manual_restriction_apps";
     public static final String KEY_MANUAL_OPS_PREFIX = "manual_ops_mask_";
@@ -28,8 +29,21 @@ public final class PreferenceKeys {
     // Kill Mode
     public static final String KEY_KILL_MODE = "kill_mode"; 
 
-    // Auto-Kill Type: which shell command to use when killing apps
+    // Auto-Kill Advanced
     public static final String KEY_AUTO_KILL_TYPE = "auto_kill_type";
+    public static final String KEY_HW_TRIGGER_HEADSET = "hw_trigger_headset";
+    public static final String KEY_HW_TRIGGER_USB = "hw_trigger_usb";
+    public static final String KEY_HW_TRIGGER_CHARGER = "hw_trigger_charger";
+    public static final String KEY_APP_LAUNCH_TRIGGER_ENABLED = "app_launch_trigger_enabled";
+    public static final String KEY_APP_LAUNCH_TRIGGER_PACKAGES = "app_launch_trigger_packages";
+    public static final String KEY_HW_TRIGGER_WIFI = "hw_trigger_wifi";
+    public static final String KEY_HW_TRIGGER_BLUETOOTH = "hw_trigger_bluetooth";
+    public static final String KEY_HW_TRIGGER_GPS = "hw_trigger_gps";
+    public static final String KEY_HW_TRIGGER_HOTSPOT = "hw_trigger_hotspot";
+    public static final String KEY_APP_LAUNCH_CLEAR_CACHE = "app_launch_clear_cache";
+
+    // Auto-Kill Presets
+    public static final String KEY_ACTIVE_PRESET = "active_preset_number";
 
     // Service & Automation
     public static final String KEY_AUTO_KILL_ENABLED = "autoKillEnabled";
@@ -52,7 +66,6 @@ public final class PreferenceKeys {
     public static final String KEY_REPLACEMENT_NOTICE_SHOWN_VERSION = "replacement_notice_shown_version";
 
     // Notifications
-    // Values: NOTIFICATION_MODE_ALL (0) = all notifications, NOTIFICATION_MODE_IMPORTANT_ONLY (1) = critical only
     public static final String KEY_NOTIFICATION_MODE = "notificationMode";
     public static final int NOTIFICATION_MODE_ALL = 0;
     public static final int NOTIFICATION_MODE_IMPORTANT_ONLY = 1;
@@ -60,6 +73,8 @@ public final class PreferenceKeys {
     // Sleep Mode
     public static final String KEY_SLEEP_MODE_ENABLED = "sleepModeEnabled";
     public static final String KEY_SLEEP_MODE_APPS = "sleepModeApps";
+    public static final String KEY_SLEEP_MODE_APPS_PERMANENT = "sleep_mode_apps_permanent";
     public static final String KEY_SLEEP_MODE_DELAY = "sleepModeDelay";
+    public static final String KEY_SLEEP_MODE_APPS_FROZEN = "sleep_mode_apps_frozen";
 
 }

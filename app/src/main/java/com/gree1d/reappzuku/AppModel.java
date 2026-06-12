@@ -14,6 +14,7 @@ public class AppModel {
     private boolean selected;
     private boolean isProtected;
     private boolean isWhitelisted;
+    private SleepModeManager.FreezeType freezeType;
     private boolean backgroundRestrictionDesired;
     private boolean backgroundRestrictionActual;
     private boolean backgroundRestrictionActualKnown;
@@ -194,5 +195,13 @@ public class AppModel {
 
     public void setWhitelisted(boolean whitelisted) {
         isWhitelisted = whitelisted;
+    }
+
+    public SleepModeManager.FreezeType getFreezeType() {
+        return freezeType;
+    }
+
+    public void setFreezeType(SleepModeManager.FreezeType freezeType) {
+        this.freezeType = freezeType;
     }
 }

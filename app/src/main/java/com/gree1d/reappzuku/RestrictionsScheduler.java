@@ -82,11 +82,14 @@ public class RestrictionsScheduler {
 
         public boolean enabled;
 
+        public boolean setBucketActive;
+
         public ScheduleEntry() {
             this.id               = System.currentTimeMillis();
             this.protectFlags     = PROTECT_ALL;
             this.onActivateAction = ON_ACTIVATE_NOTHING;
             this.enabled          = true;
+            this.setBucketActive  = false;
         }
 
 
@@ -134,6 +137,7 @@ public class RestrictionsScheduler {
             obj.put("onActivate",     onActivateAction);
             obj.put("componentName",  componentName != null ? componentName : "");
             obj.put("enabled",        enabled);
+            obj.put("setBucketActive", setBucketActive);
             return obj;
         }
 
@@ -150,6 +154,7 @@ public class RestrictionsScheduler {
             String comp        = obj.optString("componentName", "");
             e.componentName    = comp.isEmpty() ? null : comp;
             e.enabled          = obj.optBoolean("enabled", true);
+            e.setBucketActive  = obj.optBoolean("setBucketActive", false);
             return e;
         }
     }
@@ -532,7 +537,7 @@ public class RestrictionsScheduler {
                 }
 
                 if ((entry.protectFlags & PROTECT_SLEEP_MODE) != 0) {
-                    shellManager.unfreezePackage(pkg);
+                    shellManager.runShellCommandBlocking("pm enable " + pkg);
                 }
 
                 if (entry.onActivateAction != ON_ACTIVATE_NOTHING && entry.componentName != null) {
@@ -540,6 +545,10 @@ public class RestrictionsScheduler {
                     final int    action    = entry.onActivateAction;
 
                     handler.postDelayed(() -> launchComponent(component, action), 500);
+                }
+
+                if (entry.setBucketActive) {
+                    setAppBucketActive(pkg);
                 }
             }
 
@@ -553,15 +562,14 @@ public class RestrictionsScheduler {
 
                 if ((entry.protectFlags & PROTECT_BG_RESTRICTIONS) != 0) {
                     String outcome = backgroundAppManager.restoreRestrictionsForScheduler(pkg);
+                    if (!entry.setBucketActive) {
+                        restoreRestrictionBucket(pkg);
+                    }
                     SchedulerLog.logRestore(context, pkg, outcome, forceStop, use24h);
                 } else if ((entry.protectFlags & PROTECT_AUTO_KILL) != 0) {
-
-
                     stopApp(pkg, forceStop);
                     SchedulerLog.logRestore(context, pkg, "ok", forceStop, use24h);
                 }
-
-
             }
 
 
@@ -569,6 +577,37 @@ public class RestrictionsScheduler {
         });
     }
 
+
+    private void setAppBucketActive(String packageName) {
+        try {
+            String cmd = "am set-standby-bucket " + packageName + " active";
+            shellManager.runShellCommandForResult(cmd);
+            Log.d(TAG, "setAppBucketActive: " + packageName);
+        } catch (Exception e) {
+            Log.w(TAG, "setAppBucketActive failed for " + packageName, e);
+        }
+    }
+
+    private void restoreRestrictionBucket(String packageName) {
+        BackgroundAppManager.RestrictionType type = backgroundAppManager.getRestrictionType(packageName);
+        int bucket;
+        switch (type) {
+            case HARD:
+                bucket = 45;
+                break;
+            case MEDIUM:
+                bucket = 40;
+                break;
+            case MANUAL:
+                bucket = backgroundAppManager.getManualBucket(packageName);
+                break;
+            default:
+                return;
+        }
+        if (bucket == 0) return;
+        shellManager.runShellCommandForResult("am set-standby-bucket " + packageName + " " + bucket);
+        Log.d(TAG, "restoreRestrictionBucket: " + packageName + " bucket=" + bucket);
+    }
 
     private void stopApp(String packageName, boolean forceStop) {
         String cmd = (forceStop ? "am force-stop " : "am kill ") + packageName;

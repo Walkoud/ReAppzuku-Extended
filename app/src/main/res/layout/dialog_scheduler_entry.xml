@@ -140,6 +140,13 @@
              Секция 3: Действие при снятии ограничений
              ══════════════════════════════════════════ -->
 
+        <CheckBox
+            android:id="@+id/scheduler_cb_set_bucket_active"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/scheduler_set_bucket_active" />
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -167,7 +174,6 @@
 
         </RadioGroup>
 
-        <!-- Выбор компонента — видно только когда выбран scheduler_rb_launch -->
         <LinearLayout
             android:id="@+id/scheduler_component_container"
             android:layout_width="match_parent"

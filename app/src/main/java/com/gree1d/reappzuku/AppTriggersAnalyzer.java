@@ -8,13 +8,87 @@ import android.os.SystemClock;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // for debug logcat -s AppTriggersAnalyzer:D AppTriggerAnalyzersExt:D
 
+// AnalysisType — pass to analyze(packageName, types) for targeted analysis.
+// Full list of available values:
+//
+//   PROCESS_STATE                  — process state (proc state, oom adj)
+//   SERVICES_AND_BINDINGS          — running services and bindings (FGS, sticky, bound)
+//   FG_NOTIFICATION                — foreground service notification
+//   FGS_START_BLOCKED              — FGS start attempts blocked by the system
+//   WAKELOCKS                      — CPU held via wakelock
+//   NETWORK_ACTIVITY               — network activity (background data transfer)
+//   NETWORK_POLICY                 — network policy (background access allowed/blocked)
+//   SENSORS                        — sensor usage
+//   LOCATION_REQUESTS              — active location requests
+//   BACKGROUND_LOCATION_PERMISSION — background location permission granted
+//   AUDIO_FOCUS                    — audio focus acquisition
+//   BLUETOOTH                      — Bluetooth activity (scanning, connections)
+//   BLUETOOTH_PERMISSIONS          — Bluetooth permissions
+//   ALARMS                         — alarms (including WAKEUP types)
+//   EXCESSIVE_WAKEUPS              — excessive device wakeups
+//   JOBS                           — background JobScheduler tasks
+//   PENDING_INTENTS                — registered PendingIntents
+//   CONTENT_OBSERVERS              — ContentObserver subscriptions
+//   FCM_REGISTRATION               — Firebase Cloud Messaging registration
+//   APP_OPS                        — AppOps operations (system resource access)
+//   CHAIN_LAUNCH                   — chain launch (one app waking another)
+//   BROADCAST_RECEIVERS            — registered BroadcastReceivers
+//   BOOT_RECEIVERS                 — BOOT_COMPLETED receivers
+//   CONTENT_PROVIDERS              — registered ContentProviders
+//   SYNC_ADAPTERS                  — background sync (SyncAdapter)
+//   DOZE_EXEMPTION                 — Doze mode exemption
+//   STANDBY_BUCKET                 — app standby bucket (priority tier)
+//   BATTERY_STATS                  — cumulative power consumption (since last charge)
+//   BROADCAST_EFFICIENCY           — broadcast handling efficiency
+//   MULTIPLE_PROCESSES             — multiple active processes for the app
+//   ACCESSIBILITY_AND_IME          — Accessibility Service or IME usage
+//   DEVICE_ADMIN                   — device administrator rights
+//   USAGE_STATS                    — app usage statistics
+
 public class AppTriggersAnalyzer {
+
+    public enum AnalysisType {
+        PROCESS_STATE,
+        SERVICES_AND_BINDINGS,
+        FG_NOTIFICATION,
+        WAKELOCKS,
+        NETWORK_ACTIVITY,
+        NETWORK_POLICY,
+        SENSORS,
+        LOCATION_REQUESTS,
+        BACKGROUND_LOCATION_PERMISSION,
+        AUDIO_FOCUS,
+        BLUETOOTH,
+        BLUETOOTH_PERMISSIONS,
+        FGS_START_BLOCKED,
+        ALARMS,
+        JOBS,
+        PENDING_INTENTS,
+        EXCESSIVE_WAKEUPS,
+        CONTENT_OBSERVERS,
+        FCM_REGISTRATION,
+        APP_OPS,
+        CHAIN_LAUNCH,
+        BROADCAST_RECEIVERS,
+        BOOT_RECEIVERS,
+        CONTENT_PROVIDERS,
+        SYNC_ADAPTERS,
+        DOZE_EXEMPTION,
+        STANDBY_BUCKET,
+        BATTERY_STATS,
+        BROADCAST_EFFICIENCY,
+        MULTIPLE_PROCESSES,
+        ACCESSIBILITY_AND_IME,
+        DEVICE_ADMIN,
+        USAGE_STATS
+    }
 
     private static final String TAG = "AppTriggersAnalyzer";
 
@@ -246,41 +320,81 @@ public class AppTriggersAnalyzer {
     }
 
     public List<TriggerInfo> analyze(String packageName) {
+        return analyze(packageName, EnumSet.allOf(AnalysisType.class));
+    }
+
+    public List<TriggerInfo> analyze(String packageName, EnumSet<AnalysisType> types) {
         cachedUid = resolveUid(packageName);
 
         List<TriggerInfo> results = new ArrayList<>();
 
-        safeAdd(results, "ProcessState",          () -> analyzeProcessState(packageName));
-        safeAdd(results, "ServicesAndBindings",    () -> analyzeServicesAndBindings(packageName));
-        safeAdd(results, "FgNotification",         () -> analyzeFgNotification(packageName));
-        safeAdd(results, "Wakelocks",              () -> analyzeWakelocks(packageName));
-        safeAdd(results, "NetworkActivity",        () -> analyzeNetworkActivity(packageName));
-        safeAdd(results, "Sensors",                () -> analyzeSensors(packageName));
-        safeAdd(results, "LocationRequests",       () -> analyzeLocationRequests(packageName));
-        safeAdd(results, "AudioFocus",             () -> analyzeAudioFocus(packageName));
-        safeAdd(results, "Bluetooth",              () -> analyzeBluetooth(packageName));
+        if (types.contains(AnalysisType.PROCESS_STATE))
+            safeAdd(results, "ProcessState",              () -> analyzeProcessState(packageName));
+        if (types.contains(AnalysisType.SERVICES_AND_BINDINGS))
+            safeAdd(results, "ServicesAndBindings",       () -> analyzeServicesAndBindings(packageName));
+        if (types.contains(AnalysisType.FG_NOTIFICATION))
+            safeAdd(results, "FgNotification",            () -> analyzeFgNotification(packageName));
+        if (types.contains(AnalysisType.WAKELOCKS))
+            safeAdd(results, "Wakelocks",                 () -> analyzeWakelocks(packageName));
+        if (types.contains(AnalysisType.NETWORK_ACTIVITY))
+            safeAdd(results, "NetworkActivity",           () -> analyzeNetworkActivity(packageName));
+        if (types.contains(AnalysisType.SENSORS))
+            safeAdd(results, "Sensors",                   () -> analyzeSensors(packageName));
+        if (types.contains(AnalysisType.LOCATION_REQUESTS))
+            safeAdd(results, "LocationRequests",          () -> analyzeLocationRequests(packageName));
+        if (types.contains(AnalysisType.AUDIO_FOCUS))
+            safeAdd(results, "AudioFocus",                () -> analyzeAudioFocus(packageName));
+        if (types.contains(AnalysisType.BLUETOOTH))
+            safeAdd(results, "Bluetooth",                 () -> analyzeBluetooth(packageName));
+        if (types.contains(AnalysisType.FGS_START_BLOCKED))
+            safeAdd(results, "FgsStartBlocked",           () -> analyzeFgsStartBlocked(packageName));
+        if (types.contains(AnalysisType.NETWORK_POLICY))
+            safeAdd(results, "NetworkPolicy",             () -> analyzeNetworkPolicy(packageName));
+        if (types.contains(AnalysisType.BACKGROUND_LOCATION_PERMISSION))
+            safeAdd(results, "BackgroundLocationPerm",    () -> analyzeBackgroundLocationPermission(packageName));
+        if (types.contains(AnalysisType.BLUETOOTH_PERMISSIONS))
+            safeAdd(results, "BluetoothPermissions",      () -> analyzeBluetoothPermissions(packageName));
 
-        safeAdd(results, "Alarms",                 () -> ext.analyzeAlarms(packageName));
-        safeAdd(results, "Jobs",                   () -> ext.analyzeJobs(packageName));
-        safeAdd(results, "PendingIntents",         () -> ext.analyzePendingIntents(packageName));
-        safeAdd(results, "ExcessiveWakeups",       () -> ext.analyzeExcessiveWakeups(packageName));
-        safeAdd(results, "ContentObservers",       () -> ext.analyzeContentObservers(packageName));
-        safeAdd(results, "FcmRegistration",        () -> ext.analyzeFcmRegistration(packageName));
-        safeAdd(results, "AppOps",                 () -> ext.analyzeAppOps(packageName));
-
-        safeAdd(results, "ChainLaunch",            () -> ext.analyzeChainLaunch(packageName));
-        safeAdd(results, "BroadcastReceivers",     () -> ext.analyzeBroadcastReceivers(packageName));
-        safeAdd(results, "BootReceivers",          () -> ext.analyzeBootReceivers(packageName));
-        safeAdd(results, "ContentProviders",       () -> ext.analyzeContentProviders(packageName));
-        safeAdd(results, "SyncAdapters",           () -> ext.analyzeSyncAdapters(packageName));
-        safeAdd(results, "DozeExemption",          () -> ext.analyzeDozeExemption(packageName));
-        safeAdd(results, "StandbyBucket",          () -> ext.analyzeStandbyBucket(packageName));
-        safeAdd(results, "BatteryStats",           () -> ext.analyzeBatteryStats(packageName));
-        safeAdd(results, "BroadcastEfficiency",    () -> ext.analyzeBroadcastEfficiency(packageName));
-        safeAdd(results, "MultipleProcesses",      () -> ext.analyzeMultipleProcesses(packageName));
-        safeAdd(results, "AccessibilityAndIme",    () -> ext.analyzeAccessibilityAndIme(packageName));
-        safeAdd(results, "DeviceAdmin",            () -> ext.analyzeDeviceAdmin(packageName));
-        safeAdd(results, "UsageStats",             () -> ext.analyzeUsageStats(packageName));
+        if (types.contains(AnalysisType.ALARMS))
+            safeAdd(results, "Alarms",                    () -> ext.analyzeAlarms(packageName));
+        if (types.contains(AnalysisType.JOBS))
+            safeAdd(results, "Jobs",                      () -> ext.analyzeJobs(packageName));
+        if (types.contains(AnalysisType.PENDING_INTENTS))
+            safeAdd(results, "PendingIntents",            () -> ext.analyzePendingIntents(packageName));
+        if (types.contains(AnalysisType.EXCESSIVE_WAKEUPS))
+            safeAdd(results, "ExcessiveWakeups",          () -> ext.analyzeExcessiveWakeups(packageName));
+        if (types.contains(AnalysisType.CONTENT_OBSERVERS))
+            safeAdd(results, "ContentObservers",          () -> ext.analyzeContentObservers(packageName));
+        if (types.contains(AnalysisType.FCM_REGISTRATION))
+            safeAdd(results, "FcmRegistration",           () -> ext.analyzeFcmRegistration(packageName));
+        if (types.contains(AnalysisType.APP_OPS))
+            safeAdd(results, "AppOps",                    () -> ext.analyzeAppOps(packageName));
+        if (types.contains(AnalysisType.CHAIN_LAUNCH))
+            safeAdd(results, "ChainLaunch",               () -> ext.analyzeChainLaunch(packageName));
+        if (types.contains(AnalysisType.BROADCAST_RECEIVERS))
+            safeAdd(results, "BroadcastReceivers",        () -> ext.analyzeBroadcastReceivers(packageName));
+        if (types.contains(AnalysisType.BOOT_RECEIVERS))
+            safeAdd(results, "BootReceivers",             () -> ext.analyzeBootReceivers(packageName));
+        if (types.contains(AnalysisType.CONTENT_PROVIDERS))
+            safeAdd(results, "ContentProviders",          () -> ext.analyzeContentProviders(packageName));
+        if (types.contains(AnalysisType.SYNC_ADAPTERS))
+            safeAdd(results, "SyncAdapters",              () -> ext.analyzeSyncAdapters(packageName));
+        if (types.contains(AnalysisType.DOZE_EXEMPTION))
+            safeAdd(results, "DozeExemption",             () -> ext.analyzeDozeExemption(packageName));
+        if (types.contains(AnalysisType.STANDBY_BUCKET))
+            safeAdd(results, "StandbyBucket",             () -> ext.analyzeStandbyBucket(packageName));
+        if (types.contains(AnalysisType.BATTERY_STATS))
+            safeAdd(results, "BatteryStats",              () -> ext.analyzeBatteryStats(packageName));
+        if (types.contains(AnalysisType.BROADCAST_EFFICIENCY))
+            safeAdd(results, "BroadcastEfficiency",       () -> ext.analyzeBroadcastEfficiency(packageName));
+        if (types.contains(AnalysisType.MULTIPLE_PROCESSES))
+            safeAdd(results, "MultipleProcesses",         () -> ext.analyzeMultipleProcesses(packageName));
+        if (types.contains(AnalysisType.ACCESSIBILITY_AND_IME))
+            safeAdd(results, "AccessibilityAndIme",       () -> ext.analyzeAccessibilityAndIme(packageName));
+        if (types.contains(AnalysisType.DEVICE_ADMIN))
+            safeAdd(results, "DeviceAdmin",               () -> ext.analyzeDeviceAdmin(packageName));
+        if (types.contains(AnalysisType.USAGE_STATS))
+            safeAdd(results, "UsageStats",                () -> ext.analyzeUsageStats(packageName));
 
         if (results.isEmpty()) {
             results.add(new TriggerInfo(
@@ -293,12 +407,18 @@ public class AppTriggersAnalyzer {
         return results;
     }
 
-    public enum AppStatus { ACTIVE, BACKGROUND, CACHED }
+    public enum AppStatus {
+        ACTIVE,
+        BACKGROUND,
+        BACKGROUND_SERVICE,
+        CACHED_WITH_SERVICE,
+        CACHED_RECENT,
+        CACHED_IDLE
+    }
 
     public AppStatus resolveAppStatus(String packageName) {
         Log.d(TAG, "resolveAppStatus: start pkg=" + packageName);
         try {
-
             String psOutput = shellManager.runShellCommandAndGetFullOutput(
                     "ps -eo pid,name | grep " + packageName);
             Log.d(TAG, "resolveAppStatus: ps output=" + (psOutput != null ? psOutput.trim() : "null"));
@@ -312,13 +432,8 @@ public class AppTriggersAnalyzer {
             for (String line : psOutput.trim().split("\n")) {
                 String[] parts = line.trim().split("\\s+");
                 if (parts.length < 2) continue;
-                if (parts[1].equals(packageName)) {
-                    pid = parts[0];
-                    break;
-                }
-                if (pid == null && parts[1].startsWith(packageName)) {
-                    pid = parts[0];
-                }
+                if (parts[1].equals(packageName)) { pid = parts[0]; break; }
+                if (pid == null && parts[1].startsWith(packageName)) pid = parts[0];
             }
 
             if (pid == null) {
@@ -331,7 +446,6 @@ public class AppTriggersAnalyzer {
             Log.d(TAG, "resolveAppStatus: pid=" + pid + " oom_score_adj=" + (adjStr != null ? adjStr.trim() : "null"));
 
             if (adjStr == null || adjStr.trim().isEmpty()) {
-
                 Log.d(TAG, "resolveAppStatus: result=null (oom_score_adj unreadable)");
                 return null;
             }
@@ -342,12 +456,26 @@ public class AppTriggersAnalyzer {
                 Log.d(TAG, "resolveAppStatus: result=ACTIVE (adj=" + adj + ")");
                 return AppStatus.ACTIVE;
             }
+
             if (adj <= 499) {
-                Log.d(TAG, "resolveAppStatus: result=BACKGROUND (adj=" + adj + ")");
-                return AppStatus.BACKGROUND;
+                boolean hasFgs = hasActiveService(packageName);
+                Log.d(TAG, "resolveAppStatus: adj=" + adj + " hasFgs=" + hasFgs);
+                return hasFgs ? AppStatus.BACKGROUND_SERVICE : AppStatus.BACKGROUND;
             }
-            Log.d(TAG, "resolveAppStatus: result=CACHED (adj=" + adj + ")");
-            return AppStatus.CACHED;
+
+            boolean hasService = hasActiveService(packageName);
+            if (hasService) {
+                Log.d(TAG, "resolveAppStatus: result=CACHED_WITH_SERVICE (adj=" + adj + ")");
+                return AppStatus.CACHED_WITH_SERVICE;
+            }
+
+            if (adj < 920) {
+                Log.d(TAG, "resolveAppStatus: result=CACHED_RECENT (adj=" + adj + ")");
+                return AppStatus.CACHED_RECENT;
+            }
+
+            Log.d(TAG, "resolveAppStatus: result=CACHED_IDLE (adj=" + adj + ")");
+            return AppStatus.CACHED_IDLE;
 
         } catch (NumberFormatException e) {
             Log.w(TAG, "resolveAppStatus: oom_score_adj parse error: " + e.getMessage());
@@ -355,6 +483,18 @@ public class AppTriggersAnalyzer {
         } catch (Exception e) {
             Log.w(TAG, "resolveAppStatus failed: " + e.getMessage());
             return null;
+        }
+    }
+
+    private boolean hasActiveService(String packageName) {
+        try {
+            String out = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys activity services " + packageName);
+            if (out == null) return false;
+            return out.contains("ServiceRecord") && out.contains(packageName);
+        } catch (Exception e) {
+            Log.w(TAG, "hasActiveService failed: " + e.getMessage());
+            return false;
         }
     }
 
@@ -843,7 +983,7 @@ public class AppTriggersAnalyzer {
                     "dumpsys batterystats " + packageName);
             if (bsOut != null) {
                 Pattern p = Pattern.compile(
-                        "Wakelock\\s+(\\S+):\\s+(\\d+)ms realtime.*?\\((\\d+)\\s+times\\)",
+                        "(?:Wakelock|wake_lock)\\s+(\\S+)[^:]*:\\s+(\\d+)ms\\s+(?:realtime|total)[^(]*\\((\\d+)\\s+times\\)",
                         Pattern.CASE_INSENSITIVE);
                 for (String line : bsOut.split("\n")) {
                     Matcher m = p.matcher(line);
@@ -871,6 +1011,10 @@ public class AppTriggersAnalyzer {
                 && apiLevel <= Build.VERSION_CODES.TIRAMISU) {
             list.addAll(analyzeKernelWakelocksFallback(packageName));
         }
+
+        boolean activeNow = list.stream().anyMatch(
+                t -> t.group == TriggerInfo.Group.ACTIVE_NOW);
+        appendWakelockHistory(list, packageName, activeNow);
 
         return list;
     }
@@ -968,8 +1112,10 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "NetworkActivity/netstats - ERROR: " + e.getMessage()); }
         if (netstats != null) {
-            Matcher mRx = Pattern.compile("rxBytes=(\\d+)").matcher(netstats);
-            Matcher mTx = Pattern.compile("txBytes=(\\d+)").matcher(netstats);
+            // New format (Android 14+): rb= tb= rp= tp= st= op=
+            // Old format:               rxBytes= txBytes=
+            Matcher mRx = Pattern.compile("(?:rxBytes|rb)=(\\d+)").matcher(netstats);
+            Matcher mTx = Pattern.compile("(?:txBytes|tb)=(\\d+)").matcher(netstats);
             while (mRx.find()) rxBytes += Long.parseLong(mRx.group(1));
             while (mTx.find()) txBytes += Long.parseLong(mTx.group(1));
         }
@@ -1622,10 +1768,14 @@ public class AppTriggersAnalyzer {
             }
             if (netPolicy == null) return list;
 
-            boolean rejected = netPolicy.contains("REJECT_METERED_BACKGROUND")
-                    || netPolicy.contains("policy=2");
-            boolean allowed  = netPolicy.contains("ALLOW_METERED_BACKGROUND")
-                    || netPolicy.contains("policy=4");
+            boolean rejected = netPolicy.contains("REJECT_METERED_BACKGROUND");
+            boolean allowed  = netPolicy.contains("ALLOW_METERED_BACKGROUND");
+            Matcher mPolicy  = Pattern.compile("policy=(\\d+)").matcher(netPolicy);
+            if (mPolicy.find()) {
+                int policy = Integer.parseInt(mPolicy.group(1));
+                if ((policy & 2) != 0) rejected = true;
+                if ((policy & 4) != 0) allowed  = true;
+            }
 
             if (rejected) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
@@ -1698,6 +1848,124 @@ public class AppTriggersAnalyzer {
             }
         } catch (Exception e) { Log.w(TAG, "kernel wakelock check failed: " + e.getMessage()); }
         return list;
+    }
+
+    private void appendWakelockHistory(List<TriggerInfo> list, String packageName, boolean activeNow) {
+        try {
+            String history = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys batterystats --history");
+            if (history == null || history.trim().isEmpty()) return;
+
+            Pattern wakePat = Pattern.compile(
+                    "\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?\\s.*?([+-])wake_lock[^=]*=\\S*"
+                    + Pattern.quote(packageName) + "\\S*");
+            Pattern procPat = Pattern.compile(
+                    "\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?\\s.*?(?:Died|proc).*?"
+                    + Pattern.quote(packageName));
+            Pattern timePat = Pattern.compile("RESET:TIME:\\s*(\\d+)");
+
+            long baseUnixMs = 0;
+            long baseOffsetMs = 0;
+
+            for (String line : history.split("\n")) {
+                Matcher mt = timePat.matcher(line);
+                if (!mt.find()) continue;
+                baseUnixMs = Long.parseLong(mt.group(1)) * 1000L;
+                baseOffsetMs = parseHistoryOffset(line);
+            }
+
+            List<Long> deathOffsets = new ArrayList<>();
+            for (String line : history.split("\n")) {
+                Matcher mp = procPat.matcher(line);
+                if (mp.find()) deathOffsets.add(parseHistoryOffset(line));
+            }
+
+            List<long[]> pairs = new ArrayList<>();
+            long pendingAcquire = -1;
+
+            for (String line : history.split("\n")) {
+                Matcher me = wakePat.matcher(line);
+                if (!me.find()) continue;
+                long offsetMs = parseHistoryOffset(line);
+                char sign = me.group(5).charAt(0);
+                if (sign == '+') {
+                    pendingAcquire = offsetMs;
+                } else if (sign == '-' && pendingAcquire >= 0) {
+                    pairs.add(new long[]{pendingAcquire, offsetMs, 0});
+                    pendingAcquire = -1;
+                }
+            }
+            if (pendingAcquire >= 0) {
+                long deathOffset = -1;
+                for (long d : deathOffsets) {
+                    if (d >= pendingAcquire) { deathOffset = d; break; }
+                }
+                pairs.add(new long[]{pendingAcquire, deathOffset, deathOffset >= 0 ? 1 : -1});
+            }
+
+            boolean historyHasOpen = pairs.stream().anyMatch(p -> p[2] == -1);
+            String syntheticLine = null;
+            if (activeNow && !historyHasOpen) {
+                java.text.SimpleDateFormat nowSdf = new java.text.SimpleDateFormat(
+                        "HH:mm:ss", java.util.Locale.getDefault());
+                syntheticLine = nowSdf.format(new java.util.Date()) + " → now  (active, not in history buffer)";
+            }
+
+            if (pairs.isEmpty() && syntheticLine == null) return;
+
+            int from = Math.max(0, pairs.size() - 5);
+            List<long[]> last5 = pairs.subList(from, pairs.size());
+
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(
+                    "HH:mm:ss", java.util.Locale.getDefault());
+            StringBuilder sb = new StringBuilder();
+
+            for (long[] pair : last5) {
+                long acqUnix = baseUnixMs + pair[0] - baseOffsetMs;
+                String acqTime = sdf.format(new java.util.Date(acqUnix));
+                if (pair[2] == 1) {
+                    long relUnix = baseUnixMs + pair[1] - baseOffsetMs;
+                    String relTime = sdf.format(new java.util.Date(relUnix));
+                    long durMs = pair[1] - pair[0];
+                    sb.append(acqTime).append(" → ").append(relTime)
+                      .append("  (").append(formatDuration(durMs)).append(") released by system\n");
+                } else if (pair[2] == -1) {
+                    sb.append(acqTime).append(" → ?\n");
+                } else {
+                    long relUnix = baseUnixMs + pair[1] - baseOffsetMs;
+                    String relTime = sdf.format(new java.util.Date(relUnix));
+                    long durMs = pair[1] - pair[0];
+                    sb.append(acqTime).append(" → ").append(relTime)
+                      .append("  (").append(formatDuration(durMs)).append(")\n");
+                }
+            }
+
+            if (syntheticLine != null) sb.append(syntheticLine).append("\n");
+
+            String detail = sb.toString().trim();
+            if (detail.isEmpty()) return;
+
+            list.add(new TriggerInfo(
+                    TriggerInfo.Group.OTHER,
+                    "WakeLock History",
+                    "",
+                    detail,
+                    TriggerInfo.Severity.INFO));
+
+        } catch (Exception e) {
+            Log.w(TAG, "wakelock history parse failed: " + e.getMessage());
+        }
+    }
+
+    private long parseHistoryOffset(String line) {
+        Pattern p = Pattern.compile("\\+(\\d+)h(\\d+)m(\\d+)s(?:(\\d+)ms)?");
+        Matcher m = p.matcher(line);
+        if (!m.find()) return 0;
+        long ms = Long.parseLong(m.group(1)) * 3_600_000L
+                + Long.parseLong(m.group(2)) * 60_000L
+                + Long.parseLong(m.group(3)) * 1_000L;
+        if (m.group(4) != null) ms += Long.parseLong(m.group(4));
+        return ms;
     }
 
     private String resolveUid(String packageName) {
@@ -1814,8 +2082,8 @@ public class AppTriggersAnalyzer {
 
     private int getTriggerScore(TriggerInfo t) {
         switch (t.group) {
-            case ACTIVE_NOW: return 3;
-            case CAN_WAKE:   return 2;
+            case ACTIVE_NOW: return 6;
+            case CAN_WAKE:   return 5;
             case OTHER:      return getOtherScore(t);
             default:         return 0;
         }
@@ -1823,7 +2091,6 @@ public class AppTriggersAnalyzer {
 
     private int getOtherScore(TriggerInfo t) {
         if (t.severity == TriggerInfo.Severity.INFO) return 0;
-        if (t.severity == TriggerInfo.Severity.LOW)  return 0;
 
         String cat    = t.category != null ? t.category : "";
         String detail = t.detail   != null ? t.detail   : "";
@@ -1840,15 +2107,6 @@ public class AppTriggersAnalyzer {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_network))) {
-            return 0;
-        }
-
-        if (cat.equals(context.getString(R.string.triggers_cat_bucket))) {
-            return (t.severity == TriggerInfo.Severity.HIGH
-                    || t.severity == TriggerInfo.Severity.MEDIUM) ? 1 : 0;
-        }
-
         if (cat.equals(context.getString(R.string.triggers_cat_chain_launch))
                 && (detail.contains("blocked") || detail.contains("BAL_BLOCKED"))) {
             return 0;
@@ -1859,6 +2117,17 @@ public class AppTriggersAnalyzer {
             return 0;
         }
 
-        return 1;
+        if (cat.equals(context.getString(R.string.triggers_cat_bucket))) {
+            if (t.severity == TriggerInfo.Severity.HIGH)   return 4;
+            if (t.severity == TriggerInfo.Severity.MEDIUM) return 3;
+            return 1;
+        }
+
+        switch (t.severity) {
+            case HIGH:   return 4;
+            case MEDIUM: return 3;
+            case LOW:    return 1;
+            default:     return 0;
+        }
     }
 }
