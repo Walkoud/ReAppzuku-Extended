@@ -2340,6 +2340,23 @@ public class SettingsActivity extends BaseActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding == null) return;
+        boolean autoKill = sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false);
+        boolean periodic = sharedPreferences.getBoolean(KEY_PERIODIC_KILL_ENABLED, false);
+        boolean screenOff = sharedPreferences.getBoolean(KEY_KILL_ON_SCREEN_OFF, false);
+        boolean ramEnabled = sharedPreferences.getBoolean(KEY_RAM_THRESHOLD_ENABLED, false);
+        binding.switchAutoKill.setChecked(autoKill);
+        binding.switchPeriodicKill.setChecked(periodic);
+        binding.switchKillScreenOff.setChecked(screenOff);
+        binding.switchRamThreshold.setChecked(ramEnabled);
+        updateAutomationOptionsVisibility(autoKill, periodic);
+        applyServiceDependentState(autoKill);
+        updateRamThresholdLimitVisibility(ramEnabled && autoKill);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
         executor.shutdownNow();
