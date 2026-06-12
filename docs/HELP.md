@@ -637,7 +637,7 @@ Auto-Kill triggers right when selected target apps are opened — useful on budg
   - **Clear Cache** — additionally clears cache of all apps, except Protected, Persistent and other target apps.
 > ℹ️ **App Launch** function requires special permission in "Accessibility" settings. This feature can also slightly increase battery usage by ReAppzuku itself.
 
-**Auto-Kill Presets**
+**Auto-Kill Presets**\
 Save your own set of Auto-Kill settings that activates automatically at a specific time of day and replaces the current settings for the duration of its active window. When the window ends, the original settings are restored automatically.
 **2 presets** are available. Each can be configured independently: its own name, its own active time range, its own Auto-Kill rules, its own app lists, and its own additional scenarios.
 > ℹ️ While active, presets ignore the immunity granted to apps by the Restrictions Scheduler. This is done to avoid confusion in the settings.
