@@ -15,10 +15,14 @@ public class BackupManager {
     private static final String KEY_BACKUP_VERSION = "backup_version";
     private static final int BACKUP_VERSION = 4;
     private static final String KEY_MANUAL_OPS_MASKS = "manual_ops_masks";
+    private static final String KEY_PRESETS = "presets";
+    private static final String KEY_PRESET_PREFIX = "preset_";
 
+    private final Context context;
     private final SharedPreferences prefs;
 
     public BackupManager(Context context) {
+        this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PreferenceKeys.PREFERENCES_NAME, Context.MODE_PRIVATE);
     }
 
@@ -96,6 +100,9 @@ public class BackupManager {
             root.put(KEY_APP_LAUNCH_CLEAR_CACHE, getSafeBool(KEY_APP_LAUNCH_CLEAR_CACHE, false));
             Log.d(TAG, "createBackupJson: hardware triggers written");
 
+            putPresets(root);
+            Log.d(TAG, "createBackupJson: presets written");
+
             String result = root.toString(4);
             Log.d(TAG, "createBackupJson: success, json length=" + result.length());
             return result;
@@ -171,6 +178,10 @@ public class BackupManager {
             Log.d(TAG, "restoreBackupJson: hardware triggers restored");
 
             editor.apply();
+
+            restorePresets(root);
+            Log.d(TAG, "restoreBackupJson: presets restored");
+
             Log.d(TAG, "restoreBackupJson: success");
             return true;
         } catch (Exception e) {
@@ -221,6 +232,42 @@ public class BackupManager {
             count++;
         }
         Log.d(TAG, "restoreManualOpsMasks: " + count + " packages");
+    }
+
+    private void putPresets(JSONObject root) throws Exception {
+        PresetManager presetManager = new PresetManager(context);
+        JSONObject presets = new JSONObject();
+        for (int presetNumber : new int[]{ PresetModel.PRESET_1, PresetModel.PRESET_2 }) {
+            PresetModel model = presetManager.loadPreset(presetNumber);
+            if (model == null) {
+                Log.d(TAG, "putPresets: preset #" + presetNumber + " not set, skipping");
+                continue;
+            }
+            presets.put(KEY_PRESET_PREFIX + presetNumber, model.toJson());
+            Log.d(TAG, "putPresets: preset #" + presetNumber + " written, name=" + model.name);
+        }
+        root.put(KEY_PRESETS, presets);
+    }
+
+    private void restorePresets(JSONObject root) throws Exception {
+        if (!root.has(KEY_PRESETS)) {
+            Log.d(TAG, "restorePresets: no presets in backup, skipping");
+            return;
+        }
+        JSONObject presets = root.getJSONObject(KEY_PRESETS);
+        PresetManager presetManager = new PresetManager(context);
+        for (int presetNumber : new int[]{ PresetModel.PRESET_1, PresetModel.PRESET_2 }) {
+            String key = KEY_PRESET_PREFIX + presetNumber;
+            if (!presets.has(key)) {
+                Log.d(TAG, "restorePresets: preset #" + presetNumber + " not in backup, skipping");
+                continue;
+            }
+            PresetModel model = PresetModel.fromJson(presetNumber, presets.getJSONObject(key));
+            presetManager.savePreset(model);
+            presetManager.scheduleAlarms(model);
+            Log.d(TAG, "restorePresets: preset #" + presetNumber + " restored, name=" + model.name);
+        }
+        presetManager.checkAndApplyCurrentPreset();
     }
 
     private void restoreBoolean(SharedPreferences.Editor editor, JSONObject root, String key) throws Exception {
