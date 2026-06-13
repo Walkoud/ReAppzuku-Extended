@@ -19,30 +19,12 @@ public class AdditionalScenariosManager {
 
     private final Context context;
     private final SharedPreferences prefs;
-    private final PresetManager presetManager;
     private HardwareEventReceiver hardwareEventReceiver;
     private boolean receiverRegistered = false;
 
     public AdditionalScenariosManager(Context context) {
         this.context = context.getApplicationContext();
         this.prefs = this.context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-        this.presetManager = new PresetManager(this.context);
-    }
-
-    private boolean getPref(String key) {
-        if (presetManager.getActivePresetNumber() != 0) {
-            return prefs.getBoolean(PresetManager.KEY_BACKUP_PREFIX + key, false);
-        }
-        return prefs.getBoolean(key, false);
-    }
-
-    private void setPref(String key, boolean value) {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean(key, value);
-        if (presetManager.getActivePresetNumber() != 0) {
-            editor.putBoolean(PresetManager.KEY_BACKUP_PREFIX + key, value);
-        }
-        editor.apply();
     }
 
     public void updateHardwareReceiverState() {
@@ -112,41 +94,33 @@ public class AdditionalScenariosManager {
         unregisterReceiver();
     }
 
-    public boolean isHeadsetTriggerEnabled() { return getPref(KEY_HW_TRIGGER_HEADSET); }
-    public boolean isUsbTriggerEnabled() { return getPref(KEY_HW_TRIGGER_USB); }
-    public boolean isChargerTriggerEnabled() { return getPref(KEY_HW_TRIGGER_CHARGER); }
-    public boolean isWifiTriggerEnabled() { return getPref(KEY_HW_TRIGGER_WIFI); }
-    public boolean isBluetoothTriggerEnabled() { return getPref(KEY_HW_TRIGGER_BLUETOOTH); }
-    public boolean isGpsTriggerEnabled() { return getPref(KEY_HW_TRIGGER_GPS); }
-    public boolean isHotspotTriggerEnabled() { return getPref(KEY_HW_TRIGGER_HOTSPOT); }
+    public boolean isHeadsetTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_HEADSET, false); }
+    public boolean isUsbTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_USB, false); }
+    public boolean isChargerTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_CHARGER, false); }
+    public boolean isWifiTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_WIFI, false); }
+    public boolean isBluetoothTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_BLUETOOTH, false); }
+    public boolean isGpsTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_GPS, false); }
+    public boolean isHotspotTriggerEnabled() { return prefs.getBoolean(KEY_HW_TRIGGER_HOTSPOT, false); }
 
-    public void setHeadsetTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_HEADSET, enabled); }
-    public void setUsbTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_USB, enabled); }
-    public void setChargerTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_CHARGER, enabled); }
-    public void setWifiTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_WIFI, enabled); }
-    public void setBluetoothTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_BLUETOOTH, enabled); }
-    public void setGpsTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_GPS, enabled); }
-    public void setHotspotTriggerEnabled(boolean enabled) { setPref(KEY_HW_TRIGGER_HOTSPOT, enabled); }
+    public void setHeadsetTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_HEADSET, enabled).apply(); }
+    public void setUsbTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_USB, enabled).apply(); }
+    public void setChargerTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_CHARGER, enabled).apply(); }
+    public void setWifiTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_WIFI, enabled).apply(); }
+    public void setBluetoothTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_BLUETOOTH, enabled).apply(); }
+    public void setGpsTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_GPS, enabled).apply(); }
+    public void setHotspotTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_HW_TRIGGER_HOTSPOT, enabled).apply(); }
 
-    public boolean isAppLaunchTriggerEnabled() { return getPref(KEY_APP_LAUNCH_TRIGGER_ENABLED); }
-    public void setAppLaunchTriggerEnabled(boolean enabled) { setPref(KEY_APP_LAUNCH_TRIGGER_ENABLED, enabled); }
+    public boolean isAppLaunchTriggerEnabled() { return prefs.getBoolean(KEY_APP_LAUNCH_TRIGGER_ENABLED, false); }
+    public void setAppLaunchTriggerEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_APP_LAUNCH_TRIGGER_ENABLED, enabled).apply(); }
 
-    public boolean isAppLaunchClearCacheEnabled() { return getPref(KEY_APP_LAUNCH_CLEAR_CACHE); }
-    public void setAppLaunchClearCacheEnabled(boolean enabled) { setPref(KEY_APP_LAUNCH_CLEAR_CACHE, enabled); }
+    public boolean isAppLaunchClearCacheEnabled() { return prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false); }
+    public void setAppLaunchClearCacheEnabled(boolean enabled) { prefs.edit().putBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, enabled).apply(); }
 
     public Set<String> getAppLaunchTriggerPackages() {
-        String key = presetManager.getActivePresetNumber() != 0
-                ? PresetManager.KEY_BACKUP_PREFIX + KEY_APP_LAUNCH_TRIGGER_PACKAGES
-                : KEY_APP_LAUNCH_TRIGGER_PACKAGES;
-        return new HashSet<>(prefs.getStringSet(key, new HashSet<>()));
+        return new HashSet<>(prefs.getStringSet(KEY_APP_LAUNCH_TRIGGER_PACKAGES, new HashSet<>()));
     }
 
     public void saveAppLaunchTriggerPackages(Set<String> packages) {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putStringSet(KEY_APP_LAUNCH_TRIGGER_PACKAGES, new HashSet<>(packages));
-        if (presetManager.getActivePresetNumber() != 0) {
-            editor.putStringSet(PresetManager.KEY_BACKUP_PREFIX + KEY_APP_LAUNCH_TRIGGER_PACKAGES, new HashSet<>(packages));
-        }
-        editor.apply();
+        prefs.edit().putStringSet(KEY_APP_LAUNCH_TRIGGER_PACKAGES, new HashSet<>(packages)).apply();
     }
 }
