@@ -300,12 +300,7 @@ public class SettingsActivity extends BaseActivity {
             applyServiceDependentState(isChecked);
             if (isChecked) {
                 startAutomationService();
-                AutoKillWorker.schedule(this);
-            } else {
-                stopService(new Intent(this, ShappkyService.class));
-                AutoKillWorker.cancel(this);
-            }
-        });
+                AutoKillWorker.schedule(this, "Periodic Kill");
 
         binding.switchPeriodicKill.setOnCheckedChangeListener((buttonView, isChecked) -> {
             putAutoKillPref(KEY_PERIODIC_KILL_ENABLED, isChecked);
@@ -1912,7 +1907,7 @@ public class SettingsActivity extends BaseActivity {
                 return;
             }
             startAutomationService();
-            AutoKillWorker.schedule(this);
+            AutoKillWorker.schedule(this, "Periodic Kill");
         } else {
             stopService(new Intent(this, ShappkyService.class));
             AutoKillWorker.cancel(this);

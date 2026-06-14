@@ -30,7 +30,7 @@ public class BootReceiver extends BroadcastReceiver {
             SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
             boolean autoKillEnabled = prefs.getBoolean(KEY_AUTO_KILL_ENABLED, false);
             if (autoKillEnabled) {
-                AutoKillWorker.schedule(context);
+                AutoKillWorker.schedule(context, "Periodic Kill");
                 Log.d(TAG, "Boot complete (" + action + "): service started, worker scheduled");
             } else {
                 AutoKillWorker.cancel(context);

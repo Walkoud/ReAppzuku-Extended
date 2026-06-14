@@ -86,7 +86,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         lastTriggerTime = now;
 
         Log.d(TAG, "Target app launched: " + packageName + " — triggering Auto-Kill");
-        autoKillManager.performAutoKill(null, new HashSet<>(targetPackages));
+        autoKillManager.performAutoKill(null, new HashSet<String>(targetPackages), "App Launch Trigger");
 
         if (prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false)) {
             executor.execute(() -> trimMemoryForAll(targetPackages));
