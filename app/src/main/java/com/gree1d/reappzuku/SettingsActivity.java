@@ -522,8 +522,6 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         float alpha = presetActive ? 0.5f : 1.0f;
         View.OnClickListener presetBlocker = presetActive ? v -> showPresetActiveDialog() : null;
 
-        binding.switchAutoKill.setEnabled(!presetActive);
-        binding.switchAutoKill.setAlpha(alpha);
         binding.switchPeriodicKill.setEnabled(!presetActive);
         binding.switchKillScreenOff.setEnabled(!presetActive);
         binding.switchRamThreshold.setEnabled(!presetActive);
