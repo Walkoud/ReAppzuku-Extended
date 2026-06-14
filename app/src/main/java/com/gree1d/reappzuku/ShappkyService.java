@@ -151,12 +151,12 @@ public class ShappkyService extends Service {
                     if (ramThresholdEnabled) {
                         int threshold = prefs.getInt(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
                         if (getCurrentRamUsagePercent() >= threshold) {
-                            autoKillManager.performAutoKill(() -> KillTriggerReceiver.releaseAutoKillWakeLock(), "Kill Trigger");
+                            autoKillManager.performAutoKill(() -> KillTriggerReceiver.releaseAutoKillWakeLock(), resolveKillSource("Screen-Off Kill"));
                         } else {
                             KillTriggerReceiver.releaseAutoKillWakeLock();
                         }
                     } else {
-                        autoKillManager.performAutoKill(() -> KillTriggerReceiver.releaseAutoKillWakeLock(), "Kill Trigger");
+                        autoKillManager.performAutoKill(() -> KillTriggerReceiver.releaseAutoKillWakeLock(), resolveKillSource("Screen-Off Kill"));
                     }
                 });
                 break;
@@ -373,12 +373,12 @@ public class ShappkyService extends Service {
                     if (ramThresholdEnabled) {
                         int threshold = prefs.getInt(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT);
                         if (getCurrentRamUsagePercent() >= threshold) {
-                            autoKillManager.performAutoKill(() -> handler.post(this::scheduleNextKill), resolveKillSource());
+                            autoKillManager.performAutoKill(() -> handler.post(this::scheduleNextKill), resolveKillSource("Service Periodic Kill"));
                         } else {
                             handler.post(this::scheduleNextKill);
                         }
                     } else {
-                        autoKillManager.performAutoKill(() -> handler.post(this::scheduleNextKill), resolveKillSource());
+                        autoKillManager.performAutoKill(() -> handler.post(this::scheduleNextKill), resolveKillSource("Service Periodic Kill"));
                     }
                 } else {
                     handler.post(this::scheduleNextKill);
@@ -400,14 +400,14 @@ public class ShappkyService extends Service {
         }
     }
 
-    private String resolveKillSource() {
+    private String resolveKillSource(String defaultSource) {
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         int activePreset = prefs.getInt(KEY_ACTIVE_PRESET, 0);
         if (activePreset != 0) {
             PresetManager pm = new PresetManager(this);
             return "Auto-Kill: " + pm.getPresetName(activePreset);
         }
-        return "Service Periodic Kill";
+        return defaultSource;
     }
 
 
