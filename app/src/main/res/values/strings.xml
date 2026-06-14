@@ -1054,4 +1054,5 @@
     <string name="preset_reset_dialog_title">Reset preset settings?</string>
     <string name="preset_reset_dialog_message">All settings of preset %d will be reset to defaults. Changes only apply after you tap Save.</string>
     <string name="preset_reset_success">Preset %d settings reset — tap Save to apply</string>
+    <string name="antichange_settings">You cannot change main Auto-Kill settings when preset is active</string>
 </resources>
