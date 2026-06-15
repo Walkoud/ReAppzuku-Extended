@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.SharedPreferences;
 import android.os.Handler;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +76,24 @@ public class SleepModeManager {
         sharedpreferences.edit().putStringSet(KEY_SLEEP_MODE_APPS_FROZEN, frozen).apply();
     }
 
+    private boolean freezeApp(String packageName) {
+        boolean ok = shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
+        if (!ok && shellManager.isSystemApp(packageName)) {
+            Log.d(TAG, "shell freeze failed for system app, trying API: " + packageName);
+            ok = shellManager.disableSystemAppViaApi(packageName);
+        }
+        return ok;
+    }
+
+    private boolean unfreezeApp(String packageName) {
+        boolean ok = shellManager.runShellCommandBlocking("pm enable " + packageName);
+        if (!ok && shellManager.isSystemApp(packageName)) {
+            Log.d(TAG, "shell unfreeze failed for system app, trying API: " + packageName);
+            ok = shellManager.enableSystemAppViaApi(packageName);
+        }
+        return ok;
+    }
+
     public void saveSleepModeApps(Set<String> timerPackages, Set<String> permanentPackages,
             Runnable onComplete) {
         Set<String> previousPermanent = getPermanentFreezeApps();
@@ -107,11 +126,11 @@ public class SleepModeManager {
 
         executor.execute(() -> {
             for (String packageName : toFreeze) {
-                boolean ok = shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
+                boolean ok = freezeApp(packageName);
                 SleepModeLogManager.logFreeze(context, packageName, ok);
             }
             for (String packageName : toUnfreeze) {
-                boolean ok = shellManager.runShellCommandBlocking("pm enable " + packageName);
+                boolean ok = unfreezeApp(packageName);
                 SleepModeLogManager.logUnfreeze(context, packageName, ok);
             }
             if (onComplete != null) handler.post(onComplete);
@@ -176,7 +195,7 @@ public class SleepModeManager {
             for (String packageName : packages) {
                 if (alreadyFrozen.contains(packageName)) continue;
                 if (scheduler != null && scheduler.isProtected(packageName, RestrictionsScheduler.PROTECT_SLEEP_MODE)) continue;
-                boolean ok = shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
+                boolean ok = freezeApp(packageName);
                 if (ok) markFrozen(packageName);
                 SleepModeLogManager.logFreeze(context, packageName, ok);
             }
@@ -192,7 +211,7 @@ public class SleepModeManager {
         }
         executor.execute(() -> {
             for (String packageName : packages) {
-                boolean ok = shellManager.runShellCommandBlocking("pm enable " + packageName);
+                boolean ok = unfreezeApp(packageName);
                 if (ok) markUnfrozen(packageName);
                 SleepModeLogManager.logUnfreeze(context, packageName, ok);
             }

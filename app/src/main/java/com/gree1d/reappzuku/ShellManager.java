@@ -1,8 +1,11 @@
 package com.gree1d.reappzuku;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.IPackageManager;
 import android.content.pm.PackageManager;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
@@ -16,6 +19,8 @@ import java.util.function.Consumer;
 
 import rikka.shizuku.Shizuku;
 import rikka.shizuku.ShizukuRemoteProcess;
+import rikka.shizuku.ShizukuBinderWrapper;
+import rikka.shizuku.SystemServiceHelper;
 
 
 public class ShellManager {
@@ -258,6 +263,83 @@ public class ShellManager {
         return null;
     }
 
+
+    /**
+     * Отключает приложение через Shizuku binder (IPackageManager.setApplicationEnabledSetting).
+     * Fallback для системных приложений, которые pm disable-user блокирует через SecurityException.
+     */
+    public boolean disableSystemAppViaApi(String packageName) {
+        if (!hasShizukuPermission()) {
+            Log.w(TAG, "[api disable] Shizuku not available: " + packageName);
+            return false;
+        }
+        try {
+            Log.d(TAG, "[api disable] obtaining binder for: " + packageName);
+            IBinder binder = ShizukuBinderWrapper.newInstance(
+                    SystemServiceHelper.getSystemService("package"));
+            Log.d(TAG, "[api disable] binder=" + (binder != null ? binder.getInterfaceDescriptor() : "null"));
+            IPackageManager ipm = IPackageManager.Stub.asInterface(binder);
+            ipm.setApplicationEnabledSetting(
+                    packageName,
+                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER,
+                    0, 0,
+                    context.getPackageName());
+            int state = ipm.getApplicationEnabledSetting(packageName, 0);
+            Log.d(TAG, "[api disable] post-call enabledState=" + state + " pkg=" + packageName);
+            boolean ok = state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER
+                    || state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+            if (!ok) {
+                Log.w(TAG, "[api disable] unexpected state=" + state + " pkg=" + packageName);
+            }
+            return ok;
+        } catch (Exception e) {
+            Log.e(TAG, "[api disable] exception for " + packageName + ": " + e);
+            return false;
+        }
+    }
+
+    /**
+     * Включает приложение через Shizuku binder. Пара к disableSystemAppViaApi.
+     */
+    public boolean enableSystemAppViaApi(String packageName) {
+        if (!hasShizukuPermission()) {
+            Log.w(TAG, "[api enable] Shizuku not available: " + packageName);
+            return false;
+        }
+        try {
+            Log.d(TAG, "[api enable] obtaining binder for: " + packageName);
+            IBinder binder = ShizukuBinderWrapper.newInstance(
+                    SystemServiceHelper.getSystemService("package"));
+            Log.d(TAG, "[api enable] binder=" + (binder != null ? binder.getInterfaceDescriptor() : "null"));
+            IPackageManager ipm = IPackageManager.Stub.asInterface(binder);
+            ipm.setApplicationEnabledSetting(
+                    packageName,
+                    PackageManager.COMPONENT_ENABLED_STATE_DEFAULT,
+                    0, 0,
+                    context.getPackageName());
+            int state = ipm.getApplicationEnabledSetting(packageName, 0);
+            Log.d(TAG, "[api enable] post-call enabledState=" + state + " pkg=" + packageName);
+            boolean ok = state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+                    || state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
+            if (!ok) {
+                Log.w(TAG, "[api enable] unexpected state=" + state + " pkg=" + packageName);
+            }
+            return ok;
+        } catch (Exception e) {
+            Log.e(TAG, "[api enable] exception for " + packageName + ": " + e);
+            return false;
+        }
+    }
+
+    public boolean isSystemApp(String packageName) {
+        try {
+            ApplicationInfo info = context.getPackageManager().getApplicationInfo(packageName, 0);
+            return (info.flags & ApplicationInfo.FLAG_SYSTEM) != 0
+                    && (info.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
+    }
 
     private boolean executeRootCommand(String command, Consumer<String> outputProcessor) {
         Process process = null;
