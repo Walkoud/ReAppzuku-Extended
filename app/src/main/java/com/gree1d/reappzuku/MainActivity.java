@@ -1061,9 +1061,12 @@ public class MainActivity extends BaseActivity {
             }
         });
 
+        android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+        scrollView.addView(root);
+
         AlertDialog sortDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.sort_title))
-                .setView(root)
+                .setView(scrollView)
                 .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> {
                     int checkedId = radioGroup.getCheckedRadioButtonId();
                     int newSortMode = (checkedId != -1) ? (checkedId - 1000) : AppConstants.SORT_MODE_DEFAULT;

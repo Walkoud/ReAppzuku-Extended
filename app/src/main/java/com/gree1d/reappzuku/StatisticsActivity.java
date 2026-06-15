@@ -8,8 +8,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AutoCompleteTextView;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
@@ -22,6 +24,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.graphics.Insets;
+import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import androidx.core.content.ContextCompat;
 
@@ -1260,6 +1264,19 @@ public class StatisticsActivity extends BaseActivity {
         subtitleView.setText(subtitle);
         subtitleView.setVisibility(subtitle == null || subtitle.trim().isEmpty() ? View.GONE : View.VISIBLE);
         contentContainer.addView(contentView);
+
+        int screenHeight;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.view.WindowMetrics metrics = getWindowManager().getCurrentWindowMetrics();
+            Insets insets = WindowInsetsCompat.toWindowInsetsCompat(metrics.getWindowInsets())
+                    .getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            screenHeight = metrics.getBounds().height() - insets.top - insets.bottom;
+        } else {
+            DisplayMetrics dm = new DisplayMetrics();
+            getWindowManager().getDefaultDisplay().getMetrics(dm);
+            screenHeight = dm.heightPixels;
+        }
+        contentContainer.getLayoutParams().height = (int) (screenHeight * 0.55);
 
         return new MaterialAlertDialogBuilder(this).setTitle(title).setView(dialogView).create();
     }
