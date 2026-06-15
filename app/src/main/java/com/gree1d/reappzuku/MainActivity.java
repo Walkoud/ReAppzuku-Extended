@@ -970,26 +970,77 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showSortDialog() {
-        View dialogView = getLayoutInflater().inflate(R.layout.dialog_sort, null);
-        android.widget.RadioGroup radioGroup = dialogView.findViewById(R.id.sort_radio_group);
-        android.widget.CheckBox checkboxSystem = dialogView.findViewById(R.id.checkbox_show_system);
-        android.widget.CheckBox checkboxPersistent = dialogView.findViewById(R.id.checkbox_show_persistent);
+        int dp8  = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
 
-        int selectedRadioId;
-        switch (currentSortMode) {
-            case AppConstants.SORT_MODE_RAM_DESC:  selectedRadioId = R.id.sort_ram_desc;  break;
-            case AppConstants.SORT_MODE_RAM_ASC:   selectedRadioId = R.id.sort_ram_asc;   break;
-            case AppConstants.SORT_MODE_NAME_ASC:  selectedRadioId = R.id.sort_name_asc;  break;
-            case AppConstants.SORT_MODE_NAME_DESC: selectedRadioId = R.id.sort_name_desc; break;
-            case AppConstants.SORT_MODE_CPU_DESC:  selectedRadioId = R.id.sort_cpu_desc;  break;
-            case AppConstants.SORT_MODE_CPU_ASC:   selectedRadioId = R.id.sort_cpu_asc;   break;
-            case AppConstants.SORT_MODE_DEFAULT:
-            default:                               selectedRadioId = R.id.sort_default;   break;
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean isCustomAccent = accent == ACCENT_CUSTOM;
+        android.content.res.ColorStateList accentTint = isCustomAccent
+                ? android.content.res.ColorStateList.valueOf(
+                        sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR))
+                : null;
+
+        LinearLayout.LayoutParams fullWidth = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp8, 0, dp8);
+
+        android.widget.RadioGroup radioGroup = new android.widget.RadioGroup(this);
+        radioGroup.setOrientation(android.widget.RadioGroup.VERTICAL);
+        radioGroup.setLayoutParams(fullWidth);
+
+        int[][] sortModes = {
+            { AppConstants.SORT_MODE_DEFAULT,   R.string.sort_default   },
+            { AppConstants.SORT_MODE_RAM_DESC,  R.string.sort_ram_desc  },
+            { AppConstants.SORT_MODE_RAM_ASC,   R.string.sort_ram_asc   },
+            { AppConstants.SORT_MODE_CPU_DESC,  R.string.sort_cpu_desc  },
+            { AppConstants.SORT_MODE_CPU_ASC,   R.string.sort_cpu_asc   },
+            { AppConstants.SORT_MODE_NAME_ASC,  R.string.sort_name_asc  },
+            { AppConstants.SORT_MODE_NAME_DESC, R.string.sort_name_desc },
+        };
+
+        int checkedRadioId = -1;
+        for (int[] entry : sortModes) {
+            int sortMode = entry[0];
+            android.widget.RadioButton rb = new android.widget.RadioButton(this);
+            rb.setId(1000 + sortMode);
+            rb.setText(getString(entry[1]));
+            rb.setPadding(dp16, dp8, dp16, dp8);
+            rb.setLayoutParams(fullWidth);
+            if (accentTint != null) rb.setButtonTintList(accentTint);
+            radioGroup.addView(rb);
+            if (sortMode == currentSortMode) checkedRadioId = rb.getId();
         }
-        radioGroup.check(selectedRadioId);
+        if (checkedRadioId != -1) radioGroup.check(checkedRadioId);
+        root.addView(radioGroup);
 
+        View divider = new View(this);
+        LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        dividerParams.setMargins(0, dp8, 0, dp8);
+        divider.setLayoutParams(dividerParams);
+        android.util.TypedValue tv = new android.util.TypedValue();
+        getTheme().resolveAttribute(android.R.attr.colorControlHighlight, tv, true);
+        divider.setBackgroundColor(tv.data);
+        root.addView(divider);
+
+        CheckBox checkboxSystem = new CheckBox(this);
+        checkboxSystem.setText(getString(R.string.settings_show_system_apps_title));
+        checkboxSystem.setPadding(dp16, dp8, dp16, dp8);
+        checkboxSystem.setLayoutParams(fullWidth);
         checkboxSystem.setChecked(sharedPreferences.getBoolean(KEY_SHOW_SYSTEM_APPS, false));
+        if (accentTint != null) checkboxSystem.setButtonTintList(accentTint);
+        root.addView(checkboxSystem);
+
+        CheckBox checkboxPersistent = new CheckBox(this);
+        checkboxPersistent.setText(getString(R.string.settings_show_persistent_apps_title));
+        checkboxPersistent.setPadding(dp16, dp8, dp16, dp8);
+        checkboxPersistent.setLayoutParams(fullWidth);
         checkboxPersistent.setChecked(sharedPreferences.getBoolean(KEY_SHOW_PERSISTENT_APPS, false));
+        if (accentTint != null) checkboxPersistent.setButtonTintList(accentTint);
+        root.addView(checkboxPersistent);
 
         checkboxSystem.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isChecked && !sharedPreferences.getBoolean("system_apps_warning_shown", false)) {
@@ -1011,16 +1062,11 @@ public class MainActivity extends BaseActivity {
         });
 
         AlertDialog sortDialog = new MaterialAlertDialogBuilder(this)
-                .setView(dialogView)
+                .setTitle(getString(R.string.sort_title))
+                .setView(root)
                 .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> {
                     int checkedId = radioGroup.getCheckedRadioButtonId();
-                    int newSortMode = AppConstants.SORT_MODE_DEFAULT;
-                    if (checkedId == R.id.sort_ram_desc)       newSortMode = AppConstants.SORT_MODE_RAM_DESC;
-                    else if (checkedId == R.id.sort_ram_asc)   newSortMode = AppConstants.SORT_MODE_RAM_ASC;
-                    else if (checkedId == R.id.sort_name_asc)  newSortMode = AppConstants.SORT_MODE_NAME_ASC;
-                    else if (checkedId == R.id.sort_name_desc) newSortMode = AppConstants.SORT_MODE_NAME_DESC;
-                    else if (checkedId == R.id.sort_cpu_desc)  newSortMode = AppConstants.SORT_MODE_CPU_DESC;
-                    else if (checkedId == R.id.sort_cpu_asc)   newSortMode = AppConstants.SORT_MODE_CPU_ASC;
+                    int newSortMode = (checkedId != -1) ? (checkedId - 1000) : AppConstants.SORT_MODE_DEFAULT;
 
                     currentSortMode = newSortMode;
 
@@ -1038,19 +1084,6 @@ public class MainActivity extends BaseActivity {
 
         sortDialog.show();
         tintDialogButtons(sortDialog);
-
-        int accentForDialog = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
-        if (accentForDialog == ACCENT_CUSTOM) {
-            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(
-                    sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
-            for (int i = 0; i < radioGroup.getChildCount(); i++) {
-                android.view.View child = radioGroup.getChildAt(i);
-                if (child instanceof android.widget.RadioButton)
-                    ((android.widget.RadioButton) child).setButtonTintList(tint);
-            }
-            checkboxSystem.setButtonTintList(tint);
-            checkboxPersistent.setButtonTintList(tint);
-        }
     }
 
     private void applyToolbarIconTint(Menu menu) {
