@@ -161,13 +161,14 @@ public class SleepModeManager {
                 if ((appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0) {
                     systemPackages.add(appInfo.packageName);
                 }
+                boolean isSystem = (appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
                 AppModel model = new AppModel(
                         pm.getApplicationLabel(appInfo).toString(),
                         appInfo.packageName,
                         "-",
                         0,
                         pm.getApplicationIcon(appInfo),
-                        false,
+                        isSystem,
                         (appInfo.flags & ApplicationInfo.FLAG_PERSISTENT) != 0,
                         ProtectedApps.isProtected(context, appInfo.packageName));
                 boolean selected = timerApps.contains(appInfo.packageName)
@@ -180,7 +181,6 @@ public class SleepModeManager {
                 }
                 result.add(model);
             }
-            Collections.sort(result, (a, b) -> a.getAppName().compareToIgnoreCase(b.getAppName()));
             handler.post(() -> callback.accept(result));
         });
     }
