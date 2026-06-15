@@ -845,6 +845,7 @@ Action to take when restrictions are lifted:
 
 **Sleep Mode**\
 Completely **freezes** selected apps when device is idle. Unlike background restrictions — app simply can't start; fully suspended by system.
+You can also permanently freeze app directly from app list dialog.
 
 How it works:
 1. Screen turns off → timer starts
