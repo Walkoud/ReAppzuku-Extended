@@ -72,18 +72,18 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="?android:attr/listDivider"
+        android:background="?attr/colorOutline"
         android:layout_marginTop="8dp"
         android:layout_marginBottom="4dp" />
 
-    <CheckBox
+    <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/checkbox_show_system"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/settings_show_system_apps_title"
         android:padding="8dp" />
 
-    <CheckBox
+    <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/checkbox_show_persistent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
