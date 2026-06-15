@@ -96,6 +96,7 @@ dependencies {
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("io.noties.markwon:core:4.6.2")
+    compileOnly("dev.rikka.hidden:stub:4.3.2")
     
     // Room
     def room_version = "2.8.4"
