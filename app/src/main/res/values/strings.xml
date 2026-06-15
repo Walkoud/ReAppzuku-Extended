@@ -415,7 +415,7 @@
     <!-- ── Information section ── -->
     <string name="settings_section_information">Information</string>
     <string name="settings_help_title">Help</string>
-    <string name="settings_help_subtitle">Setup guide</string>
+    <string name="settings_help_subtitle">User Manual</string>
     <string name="settings_telegram_title">Telegram</string>
     <string name="settings_telegram_subtitle">Contact the developer</string>
     <string name="settings_source_code_title">Source code</string>
