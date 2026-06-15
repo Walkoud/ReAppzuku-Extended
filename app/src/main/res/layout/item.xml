@@ -74,32 +74,18 @@
                     app:layout_constraintStart_toEndOf="@id/app_name"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/whitelist_icon"
+                    app:layout_constraintEnd_toStartOf="@+id/status_icon"
                     app:layout_goneMarginStart="0dp" />
 
                 <ImageView
-                    android:id="@+id/freeze_icon"
+                    android:id="@+id/status_icon"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:layout_marginStart="4dp"
-                    android:src="@drawable/ic_freeze"
                     android:visibility="gone"
                     android:focusable="false"
-                    app:layout_constraintStart_toEndOf="@id/app_name"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/whitelist_icon"
-                    app:layout_goneMarginStart="0dp" />
-
-                <ImageView
-                    android:id="@+id/whitelist_icon"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:layout_marginStart="6dp"
-                    android:src="@drawable/ic_whitelist"
-                    android:visibility="gone"
-                    android:focusable="false"
-                    app:layout_constraintStart_toEndOf="@id/freeze_icon"
+                    android:scaleType="fitCenter"
+                    app:layout_constraintStart_toEndOf="@id/protected_icon"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -117,7 +103,6 @@
                 android:textSize="12sp"
                 android:focusable="false" />
 
-            <!-- Строка 3: ОЗУ + CPU + бейджи — без изменений от оригинала -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -144,7 +129,6 @@
                     android:textSize="12sp"
                     android:focusable="false" />
 
-                <!-- Бейджи — оригинальный стиль TextView с @drawable/badge_* -->
                 <TextView
                     android:id="@+id/badge_system"
                     android:layout_width="wrap_content"
