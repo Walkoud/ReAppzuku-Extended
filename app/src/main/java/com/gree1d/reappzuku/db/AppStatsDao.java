@@ -31,15 +31,15 @@ public interface AppStatsDao {
     @Query("UPDATE app_stats SET relaunchCount = relaunchCount + 1, lastRelaunchTime = :time WHERE packageName = :packageName")
     void incrementRelaunch(String packageName, long time);
 
-    @Query("UPDATE app_stats SET killCount = killCount + 1, lastKillTime = :time WHERE packageName = :packageName")
-    void incrementKill(String packageName, long time);
+    @Query("UPDATE app_stats SET killCount = killCount + 1, lastKillTime = :time, lastKillSource = :source WHERE packageName = :packageName")
+    void incrementKill(String packageName, long time, String source);
 
     @Query("UPDATE app_stats SET totalRecoveredKb = totalRecoveredKb + :recoveredKb WHERE packageName = :packageName")
     void addRecoveredKb(String packageName, long recoveredKb);
 
     @Query("UPDATE app_stats SET appName = :appName WHERE packageName = :packageName")
     void updateAppName(String packageName, String appName);
-    
+
     @Query("SELECT COUNT(*) FROM app_stats")
     int getCount();
 

@@ -73,7 +73,7 @@ public class ShappkyBackgroundKillTile extends TileService {
             backgroundAppManager.performAutoKill(() -> {
                 Toast.makeText(this, "Configured background kill finished", Toast.LENGTH_SHORT).show();
                 updateTileState();
-            });
+            }, "Quick Tile");
         });
     }
 

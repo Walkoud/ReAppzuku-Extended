@@ -13,6 +13,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.RadioGroup;
 import android.widget.RadioButton;
@@ -66,7 +67,7 @@ import android.text.style.StyleSpan;
 import static com.gree1d.reappzuku.PreferenceKeys.*;
 import static com.gree1d.reappzuku.AppConstants.*;
 
-public class SettingsActivity extends BaseActivity {
+public class SettingsActivity extends BaseActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = "SettingsActivity";
 
     private ActivitySettingsBinding binding;
@@ -83,6 +84,39 @@ public class SettingsActivity extends BaseActivity {
     private int easterEggClickCount = 0;
     private static final int EASTER_EGG_THRESHOLD = 5;
     private PresetManager presetManager;
+
+    private final CompoundButton.OnCheckedChangeListener autoKillListener = (buttonView, isChecked) -> {
+        if (isChecked && !hasPrivilege()) {
+            buttonView.setChecked(false);
+            Toast.makeText(this, getString(R.string.settings_requires_privilege), Toast.LENGTH_LONG).show();
+            return;
+        }
+        putAutoKillPref(KEY_AUTO_KILL_ENABLED, isChecked);
+        boolean periodicEnabled = binding.switchPeriodicKill.isChecked();
+        updateAutomationOptionsVisibility(isChecked, periodicEnabled);
+        applyServiceDependentState(isChecked);
+        if (isChecked) {
+            startAutomationService();
+            AutoKillWorker.schedule(this, "Periodic Kill");
+        } else {
+            stopService(new Intent(this, ShappkyService.class));
+            AutoKillWorker.cancel(this);
+        }
+    };
+
+    private final CompoundButton.OnCheckedChangeListener periodicKillListener = (buttonView, isChecked) -> {
+        putAutoKillPref(KEY_PERIODIC_KILL_ENABLED, isChecked);
+        boolean serviceEnabled = binding.switchAutoKill.isChecked();
+        updateAutomationOptionsVisibility(serviceEnabled, isChecked);
+    };
+
+    private final CompoundButton.OnCheckedChangeListener screenOffListener = (buttonView, isChecked) ->
+            putAutoKillPref(KEY_KILL_ON_SCREEN_OFF, isChecked);
+
+    private final CompoundButton.OnCheckedChangeListener ramThresholdListener = (buttonView, isChecked) -> {
+        putAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, isChecked);
+        updateRamThresholdLimitVisibility(isChecked && binding.switchAutoKill.isChecked());
+    };
 
     private final ActivityResultLauncher<String> createBackupLauncher = registerForActivityResult(
             new ActivityResultContracts.CreateDocument("application/json"),
@@ -288,38 +322,13 @@ public class SettingsActivity extends BaseActivity {
 
         binding.layoutNotificationMode.setOnClickListener(v -> showNotificationModeDialog());
 
-        binding.switchAutoKill.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked && !hasPrivilege()) {
-                buttonView.setChecked(false);
-                Toast.makeText(this, getString(R.string.settings_requires_privilege), Toast.LENGTH_LONG).show();
-                return;
-            }
-            putAutoKillPref(KEY_AUTO_KILL_ENABLED, isChecked);
-            boolean periodicEnabled = binding.switchPeriodicKill.isChecked();
-            updateAutomationOptionsVisibility(isChecked, periodicEnabled);
-            applyServiceDependentState(isChecked);
-            if (isChecked) {
-                startAutomationService();
-                AutoKillWorker.schedule(this);
-            } else {
-                stopService(new Intent(this, ShappkyService.class));
-                AutoKillWorker.cancel(this);
-            }
-        });
+        binding.switchAutoKill.setOnCheckedChangeListener(autoKillListener);
 
-        binding.switchPeriodicKill.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            putAutoKillPref(KEY_PERIODIC_KILL_ENABLED, isChecked);
-            boolean serviceEnabled = binding.switchAutoKill.isChecked();
-            updateAutomationOptionsVisibility(serviceEnabled, isChecked);
-        });
+        binding.switchPeriodicKill.setOnCheckedChangeListener(periodicKillListener);
 
-        binding.switchKillScreenOff.setOnCheckedChangeListener((buttonView, isChecked) ->
-                putAutoKillPref(KEY_KILL_ON_SCREEN_OFF, isChecked));
+        binding.switchKillScreenOff.setOnCheckedChangeListener(screenOffListener);
 
-        binding.switchRamThreshold.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            putAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, isChecked);
-            updateRamThresholdLimitVisibility(isChecked && binding.switchAutoKill.isChecked());
-        });
+        binding.switchRamThreshold.setOnCheckedChangeListener(ramThresholdListener);
         binding.layoutRamThreshold.setOnClickListener(v -> showRamThresholdDialog());
 
         binding.layoutKillInterval.setOnClickListener(v -> showKillIntervalDialog());
@@ -424,6 +433,7 @@ public class SettingsActivity extends BaseActivity {
 
         updateKillModeVisibility();
         applyServiceDependentState(isServiceEnabled());
+        applyPresetActiveState(isPresetActive());
         setupAdditionalScenariosListeners();
     }
 
@@ -506,6 +516,58 @@ public class SettingsActivity extends BaseActivity {
         binding.switchSleepMode.setEnabled(serviceEnabled);
         binding.layoutSleepModeApps.setAlpha(alpha);
         binding.layoutSleepModeDelay.setAlpha(alpha);
+    }
+
+    private void applyPresetActiveState(boolean presetActive) {
+        float alpha = presetActive ? 0.5f : 1.0f;
+        View.OnClickListener presetBlocker = presetActive ? v -> showPresetActiveDialog() : null;
+
+        binding.switchPeriodicKill.setEnabled(!presetActive);
+        binding.switchKillScreenOff.setEnabled(!presetActive);
+        binding.switchRamThreshold.setEnabled(!presetActive);
+
+        binding.layoutPeriodicKill.setAlpha(alpha);
+        binding.layoutPeriodicKill.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : null);
+        binding.layoutScreenLock.setAlpha(alpha);
+        binding.layoutScreenLock.setOnClickListener(presetBlocker);
+        binding.layoutRamThresholdToggle.setAlpha(alpha);
+        binding.layoutRamThresholdToggle.setOnClickListener(presetBlocker);
+        binding.layoutRamThreshold.setAlpha(alpha);
+        binding.layoutRamThreshold.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> showRamThresholdDialog());
+        binding.layoutKillInterval.setAlpha(alpha);
+        binding.layoutKillInterval.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> showKillIntervalDialog());
+        binding.layoutKillMode.setAlpha(alpha);
+        binding.layoutKillMode.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showKillModeDialog();
+        });
+        binding.layoutAutoKillType.setAlpha(alpha);
+        binding.layoutAutoKillType.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAutoKillTypeDialog();
+        });
+        binding.layoutBlacklist.setAlpha(alpha);
+        binding.layoutBlacklist.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showBlacklistDialog();
+        });
+        binding.layoutWhitelist.setAlpha(alpha);
+        binding.layoutWhitelist.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showWhitelistDialog();
+        });
+        binding.layoutAdditionalScenarios.setAlpha(alpha);
+        binding.layoutAdditionalScenarios.setOnClickListener(presetActive ? v -> showPresetActiveDialog() : v -> {
+            if (!isServiceEnabled()) { showServiceRequiredToast(); return; }
+            showAdditionalScenariosDialog();
+        });
+    }
+
+    private void showPresetActiveDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setMessage(R.string.antichange_settings)
+                .setPositiveButton(R.string.dialog_close, null)
+                .show();
     }
 
     private void updateShellModeText() {
@@ -1912,7 +1974,7 @@ public class SettingsActivity extends BaseActivity {
                 return;
             }
             startAutomationService();
-            AutoKillWorker.schedule(this);
+            AutoKillWorker.schedule(this, "Periodic Kill");
         } else {
             stopService(new Intent(this, ShappkyService.class));
             AutoKillWorker.cancel(this);
@@ -2388,6 +2450,7 @@ public class SettingsActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         if (binding == null) return;
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this);
         boolean autoKill = getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
         boolean periodic = getAutoKillPref(KEY_PERIODIC_KILL_ENABLED, false);
         boolean screenOff = getAutoKillPref(KEY_KILL_ON_SCREEN_OFF, false);
@@ -2398,7 +2461,73 @@ public class SettingsActivity extends BaseActivity {
         binding.switchRamThreshold.setChecked(ramEnabled);
         updateAutomationOptionsVisibility(autoKill, periodic);
         applyServiceDependentState(autoKill);
+        applyPresetActiveState(isPresetActive());
         updateRamThresholdLimitVisibility(ramEnabled && autoKill);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+        if (binding == null) return;
+        switch (key) {
+            case KEY_AUTO_KILL_ENABLED: {
+                boolean val = getAutoKillPref(KEY_AUTO_KILL_ENABLED, false);
+                binding.switchAutoKill.setOnCheckedChangeListener(null);
+                binding.switchAutoKill.setChecked(val);
+                binding.switchAutoKill.setOnCheckedChangeListener(autoKillListener);
+                updateAutomationOptionsVisibility(val, getAutoKillPref(KEY_PERIODIC_KILL_ENABLED, false));
+                applyServiceDependentState(val);
+                updateRamThresholdLimitVisibility(getAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, false) && val);
+                break;
+            }
+            case KEY_PERIODIC_KILL_ENABLED: {
+                boolean val = getAutoKillPref(KEY_PERIODIC_KILL_ENABLED, false);
+                binding.switchPeriodicKill.setOnCheckedChangeListener(null);
+                binding.switchPeriodicKill.setChecked(val);
+                binding.switchPeriodicKill.setOnCheckedChangeListener(periodicKillListener);
+                updateAutomationOptionsVisibility(getAutoKillPref(KEY_AUTO_KILL_ENABLED, false), val);
+                break;
+            }
+            case KEY_KILL_INTERVAL:
+                updateKillIntervalText(getAutoKillIntPref(KEY_KILL_INTERVAL, DEFAULT_KILL_INTERVAL_MS));
+                break;
+            case KEY_KILL_ON_SCREEN_OFF: {
+                boolean val = getAutoKillPref(KEY_KILL_ON_SCREEN_OFF, false);
+                binding.switchKillScreenOff.setOnCheckedChangeListener(null);
+                binding.switchKillScreenOff.setChecked(val);
+                binding.switchKillScreenOff.setOnCheckedChangeListener(screenOffListener);
+                break;
+            }
+            case KEY_RAM_THRESHOLD_ENABLED: {
+                boolean val = getAutoKillPref(KEY_RAM_THRESHOLD_ENABLED, false);
+                binding.switchRamThreshold.setOnCheckedChangeListener(null);
+                binding.switchRamThreshold.setChecked(val);
+                binding.switchRamThreshold.setOnCheckedChangeListener(ramThresholdListener);
+                updateRamThresholdLimitVisibility(val && getAutoKillPref(KEY_AUTO_KILL_ENABLED, false));
+                break;
+            }
+            case KEY_RAM_THRESHOLD:
+                updateRamThresholdText(getAutoKillIntPref(KEY_RAM_THRESHOLD, DEFAULT_RAM_THRESHOLD_PERCENT));
+                break;
+            case KEY_AUTO_KILL_TYPE:
+                updateAutoKillTypeText(autoKillManager.getAutoKillType());
+                break;
+            case KEY_KILL_MODE: {
+                int mode = autoKillManager.getKillMode();
+                binding.textKillMode.setText(mode == 0 ? R.string.settings_mode_whitelist : R.string.settings_mode_blacklist);
+                binding.layoutBlacklist.setVisibility(mode == 1 ? View.VISIBLE : View.GONE);
+                binding.layoutWhitelist.setVisibility(mode == 0 ? View.VISIBLE : View.GONE);
+                break;
+            }
+            case KEY_ACTIVE_PRESET:
+                applyPresetActiveState(isPresetActive());
+                break;
+        }
     }
 
     @Override

@@ -172,7 +172,7 @@ public class ShappkyQuickTile extends TileService {
                     appStatsDao.updateAppName(packageName, appName);
                 }
 
-                appStatsDao.incrementKill(packageName, System.currentTimeMillis());
+                appStatsDao.incrementKill(packageName, System.currentTimeMillis(), "Quick Tile");
             } catch (Exception ignored) {
             }
         });

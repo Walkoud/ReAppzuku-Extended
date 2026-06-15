@@ -7,12 +7,12 @@ import android.os.Looper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.work.Data;
 import androidx.work.ExistingPeriodicWorkPolicy;
 import androidx.work.PeriodicWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
-
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.CountDownLatch;
@@ -25,18 +25,25 @@ import static com.gree1d.reappzuku.AppConstants.*;
 
 public class AutoKillWorker extends Worker {
     private static final String UNIQUE_WORK_NAME = "AutoKillWorker";
+    private static final String KEY_SOURCE = "kill_source";
 
     public AutoKillWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
     }
 
-    public static void schedule(Context context) {
+    public static void schedule(Context context, String source) {
         SharedPreferences prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         int intervalMinutes = prefs.getInt(KEY_KILL_INTERVAL, 15);
         long clampedInterval = Math.max(intervalMinutes, 15);
 
+        Data inputData = new Data.Builder()
+                .putString(KEY_SOURCE, source)
+                .build();
+
         PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
-                AutoKillWorker.class, clampedInterval, TimeUnit.MINUTES).build();
+                AutoKillWorker.class, clampedInterval, TimeUnit.MINUTES)
+                .setInputData(inputData)
+                .build();
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 UNIQUE_WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request);
     }
@@ -84,7 +91,9 @@ public class AutoKillWorker extends Worker {
             CountDownLatch latch = new CountDownLatch(1);
             Log.d("AutoKillWorker", "Triggering performAutoKill from WORKER");
 
-            autoKillManager.performAutoKill(latch::countDown);
+            String source = getInputData().getString(KEY_SOURCE);
+            if (source == null) source = "Periodic Kill";
+            autoKillManager.performAutoKill(latch::countDown, source);
 
             boolean finished = latch.await(60, TimeUnit.SECONDS);
             if (!finished) {

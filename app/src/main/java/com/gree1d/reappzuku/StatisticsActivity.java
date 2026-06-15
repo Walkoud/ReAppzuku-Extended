@@ -653,14 +653,16 @@ public class StatisticsActivity extends BaseActivity {
                         stats.packageName,
                         String.join(" | ", detailParts),
                         badge,
-                        lastEventTime));
+                        lastEventTime,
+                        stats.lastKillSource));
                 totalKills += stats.killCount;
                 totalRelaunches += stats.relaunchCount;
                 totalRecoveredKb += stats.totalRecoveredKb;
             }
 
             Collections.sort(historyEntries, (a, b) -> Long.compare(b.lastEventTime, a.lastEventTime));
-            List<SettingsSurfaceRow> rows = buildKillHistoryRows(historyEntries);
+            final List<KillHistoryEntry> sortedEntries = new ArrayList<>(historyEntries);
+            List<SettingsSurfaceRow> rows = buildKillHistoryRows(sortedEntries);
             String summary = getString(R.string.stats_summary_12h,
                     rows.size(), totalKills, totalRelaunches, formatRecoveredSize(totalRecoveredKb));
 
@@ -672,9 +674,8 @@ public class StatisticsActivity extends BaseActivity {
                 content.listView.setAdapter(adapter);
                 content.listView.setEmptyView(content.emptyView);
                 content.listView.setOnItemClickListener((parent, view, position, id) -> {
-                    SettingsSurfaceRow row = adapter.getItem(position);
-                    if (row != null && row.packageName != null && !row.packageName.isEmpty()) {
-                        openAppInfo(row.packageName);
+                    if (position < sortedEntries.size()) {
+                        showKillEntryDetails(sortedEntries.get(position));
                     }
                 });
                 content.summaryText.setText(summary);
@@ -865,6 +866,23 @@ public class StatisticsActivity extends BaseActivity {
             appManager.clearBackgroundRestrictionLog();
             reloadLog.run();
         });
+    }
+
+    private void showKillEntryDetails(KillHistoryEntry entry) {
+        java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
+        String killTime = entry.lastEventTime > 0
+                ? timeFormat.format(new java.util.Date(entry.lastEventTime)) : "—";
+        String source = entry.lastKillSource != null ? entry.lastKillSource : "—";
+
+        String message = entry.appName + "\n"
+                + entry.packageName + "\n"
+                + killTime + " · " + source;
+
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
+                .setMessage(message)
+                .setNegativeButton(getString(R.string.dialog_close), (d, w) -> d.dismiss());
+
+        applyCustomAccentToDialogButtons(builder.show());
     }
 
     private void showRestrictionLogEntryDetails(BackgroundRestrictionLog.LogEntry entry) {
@@ -1142,11 +1160,12 @@ public class StatisticsActivity extends BaseActivity {
     }
 
     private static class KillHistoryEntry {
-        final String appName, packageName, detail, badge;
+        final String appName, packageName, detail, badge, lastKillSource;
         final long lastEventTime;
-        KillHistoryEntry(String appName, String packageName, String detail, String badge, long lastEventTime) {
+        KillHistoryEntry(String appName, String packageName, String detail, String badge, long lastEventTime, String lastKillSource) {
             this.appName = appName; this.packageName = packageName;
             this.detail = detail; this.badge = badge; this.lastEventTime = lastEventTime;
+            this.lastKillSource = lastKillSource;
         }
     }
 

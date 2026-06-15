@@ -301,10 +301,16 @@ public class PresetSettingsActivity extends BaseActivity {
         workingModel.autoKillEnabled = true;
 
         presetManager.savePreset(workingModel);
-        presetManager.scheduleAlarms(workingModel);
-        presetManager.checkAndApplyCurrentPreset();
 
-        Log.d(TAG, "Preset #" + presetNumber + " saved");
+        if (workingModel.enabled) {
+            presetManager.scheduleAlarms(workingModel);
+            presetManager.checkAndApplyCurrentPreset();
+        } else {
+            presetManager.cancelAlarms(workingModel.presetNumber);
+            presetManager.forceDeactivateIfActive(workingModel.presetNumber);
+        }
+
+        Log.d(TAG, "Preset #" + presetNumber + " saved, enabled=" + workingModel.enabled);
         Toast.makeText(this, getString(R.string.preset_saved, presetNumber), Toast.LENGTH_SHORT).show();
         finish();
     }

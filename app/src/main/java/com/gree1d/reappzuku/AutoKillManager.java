@@ -52,16 +52,16 @@ public class AutoKillManager {
         this.scheduler = scheduler;
     }
 
-    public void performAutoKill(Runnable onComplete) {
-        performAutoKill(onComplete, null);
+    public void performAutoKill(Runnable onComplete, String source) {
+        performAutoKill(onComplete, null, source);
     }
 
-    public void performAutoKill(Runnable onComplete, Set<String> extraWhitelist) {
-        performAutoKillWithResult(onComplete, extraWhitelist, null);
+    public void performAutoKill(Runnable onComplete, Set<String> extraWhitelist, String source) {
+        performAutoKillWithResult(onComplete, extraWhitelist, null, source);
     }
 
     public void performAutoKillWithResult(Runnable onComplete, Set<String> extraWhitelist,
-            java.util.function.BiConsumer<Integer, Long> onResult) {
+            java.util.function.BiConsumer<Integer, Long> onResult, String source) {
         executor.execute(() -> {
             if (!shellManager.resolveAnyShellPermission()) {
                 if (onComplete != null)
@@ -193,7 +193,7 @@ public class AutoKillManager {
             }
 
             if (!toKill.isEmpty()) {
-                recordSuccessfulKills(toKill, null);
+                recordSuccessfulKills(toKill, null, source);
 
                 Map<String, Long> newPendingRss = new HashMap<>();
                 for (String pkg : toKill) {
@@ -302,7 +302,7 @@ public class AutoKillManager {
         final Map<String, Long> recoveredToLog = new HashMap<>(recoveredKbByPackage);
         shellManager.runShellCommand(command, () -> {
             executor.execute(() -> {
-                recordSuccessfulKills(packagesToLog, recoveredToLog);
+                recordSuccessfulKills(packagesToLog, recoveredToLog, "Manual Kill");
                 killOrphanShellProcesses(new HashSet<>(packagesToLog));
             });
             Toast.makeText(context, context.getString(R.string.toast_free_up, formatMemorySize(finalTotalKb)), Toast.LENGTH_LONG).show();
@@ -346,7 +346,7 @@ public class AutoKillManager {
         final long finalAppRamBytes = appRamBytes;
         shellManager.runShellCommand(buildKillCommand(packageToKill), () -> {
             executor.execute(() -> {
-                recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage);
+                recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage, "Manual Kill");
                 killOrphanShellProcesses(Collections.singleton(packageToKill));
             });
             if (finalAppRamBytes > 0) {
@@ -404,7 +404,7 @@ public class AutoKillManager {
                 context.getString(R.string.bg_manager_stopped_apps, count));
     }
 
-    private void recordSuccessfulKills(List<String> packageNames, Map<String, Long> recoveredKbByPackage) {
+    private void recordSuccessfulKills(List<String> packageNames, Map<String, Long> recoveredKbByPackage, String source) {
         if (packageNames == null || packageNames.isEmpty()) {
             return;
         }
@@ -445,7 +445,7 @@ public class AutoKillManager {
                 appStatsDao.updateAppName(packageName, appName);
             }
 
-            appStatsDao.incrementKill(packageName, now);
+            appStatsDao.incrementKill(packageName, now, source);
 
             long recoveredKb = recoveredKbByPackage != null ? recoveredKbByPackage.getOrDefault(packageName, 0L) : 0L;
             if (recoveredKb > 0) {

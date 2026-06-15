@@ -95,7 +95,7 @@ public class RamKillShortcutManager {
                     showKillToast(killCount, freedKb);
                     updateShortcut();
                 }, 5000);
-            });
+            }, "RAM Shortcut");
         });
     }
 

@@ -9,13 +9,14 @@ public class AppStats {
     @PrimaryKey
     @NonNull
     public String packageName;
-    
+
     public String appName;
     public int killCount;
     public int relaunchCount;
     public long totalRecoveredKb;
     public long lastKillTime;
     public long lastRelaunchTime;
+    public String lastKillSource;
 
     public AppStats(@NonNull String packageName) {
         this.packageName = packageName;

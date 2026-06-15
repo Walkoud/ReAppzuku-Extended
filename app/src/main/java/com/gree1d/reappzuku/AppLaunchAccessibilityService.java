@@ -86,7 +86,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         lastTriggerTime = now;
 
         Log.d(TAG, "Target app launched: " + packageName + " — triggering Auto-Kill");
-        autoKillManager.performAutoKill(null, new HashSet<>(targetPackages));
+        autoKillManager.performAutoKill(null, new HashSet<String>(targetPackages), resolveKillSource("App Launch Trigger"));
 
         if (prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false)) {
             executor.execute(() -> trimMemoryForAll(targetPackages));
@@ -144,5 +144,15 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         if (executor != null) {
             executor.shutdown();
         }
+    }
+
+    private String resolveKillSource(String defaultSource) {
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        int activePreset = prefs.getInt(KEY_ACTIVE_PRESET, 0);
+        if (activePreset != 0) {
+            PresetManager pm = new PresetManager(this);
+            return defaultSource + " · " + pm.getPresetName(activePreset);
+        }
+        return defaultSource;
     }
 }

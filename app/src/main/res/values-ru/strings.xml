@@ -1054,4 +1054,5 @@
     <string name="preset_reset_dialog_title">Сбросить настройки пресета?</string>
     <string name="preset_reset_dialog_message">Все настройки пресета %d будут сброшены до значений по умолчанию. Изменения применятся только после нажатия «Сохранить».</string>
     <string name="preset_reset_success">Настройки пресета %d сброшены — нажмите «Сохранить»</string>
+    <string name="antichange_settings">Вы не можете изменять основные настройки Auto-Kill когда активен пресет</string>
 </resources>

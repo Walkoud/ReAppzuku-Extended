@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.util.Log;
+import com.gree1d.reappzuku.AdditionalScenariosManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -276,6 +277,7 @@ public class PresetManager {
         editor.apply();
 
         Log.d(TAG, "applyPreset #" + model.presetNumber + " prefs written — rescheduling worker");
+        notifyServiceUpdateHwReceivers();
         rescheduleWorker();
     }
 
@@ -361,7 +363,16 @@ public class PresetManager {
         e.apply();
 
         Log.d(TAG, "restoreBackup DONE — rescheduling worker");
+        notifyServiceUpdateHwReceivers();
         rescheduleWorker();
+    }
+
+    private void notifyServiceUpdateHwReceivers() {
+        if (ShappkyService.isRunning()) {
+            Intent intent = new Intent(context, ShappkyService.class);
+            intent.setAction("UPDATE_HW_RECEIVERS");
+            context.startService(intent);
+        }
     }
 
     private void rescheduleWorker() {
@@ -373,8 +384,16 @@ public class PresetManager {
         boolean presetActive = mainPrefs.getInt(KEY_ACTIVE_PRESET, 0) != 0;
         AutoKillWorker.cancel(context);
         if ((autoKillEnabled || presetActive) && periodicEnabled) {
-            AutoKillWorker.schedule(context);
-            Log.d(TAG, "rescheduleWorker — scheduled with interval=" + interval);
+            int activePresetNumber = mainPrefs.getInt(KEY_ACTIVE_PRESET, 0);
+            String source;
+            if (activePresetNumber != 0) {
+                String presetName = getPresetName(activePresetNumber);
+                source = "Periodic Kill · " + presetName;
+            } else {
+                source = "Periodic Kill";
+            }
+            AutoKillWorker.schedule(context, source);
+            Log.d(TAG, "rescheduleWorker — scheduled with interval=" + interval + " source=" + source);
         } else {
             Log.d(TAG, "rescheduleWorker — worker cancelled");
         }

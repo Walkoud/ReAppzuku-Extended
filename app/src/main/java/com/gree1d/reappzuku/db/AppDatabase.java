@@ -16,7 +16,7 @@ import androidx.annotation.NonNull;
         SchedulerLog.class,
         SleepModeLog.class
     },
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -99,6 +99,13 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE app_stats ADD COLUMN lastKillSource TEXT");
+        }
+    };
+
     public abstract AppStatsDao appStatsDao();
     public abstract ResourceSnapshotDao resourceSnapshotDao();
     public abstract BgRestrictionLog.Dao bgRestrictionLogDao();
@@ -116,7 +123,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
-                        MIGRATION_7_8
+                        MIGRATION_7_8,
+                        MIGRATION_8_9
                     )
                     .fallbackToDestructiveMigration()
                     .build();
