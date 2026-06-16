@@ -26,6 +26,11 @@ public class SleepModeManager {
         PERMANENT
     }
 
+    public enum FreezeMethod {
+        SUSPEND,
+        DISABLE
+    }
+
     private final Context context;
     private final Handler handler;
     private final ExecutorService executor;
@@ -65,6 +70,28 @@ public class SleepModeManager {
         return new HashSet<>(sharedpreferences.getStringSet(KEY_SLEEP_MODE_APPS_FROZEN, new HashSet<>()));
     }
 
+    public Set<String> getSuspendMethodApps() {
+        return new HashSet<>(sharedpreferences.getStringSet(KEY_SLEEP_MODE_APPS_SUSPEND_METHOD, new HashSet<>()));
+    }
+
+    public FreezeMethod getFreezeMethod(String packageName) {
+        if (isSystemPackage(packageName) || systemPackages.contains(packageName)) {
+            return FreezeMethod.SUSPEND;
+        }
+        return getSuspendMethodApps().contains(packageName) ? FreezeMethod.SUSPEND : FreezeMethod.DISABLE;
+    }
+
+    public void setFreezeMethod(String packageName, FreezeMethod method) {
+        if (isSystemPackage(packageName) || systemPackages.contains(packageName)) return;
+        Set<String> suspendApps = getSuspendMethodApps();
+        if (method == FreezeMethod.SUSPEND) {
+            suspendApps.add(packageName);
+        } else {
+            suspendApps.remove(packageName);
+        }
+        sharedpreferences.edit().putStringSet(KEY_SLEEP_MODE_APPS_SUSPEND_METHOD, suspendApps).apply();
+    }
+
     private void markFrozen(String packageName) {
         Set<String> frozen = getFrozenTimerApps();
         frozen.add(packageName);
@@ -87,22 +114,21 @@ public class SleepModeManager {
     }
 
     public boolean reapplyPermanentFreeze(String packageName) {
-        if (isSystemPackage(packageName)) {
-            return shellManager.suspendSystemApp(packageName);
-        }
-        return shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
+        return freezeApp(packageName);
     }
 
     private boolean freezeApp(String packageName) {
-        if (systemPackages.contains(packageName)) {
-            return shellManager.suspendSystemApp(packageName);
+        FreezeMethod method = getFreezeMethod(packageName);
+        if (method == FreezeMethod.SUSPEND) {
+            return shellManager.runShellCommandBlocking("pm suspend --user 0 " + packageName);
         }
         return shellManager.runShellCommandBlocking("pm disable-user --user 0 " + packageName);
     }
 
     private boolean unfreezeApp(String packageName) {
-        if (systemPackages.contains(packageName)) {
-            return shellManager.unsuspendSystemApp(packageName);
+        FreezeMethod method = getFreezeMethod(packageName);
+        if (method == FreezeMethod.SUSPEND) {
+            return shellManager.runShellCommandBlocking("pm unsuspend --user 0 " + packageName);
         }
         return shellManager.runShellCommandBlocking("pm enable " + packageName);
     }
@@ -139,12 +165,14 @@ public class SleepModeManager {
 
         executor.execute(() -> {
             for (String packageName : toFreeze) {
+                FreezeMethod method = getFreezeMethod(packageName);
                 boolean ok = freezeApp(packageName);
-                SleepModeLogManager.logFreeze(context, packageName, ok);
+                SleepModeLogManager.logFreeze(context, packageName, ok, method);
             }
             for (String packageName : toUnfreeze) {
+                FreezeMethod method = getFreezeMethod(packageName);
                 boolean ok = unfreezeApp(packageName);
-                SleepModeLogManager.logUnfreeze(context, packageName, ok);
+                SleepModeLogManager.logUnfreeze(context, packageName, ok, method);
             }
             if (onComplete != null) handler.post(onComplete);
         });
@@ -212,9 +240,10 @@ public class SleepModeManager {
             for (String packageName : packages) {
                 if (alreadyFrozen.contains(packageName)) continue;
                 if (scheduler != null && scheduler.isProtected(packageName, RestrictionsScheduler.PROTECT_SLEEP_MODE)) continue;
+                FreezeMethod method = getFreezeMethod(packageName);
                 boolean ok = freezeApp(packageName);
                 if (ok) markFrozen(packageName);
-                SleepModeLogManager.logFreeze(context, packageName, ok);
+                SleepModeLogManager.logFreeze(context, packageName, ok, method);
             }
             if (onComplete != null) handler.post(onComplete);
         });
@@ -228,9 +257,10 @@ public class SleepModeManager {
         }
         executor.execute(() -> {
             for (String packageName : packages) {
+                FreezeMethod method = getFreezeMethod(packageName);
                 boolean ok = unfreezeApp(packageName);
                 if (ok) markUnfrozen(packageName);
-                SleepModeLogManager.logUnfreeze(context, packageName, ok);
+                SleepModeLogManager.logUnfreeze(context, packageName, ok, method);
             }
             if (onComplete != null) handler.post(onComplete);
         });

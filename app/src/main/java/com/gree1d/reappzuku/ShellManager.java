@@ -258,16 +258,7 @@ public class ShellManager {
         }
         return null;
     }
-
-
-    public boolean suspendSystemApp(String packageName) {
-        return runShellCommandBlocking("pm suspend --user 0 " + packageName);
-    }
-
-    public boolean unsuspendSystemApp(String packageName) {
-        return runShellCommandBlocking("pm unsuspend --user 0 " + packageName);
-    }
-
+    
     private boolean executeRootCommand(String command, Consumer<String> outputProcessor) {
         Process process = null;
         DataOutputStream os = null;

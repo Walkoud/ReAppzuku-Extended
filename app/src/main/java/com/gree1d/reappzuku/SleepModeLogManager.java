@@ -22,20 +22,20 @@ public final class SleepModeLogManager {
 
     private SleepModeLogManager() {}
 
-    public static void logFreeze(Context context, String packageName, boolean succeeded) {
-        append(context, packageName, "freeze", buildOutcome(succeeded, null));
+    public static void logFreeze(Context context, String packageName, boolean succeeded, SleepModeManager.FreezeMethod method) {
+        append(context, packageName, "freeze", buildOutcome(succeeded, null), method);
     }
 
-    public static void logFreeze(Context context, String packageName, boolean succeeded, String source) {
-        append(context, packageName, "freeze", buildOutcome(succeeded, source));
+    public static void logFreeze(Context context, String packageName, boolean succeeded, String source, SleepModeManager.FreezeMethod method) {
+        append(context, packageName, "freeze", buildOutcome(succeeded, source), method);
     }
 
-    public static void logUnfreeze(Context context, String packageName, boolean succeeded) {
-        append(context, packageName, "unfreeze", buildOutcome(succeeded, null));
+    public static void logUnfreeze(Context context, String packageName, boolean succeeded, SleepModeManager.FreezeMethod method) {
+        append(context, packageName, "unfreeze", buildOutcome(succeeded, null), method);
     }
 
-    public static void logUnfreeze(Context context, String packageName, boolean succeeded, String source) {
-        append(context, packageName, "unfreeze", buildOutcome(succeeded, source));
+    public static void logUnfreeze(Context context, String packageName, boolean succeeded, String source, SleepModeManager.FreezeMethod method) {
+        append(context, packageName, "unfreeze", buildOutcome(succeeded, source), method);
     }
 
     private static String buildOutcome(boolean succeeded, String source) {
@@ -45,7 +45,7 @@ public final class SleepModeLogManager {
     }
 
     private static void append(Context context, String packageName,
-                                String action, String outcome) {
+                                String action, String outcome, SleepModeManager.FreezeMethod method) {
         if (context == null) return;
 
         SleepModeLog entry = new SleepModeLog();
@@ -53,6 +53,7 @@ public final class SleepModeLogManager {
         entry.packageName = sanitize(packageName == null || packageName.trim().isEmpty() ? "-" : packageName);
         entry.action      = action;
         entry.outcome     = outcome;
+        entry.method      = method != null ? method.name().toLowerCase(Locale.US) : null;
 
         DB_EXECUTOR.execute(() -> {
             SleepModeLog.Dao dao = AppDatabase.getInstance(context).sleepModeLogDao();
@@ -87,7 +88,8 @@ public final class SleepModeLogManager {
                     formatTimestamp(row.timestamp),
                     row.action      != null ? row.action      : "event",
                     row.packageName != null ? row.packageName : "-",
-                    row.outcome     != null ? row.outcome     : "unknown"
+                    row.outcome     != null ? row.outcome     : "unknown",
+                    row.method      != null ? row.method      : "-"
             ));
         }
         return result;
@@ -118,16 +120,18 @@ public final class SleepModeLogManager {
         public final String action;
         public final String packageName;
         public final String outcome;
+        public final String method;
 
-        private LogEntry(String timestamp, String action, String packageName, String outcome) {
+        private LogEntry(String timestamp, String action, String packageName, String outcome, String method) {
             this.timestamp   = timestamp;
             this.action      = action;
             this.packageName = packageName;
             this.outcome     = outcome;
+            this.method      = method;
         }
 
         public String toDisplayLine() {
-            return timestamp + " | " + action + " | " + packageName + " | " + outcome;
+            return timestamp + " | " + action + " | " + packageName + " | " + outcome + " | " + method;
         }
     }
 }

@@ -56,6 +56,7 @@ import androidx.core.content.ContextCompat;
 import com.gree1d.reappzuku.databinding.ActivitySettingsBinding;
 
 import java.util.Set;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
@@ -1109,7 +1110,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
             List<AppModel> allApps = filterOutProtected(rawApps);
             Set<String> timerApps = sleepModeManager.getSleepModeApps();
             Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
-            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, timerApps, permanentApps, true);
+            FilterAppsAdapter filterAdapter = new FilterAppsAdapter(this, allApps, timerApps, permanentApps, sleepModeManager, true);
             if (sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM)
                 filterAdapter.setAccentColor(sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR));
             listView.setAdapter(filterAdapter);
@@ -1136,6 +1137,10 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setText(getString(R.string.dialog_apply)));
 
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+                Map<String, SleepModeManager.FreezeMethod> methodMap = filterAdapter.getFreezeMethodMap();
+                for (Map.Entry<String, SleepModeManager.FreezeMethod> entry : methodMap.entrySet()) {
+                    sleepModeManager.setFreezeMethod(entry.getKey(), entry.getValue());
+                }
                 sleepModeManager.saveSleepModeApps(
                         filterAdapter.getTimerPackages(),
                         filterAdapter.getPermanentPackages(),
