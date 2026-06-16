@@ -1033,9 +1033,22 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         for (String name : names) {
             sb.append("• ").append(name).append("\n");
         }
+
+        TextView textView = new TextView(this);
+        textView.setText(sb.toString().trim());
+        textView.setTextColor(getColor(R.color.text_primary));
+        textView.setTextSize(16f);
+        int paddingH = (int) (24 * getResources().getDisplayMetrics().density);
+        int paddingV = (int) (16 * getResources().getDisplayMetrics().density);
+        textView.setPadding(paddingH, paddingV, paddingH, paddingV);
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(textView);
+        scrollView.setMaxHeight((int) (400 * getResources().getDisplayMetrics().density));
+
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.special_thanks_title))
-                .setMessage(sb.toString().trim())
+                .setView(scrollView)
                 .setPositiveButton(getString(R.string.dialog_close), (d, w) -> d.dismiss())
                 .create();
         dialog.show();
