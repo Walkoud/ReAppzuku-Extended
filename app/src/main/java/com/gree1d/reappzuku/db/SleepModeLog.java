@@ -22,10 +22,9 @@ public class SleepModeLog {
 
     public long timestamp;
     public String packageName;
-    /** "freeze" / "unfreeze" */
     public String action;
-    /** "ok" / "error" */
     public String outcome;
+    public String method;
 
     @androidx.room.Dao
     public interface Dao {
