@@ -25,6 +25,7 @@ public class SleepModeLog {
     public String action;
     public String outcome;
     public String method;
+    public String freezeType;
 
     @androidx.room.Dao
     public interface Dao {

@@ -110,6 +110,7 @@ public abstract class AppDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
             db.execSQL("ALTER TABLE sleep_mode_log ADD COLUMN method TEXT");
+            db.execSQL("ALTER TABLE sleep_mode_log ADD COLUMN freezeType TEXT");
         }
     };
 
