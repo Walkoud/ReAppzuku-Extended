@@ -1451,19 +1451,28 @@ public class StatisticsActivity extends BaseActivity {
 
     private String humanizeLogOutcome(String outcome) {
         if (outcome == null || outcome.trim().isEmpty()) return "";
-        switch (outcome.trim().toLowerCase()) {
-            case "ok": return getString(R.string.log_outcome_ok);
-            case "verified": return getString(R.string.log_outcome_verified);
-            case "failed": return getString(R.string.log_outcome_failed);
-            case "skipped": return getString(R.string.log_outcome_skipped);
-            case "verify-failed": return getString(R.string.log_outcome_verify_failed);
-            case "verify-unavailable": return getString(R.string.log_outcome_verify_unavailable);
-            case "battery-whitelist-removed": return getString(R.string.log_outcome_battery_whitelist_removed);
-            case "battery-whitelist-restored": return getString(R.string.log_outcome_battery_whitelist_restored);
-            default:
-                String n = outcome.trim().replace('-', ' ').replace('_', ' ');
-                return n.toUpperCase(Locale.US);
+        String trimmed = outcome.trim();
+        String suffix = "";
+        int parenIdx = trimmed.indexOf(" (");
+        if (parenIdx > 0 && trimmed.endsWith(")")) {
+            suffix = trimmed.substring(parenIdx);
+            trimmed = trimmed.substring(0, parenIdx);
         }
+        String localized;
+        switch (trimmed.toLowerCase()) {
+            case "ok": localized = getString(R.string.log_outcome_ok); break;
+            case "verified": localized = getString(R.string.log_outcome_verified); break;
+            case "failed": localized = getString(R.string.log_outcome_failed); break;
+            case "skipped": localized = getString(R.string.log_outcome_skipped); break;
+            case "verify-failed": localized = getString(R.string.log_outcome_verify_failed); break;
+            case "verify-unavailable": localized = getString(R.string.log_outcome_verify_unavailable); break;
+            case "battery-whitelist-removed": localized = getString(R.string.log_outcome_battery_whitelist_removed); break;
+            case "battery-whitelist-restored": localized = getString(R.string.log_outcome_battery_whitelist_restored); break;
+            default:
+                String n = trimmed.replace('-', ' ').replace('_', ' ');
+                localized = n.toUpperCase(Locale.US);
+        }
+        return localized + suffix;
     }
 
     private void openAppInfo(String packageName) {
