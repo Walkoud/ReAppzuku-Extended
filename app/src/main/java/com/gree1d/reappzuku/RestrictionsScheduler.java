@@ -305,18 +305,21 @@ public class RestrictionsScheduler {
     private final ExecutorService      executor;
     private final ShellManager         shellManager;
     private final BackgroundAppManager backgroundAppManager;
+    private final SleepModeManager     sleepModeManager;
     private final SharedPreferences    prefs;
 
     public RestrictionsScheduler(Context context,
                                  Handler handler,
                                  ExecutorService executor,
                                  ShellManager shellManager,
-                                 BackgroundAppManager backgroundAppManager) {
+                                 BackgroundAppManager backgroundAppManager,
+                                 SleepModeManager sleepModeManager) {
         this.context              = context;
         this.handler              = handler;
         this.executor             = executor;
         this.shellManager         = shellManager;
         this.backgroundAppManager = backgroundAppManager;
+        this.sleepModeManager     = sleepModeManager;
         this.prefs = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
     }
 
@@ -536,8 +539,14 @@ public class RestrictionsScheduler {
                     SchedulerLog.logLift(context, pkg, outcome, entry.componentName, use24h);
                 }
 
-                if ((entry.protectFlags & PROTECT_SLEEP_MODE) != 0) {
-                    shellManager.runShellCommandBlocking("pm enable " + pkg);
+                if ((entry.protectFlags & PROTECT_SLEEP_MODE) != 0
+                        && sleepModeManager.getFreezeType(pkg) == SleepModeManager.FreezeType.TIMER) {
+                    SleepModeManager.FreezeMethod method = sleepModeManager.getFreezeMethod(pkg);
+                    if (method == SleepModeManager.FreezeMethod.SUSPEND) {
+                        shellManager.runShellCommandBlocking("pm unsuspend --user 0 " + pkg);
+                    } else {
+                        shellManager.runShellCommandBlocking("pm enable " + pkg);
+                    }
                 }
 
                 if (entry.onActivateAction != ON_ACTIVATE_NOTHING && entry.componentName != null) {

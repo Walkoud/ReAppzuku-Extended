@@ -140,7 +140,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         sleepModeManager = new SleepModeManager(this.getApplicationContext(), handler, executor, shellManager);
         backupManager = new BackupManager(this);
         scheduler = new RestrictionsScheduler(
-                getApplicationContext(), handler, executor, shellManager, appManager);
+                getApplicationContext(), handler, executor, shellManager, appManager, sleepModeManager);
         additionalScenariosManager = new AdditionalScenariosManager(this);
         ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
         presetManager = new PresetManager(this);

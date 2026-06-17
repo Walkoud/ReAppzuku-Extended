@@ -88,7 +88,7 @@ public class ShappkyService extends Service {
         autoKillManager = new AutoKillManager(this, handler, executor, shellManager, appManager.getCurrentAppsList());
         sleepModeManager = new SleepModeManager(this, handler, executor, shellManager);
         batteryStatsManager = new BatteryStatsManager(this, shellManager);
-        scheduler = new RestrictionsScheduler(this, handler, executor, shellManager, appManager);
+        scheduler = new RestrictionsScheduler(this, handler, executor, shellManager, appManager, sleepModeManager);
         autoKillManager.setScheduler(scheduler);
         sleepModeManager.setScheduler(scheduler);
         appManager.setScheduler(scheduler);
