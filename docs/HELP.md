@@ -20,6 +20,9 @@
   - [App Stability](#️-app-stability)
   - [Auto-Kill Settings](#-auto-kill-settings)
   - [Advanced Tools](#-advanced-tools)
+    - [Background Restrictions](#background-restrictions)
+    - [Restriction Scheduler](#restriction-scheduler)
+    - [Sleep Mode](#sleep-mode)
   - [About](#ℹ️-about)
 - [Statistics & Logs](#-statistics--logs)
 - [Protected Apps](#protected-apps)
@@ -926,6 +929,7 @@ You can write to ReAppzuku dev in telegram.
 
 **Special Thanks**\
 An honorary list of users who have contributed to development of ReappZuku.
+
 ---
 
 ### 📊 Statistics & Logs
