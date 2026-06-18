@@ -36,6 +36,7 @@
 ---
 
 ## Requirements
+🔙[Table of Contents](#table-of-contents)
 
 | Requirement | Description |
 |---|---|
@@ -53,6 +54,7 @@
 ---
 
 ## Background Survival Setup
+🔙[Table of Contents](#table-of-contents)
 
 For ReAppzuku to run reliably without being killed by system, configure permissions correctly. Steps depend on your firmware.
 
@@ -212,6 +214,7 @@ After setup:
 ---
 
 ## Quick Start
+🔙[Table of Contents](#table-of-contents)
 
 1. Install and open ReAppzuku
 2. Grant root access or set up Shizuku
@@ -221,9 +224,9 @@ After setup:
 ---
 
 ## Manual Control
+🔙[Table of Contents](#table-of-contents)
 
-### Quick Tiles
-
+**Quick Tiles**\
 Added to notification shade:
 
 | Tile | Action |
@@ -231,21 +234,21 @@ Added to notification shade:
 | **Kill App** | Kills current foreground app |
 | **Kill Background Apps** | Runs Auto-Kill with your whitelist/blacklist settings |
 
-### Widget
-
+**Widget**\
 Home screen widget — shows Auto-Kill stats for last 12 hours and current RAM load.
 
-### Shortcut
-
+**Shortcut**\
 Static shortcut via long-pressing app icon — kills current foreground app.
 
 ---
 
 ## Main
+🔙[Table of Contents](#table-of-contents)
 
 Main screen shows all active background apps with real-time RAM and CPU usage. Top section shows overall stats: number of active apps and current RAM load.
 
 ### Toolbar
+🔙[Table of Contents](#table-of-contents)
 
 Three buttons in toolbar:
 
@@ -275,7 +278,7 @@ Performs scan of current load on system from all active apps in list. Load categ
 > [!NOTE]
 > Scan does not work on Persistent and Protected apps, even if they appear in active apps list.
 
-> [!WARNING]
+> [!TIP]
 > Keep in mind that more active apps displayed (e.g. system apps display is enabled), longer scan will take.
 
 ### App Actions
@@ -292,6 +295,7 @@ Tapping app in list opens quick action menu:
   - Background Restriction (Soft)
 
 ### App Triggers
+🔙[Table of Contents](#table-of-contents)
 
 Triggers is a deep diagnostic tool that analyzes **real reasons** for an app's background activity at system level. Instead of guesswork — precise technical facts: what's keeping app in memory, how often it wakes up, and whether it has active network connections right now.
 
@@ -559,6 +563,7 @@ Android 11–13: device is in Deep Doze or Light Doze. Wakelocks, network, jobs,
 ## Settings
 
 ### 🔵 Information
+🔙[Table of Contents](#table-of-contents)
 
 **ReAppzuku Access Mode**\
 Shows current access mode: **Root**, **Shizuku**, or **No Access**. Read-only.
@@ -569,6 +574,7 @@ Link to this FAQ.
 ---
 
 ### 🎨 Appearance
+🔙[Table of Contents](#table-of-contents)
 
 **App Theme**\
 Choose a theme: system default, light, dark, or AMOLED.
@@ -582,6 +588,7 @@ Configure notification behavior. Critical notifications cover background service
 ---
 
 ### ⚙️ App stability
+🔙[Table of Contents](#table-of-contents)
 
 **Background Service**\
 Main automation toggle. Starts persistent ReAppzuku background process. Required for most of app's features to work, including collecting statistics.
@@ -589,6 +596,7 @@ Main automation toggle. Starts persistent ReAppzuku background process. Required
 ---
 
 ### 🎯 Auto-Kill Settings
+🔙[Table of Contents](#table-of-contents)
 
 **Periodic Auto-Kill**\
 Automatically kills apps at set interval while background service runs.
@@ -641,7 +649,6 @@ Auto-Kill triggers right when selected target apps are opened — useful on budg
 > [!IMPORTANT]
 > **App Launch** function requires special permission in "Accessibility" settings. This feature can also slightly increase battery usage by ReAppzuku itself.
 
-
 **Auto-Kill Presets**\
 Save your own set of Auto-Kill settings that activates automatically at a specific time of day and replaces the current settings for the duration of its active window. When the window ends, the original settings are restored automatically.
 **2 presets** are available. Each can be configured independently: its own name, its own active time range, its own Auto-Kill rules, its own app lists, and its own additional scenarios.
@@ -683,7 +690,9 @@ Adds small 1x1 shortcut to home screen. Tapping shortcut launches Auto-Kill acco
 
 ### 🔧 Advanced Tools
 
-**Background Restrictions**
+#### Background Restrictions
+🔙[Table of Contents](#table-of-contents)
+
 > [!WARNING]
 > Available on **Android 11+** only
 
@@ -697,7 +706,6 @@ Uses Android's `appops` to **block an app from running in background at OS level
 | Requires Android 11+ | ❌ No | ✅ Yes |
 
 **Restriction types:**
-
 - **Soft** (RUN_ANY_IN_BACKGROUND ignore)\
 Blocks autostart at a stricter level than standard activity settings.\
 **How it works**: If you open app and switch away — it keeps running (while in recents). But on its own (overnight or in background) it won't wake up until you open it.
@@ -736,10 +744,7 @@ You choose which restrictions to apply.\
 > [!IMPORTANT]
 > App Standby Bucket resets upon user interaction with target app. System does not always restore it back. ReAppzuku will automatically restore app Bucket on next restriction integrity check cycle.
 
----
-
 **Available restrictions:**
-
 - **RUN_ANY_IN_BACKGROUND**\
 Prevents app from starting background processes or services without explicit user interaction. Primary and broadest restriction — used in **Soft** mode.\
 **Blocks:** background service starts, sync, deferred tasks (JobScheduler, WorkManager).\
@@ -796,9 +801,7 @@ Marked by system as long-unused or anomalous app that consumed excessive CPU and
   - Network access during maintenance windows. During Doze Mode, system periodically opens maintenance windows. Apps with Restricted bucket are denied network access even during these system windows.
   - Expedited Jobs limit cut. Limit for Expedited Jobs is halved — down to 5 minutes per day.
 
----
-
-### Restriction types comparison
+**Restriction types comparison**
 
 | Restriction | Soft | Medium | Hard | Manual |
 |---|:---:|:---:|:---:|:---:|
@@ -812,15 +815,13 @@ Marked by system as long-unused or anomalous app that consumed excessive CPU and
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | optional |
 | Standby Bucket | — | Rare | Restricted | optional |
 
----
-
-List statuses:
+**List statuses**:
 - **Saved in ReAppzuku** — saved, but system status is unknown (insufficient permissions)
 - **Saved in ReAppzuku, but not applied** — saved, but Android hasn't applied restriction
 - **Restricted, not by ReAppzuku** — restricted by Android or another app
 
-**Background Restrictions WatchDog**\
-ReAppzuku periodically checks integrity of Background Restrictions applied to apps. If system resets any restrictions — restores them.\
+**Background Restrictions Watchdog**\
+An automated ReAppzuku feature that periodically checks integrity of background restrictions. If system resets any restrictions, WatchDog automatically restores them.\
 For **Soft and Medium** (and Manual, if chosen restrictions are equivalent to Soft/Medium) — restrictions are restored only if app is not active on screen and does not hold `IMPORTANCE_FOREGROUND_SERVICE`.\
 In all other cases restrictions are restored only if app is not currently active on screen (not being used).
 
@@ -829,7 +830,9 @@ Manually re-applies all saved restrictions. After reboot this happens **automati
 
 ---
 
-**Restriction Scheduler**\
+#### Restriction Scheduler
+🔙[Table of Contents](#table-of-contents)
+
 Schedule when restrictions should be lifted and restored for specific apps.
 > [!NOTE]
 > Only apps with an active **Background Restriction** (Soft / Medium/ Hard / Manual) appear here.
@@ -857,29 +860,43 @@ Action to take when restrictions are lifted:
 
 ---
 
-**Sleep Mode**\
-Completely **freezes** selected apps when device is idle. Unlike background restrictions — app simply can't start; fully suspended by system.
-You can also permanently freeze app directly from app list dialog.
+#### Sleep Mode
+🔙[Table of Contents](#table-of-contents)
 
-How it works:
-1. Screen turns off → timer starts
-2. Timer expires → selected apps are frozen
-3. Screen turns on and unlocks → apps unfreeze automatically
+Fully **freezes** selected apps when device is idle. Unlike background restrictions — app just can't launch, it's completely disabled by system.
+Can also freeze app **permanently** right in app list dialog.
 
-> [!WARNING]
-> Due to Android limitations, pm suspend/unsuspend is used for system apps instead of pm disable/enable.
+For each app (Temporary or Permanent) you can pick freeze command:
+- **pm disable** — app gets fully disabled by system, icon may disappear/move on home screen. Most reliable freezing, app will not be able to start.
+- **pm suspend** — app gets hidden and blocked without disabling, icon stays in place. Slightly less reliable freezing, app is suspended, but may still have some activity in the background.
 
 > [!IMPORTANT]
-> Enabling Sleep Mode restarts ReAppzuku — required for proper initialization
+> For system apps only **pm suspend** command is available
+
+> [!CAUTION]Be careful when setting Sleep Mode for system apps.\
+> ReAppzuku protects most critical system apps (like com.android.systemui) from tampering, but doesn't guarantee 100% safety.\
+> Keep in mind that freezing system apps without thinking can cause bootloop.
+
+How **temporary** freeze works:\
+1. Screen turns off → timer starts
+2. Timer expires → selected apps get frozen with chosen command
+3. Screen turns on and unlocked → apps get unfrozen automatically
+
+> [!IMPORTANT]
+> Enabling sleep mode restarts ReAppzuku — needed for correct initialization.
 
 > [!NOTE]
-> If target app was on home screen, its icon may disappear or move after Sleep Mode activates. Expected Android behavior with pm disable/enable.
+> If target app was on home screen, after using pm disable command its icon may disappear/move. This is Android's own behavior. With pm suspend icon stays in place.
 
-**Sleep Mode App List**\
-Select apps to freeze in Sleep Mode.
+**Sleep Mode app list**\
+Pick apps to freeze in sleep mode, and pick freeze command (pm suspend/pm disable) for each of them.
 
-**Freeze Timer**\
-Idle period after which freezing triggers: **5 to 60 minutes** (default: 60 minutes).
+**Freeze timer**\
+Idle period after which freeze triggers: from **5 to 60 minutes** (default 60 minutes).
+
+**Sleep Mode WatchDog**\
+ReAppzuku's automatic function that periodically checks sleep mode freeze integrity, and if system unfreezes some app — re-freezes it with command chosen for it.\
+Only works for "Permanent" freeze type.
 
 ---
 
@@ -895,6 +912,7 @@ Export and import all settings as JSON. Covers whitelist, blacklist, hidden apps
 ---
 
 ### ℹ️ About
+🔙[Table of Contents](#table-of-contents)
 
 **Source Code**\
 Link to GitHub repository.
@@ -903,11 +921,15 @@ Link to GitHub repository.
 Manually checks GitHub for a new release and shows it if found.
 Automatic update checks run once a day.
 
+**Telegram**\
+You can write to ReAppzuku dev in telegram.
+
+**Special Thanks**\
+An honorary list of users who have contributed to development of ReappZuku.
 ---
 
 ### 📊 Statistics & Logs
-
-Statistics & Logs are available as a **separate screen** with detailed data for all tracked apps.
+🔙[Table of Contents](#table-of-contents)
 
 **ReAppzuku Consumption**\
 Top of screen shows **ReAppzuku's own resource usage** — RAM, CPU, and battery — so you can assess its impact on device.
@@ -976,6 +998,7 @@ Contains records of Restriction Scheduler activity. Each entry shows:
 ---
 
 ## Protected Apps
+🔙[Table of Contents](#table-of-contents)
 
 These apps are **never affected** by Auto-Kill or other restrictions, regardless of settings:
 
@@ -1020,6 +1043,7 @@ These apps are **never affected** by Auto-Kill or other restrictions, regardless
 ---
 
 ## FAQ
+🔙[Table of Contents](#table-of-contents)
 
 **❓ An app restarts immediately after Kill — what should I do?**
 
