@@ -13,6 +13,8 @@ import java.util.Set;
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 
+import com.gree1d.reappzuku.service.HardwareEventReceiver;
+
 public class AdditionalScenariosManager {
 
     private static final String TAG = "AdditionalScenariosManager";

@@ -21,6 +21,8 @@ import java.util.Calendar;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.gree1d.reappzuku.utils.PresetModel;
+
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 
 public class PresetManager {
