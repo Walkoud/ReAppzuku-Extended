@@ -3,6 +3,8 @@ package com.gree1d.reappzuku.utils;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 
+import com.gree1d.reappzuku.manager.SleepModeManager;
+
 public class AppModel {
     private String appName;
     private String packageName;
