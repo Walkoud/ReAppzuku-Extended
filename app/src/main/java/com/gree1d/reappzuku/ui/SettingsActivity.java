@@ -76,6 +76,7 @@ import com.gree1d.reappzuku.manager.RestrictionsScheduler;
 import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
 import com.gree1d.reappzuku.manager.RamKillShortcutManager;
 import com.gree1d.reappzuku.core.BaseActivity;
+import com.gree1d.reappzuku.manager.PresetManager;
 
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
