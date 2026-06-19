@@ -154,7 +154,7 @@ public class MainActivity extends BaseActivity {
         loadSettingsAndApplyToManager();
 
         shellManager.setShizukuPermissionListener(shizukuPermissionListener);
-        shellManager.checkShellPermissions();
+        shellManager.setOnRootCheckCompleteListener(() -> shellManager.checkShellPermissions());
         loadBackgroundApps();
         ramMonitor.startMonitoring();
     }
