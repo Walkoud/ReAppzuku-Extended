@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.R;
+import com.gree1d.reappzuku.service.ShappkyService;
 
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 
