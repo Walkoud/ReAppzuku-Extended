@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.drawable.Drawable;
 
 import com.gree1d.reappzuku.manager.SleepModeManager;
+import com.gree1d.reappzuku.R;
 
 public class AppModel {
     private String appName;
