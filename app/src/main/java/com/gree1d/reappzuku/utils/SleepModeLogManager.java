@@ -13,6 +13,8 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.manager.SleepModeManager;
+
 public final class SleepModeLogManager {
 
     private static final int MAX_ENTRIES    = 200;

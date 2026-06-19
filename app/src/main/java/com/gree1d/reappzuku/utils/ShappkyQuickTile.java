@@ -13,6 +13,8 @@ import android.widget.Toast;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.core.ShellManager;
+
 public class ShappkyQuickTile extends TileService {
 
     private ShellManager shellManager;
