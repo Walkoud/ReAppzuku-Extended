@@ -39,6 +39,7 @@ import java.io.RandomAccessFile
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
+import com.gree1d.reappzuku.R
 
 private val BgSurface     = Color(0xFF1A1C24)
 private val BgCard        = Color(0xFF22242E)
