@@ -121,19 +121,19 @@ public class AppTriggersAnalyzer {
         }
     }
 
-    static final class AlarmEntry {
-
-        final String  type;
-        final String  tag;
-        final long    fireDiffMs;
-        final long    intervalMs;
-        final boolean exact;
-        final boolean whileIdle;
-        final boolean isWakeup;
-        boolean pendingBroadcast;
-        boolean quotaExceeded;
-
-        AlarmEntry(String type, String tag, long fireDiffMs, long intervalMs,
+    public static final class AlarmEntry {
+    
+        public final String  type;
+        public final String  tag;
+        public final long    fireDiffMs;
+        public final long    intervalMs;
+        public final boolean exact;
+        public final boolean whileIdle;
+        public final boolean isWakeup;
+        public boolean pendingBroadcast;
+        public boolean quotaExceeded;
+    
+        public AlarmEntry(String type, String tag, long fireDiffMs, long intervalMs,
                    boolean exact, boolean whileIdle, boolean isWakeup) {
             this.type       = type;
             this.tag        = tag;
@@ -143,7 +143,7 @@ public class AppTriggersAnalyzer {
             this.whileIdle  = whileIdle;
             this.isWakeup   = isWakeup;
         }
-
+    
         boolean isClockAlarm() {
             return tag != null && (tag.contains("AlarmClock") || tag.contains("ALARM_CLOCK"));
         }
