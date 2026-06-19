@@ -55,6 +55,12 @@ import com.gree1d.reappzuku.utils.AppModel;
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 
+import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.manager.BackgroundAppManager;
+import com.gree1d.reappzuku.manager.AutoKillManager;
+import com.gree1d.reappzuku.manager.RamMonitor;
+import com.gree1d.reappzuku.manager.CpuMonitor;
+
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
     private static final int NOTIFICATION_PERMISSION_CODE = 1;

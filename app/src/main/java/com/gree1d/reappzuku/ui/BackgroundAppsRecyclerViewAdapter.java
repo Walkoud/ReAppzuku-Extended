@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import com.gree1d.reappzuku.utils.AppModel;
+
 public class BackgroundAppsRecyclerViewAdapter extends RecyclerView.Adapter<BackgroundAppsRecyclerViewAdapter.ViewHolder> {
 
     private final Context context;

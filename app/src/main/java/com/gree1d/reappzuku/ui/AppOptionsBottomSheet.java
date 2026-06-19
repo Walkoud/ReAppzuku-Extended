@@ -15,6 +15,8 @@ import androidx.annotation.Nullable;
 
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+import com.gree1d.reappzuku.utils.AppModel;
+
 public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
 
     public interface Listener {

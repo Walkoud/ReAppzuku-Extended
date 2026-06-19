@@ -66,6 +66,17 @@ import java.util.concurrent.Executors;
 import android.text.SpannableStringBuilder;
 import android.text.style.StyleSpan;
 
+import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.utils.AppModel;
+import com.gree1d.reappzuku.manager.BackgroundAppManager;
+import com.gree1d.reappzuku.manager.AutoKillManager;
+import com.gree1d.reappzuku.manager.SleepModeManager;
+import com.gree1d.reappzuku.manager.BackupManager;
+import com.gree1d.reappzuku.manager.RestrictionsScheduler;
+import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
+import com.gree1d.reappzuku.manager.RamKillShortcutManager;
+import com.gree1d.reappzuku.core.BaseActivity;
+
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 
