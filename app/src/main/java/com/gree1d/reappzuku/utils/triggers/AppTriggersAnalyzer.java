@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.gree1d.reappzuku.core.ShellManager;
+
 // for debug logcat -s AppTriggersAnalyzer:D AppTriggerAnalyzersExt:D
 
 // AnalysisType — pass to analyze(packageName, types) for targeted analysis.
