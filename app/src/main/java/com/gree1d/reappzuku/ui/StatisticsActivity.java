@@ -49,6 +49,10 @@ import java.util.concurrent.Executors;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.manager.BackgroundAppManager;
 import com.gree1d.reappzuku.manager.BatteryStatsManager;
+import com.gree1d.reappzuku.utils.SleepModeLogManager;
+import com.gree1d.reappzuku.manager.RestrictionsScheduler;
+import com.gree1d.reappzuku.utils.BackgroundRestrictionLog;
+import com.gree1d.reappzuku.core.BaseActivity;
 
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
