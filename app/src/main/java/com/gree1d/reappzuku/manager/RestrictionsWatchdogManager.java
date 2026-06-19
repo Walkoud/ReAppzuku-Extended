@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.gree1d.reappzuku.core.ShellManager;
+
 public class RestrictionsWatchdogManager {
 
     private static final String TAG = "RestrictionsWatchdog";

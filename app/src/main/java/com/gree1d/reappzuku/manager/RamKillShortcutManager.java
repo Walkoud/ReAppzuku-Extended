@@ -27,6 +27,8 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.core.ShellManager;
+
 public class RamKillShortcutManager {
 
     private static final String TAG = "RamKillShortcutManager";
