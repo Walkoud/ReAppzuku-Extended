@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.R;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.service.ShappkyService;
 import com.gree1d.reappzuku.core.ProtectedApps;
