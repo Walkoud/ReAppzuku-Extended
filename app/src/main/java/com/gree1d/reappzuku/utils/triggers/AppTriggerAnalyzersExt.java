@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.gree1d.reappzuku.utils.triggers.AppTriggersAnalyzer.TriggerInfo;
 import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.R;
 
 import java.util.ArrayList;
 import java.util.List;
