@@ -154,7 +154,7 @@ public class AppTriggersAnalyzer {
             this.isWakeup   = isWakeup;
         }
     
-        boolean isClockAlarm() {
+        public boolean isClockAlarm() {
             return tag != null && (tag.contains("AlarmClock") || tag.contains("ALARM_CLOCK"));
         }
     }
@@ -267,7 +267,7 @@ public class AppTriggersAnalyzer {
             return Long.MAX_VALUE;
         }
 
-        List<String> parseTopAlarms(String output, String packageName) {
+        public List<String> parseTopAlarms(String output, String packageName) {
             List<String> result = new ArrayList<>();
             boolean inTop = false;
             for (String line : output.split("\n")) {
