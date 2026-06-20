@@ -53,13 +53,21 @@ public class KillTriggerReceiver extends BroadcastReceiver {
             }
         } else if (ShappkyService.ACTION_IDLE_FREEZE.equals(action)) {
             Log.d(TAG, "Idle freeze alarm received, forwarding to service");
-            Log.d(TAG, "Idle freeze alarm received, forwarding to service");
             Intent freezeIntent = new Intent(context, ShappkyService.class);
             freezeIntent.setAction("IDLE_FREEZE");
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(freezeIntent);
             } else {
                 context.startService(freezeIntent);
+            }
+        } else if (ShappkyService.ACTION_HEARTBEAT_CHECK.equals(action)) {
+            Log.d(TAG, "Heartbeat alarm received, forwarding to service");
+            Intent heartbeatIntent = new Intent(context, ShappkyService.class);
+            heartbeatIntent.setAction("HEARTBEAT_CHECK");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(heartbeatIntent);
+            } else {
+                context.startService(heartbeatIntent);
             }
         }
     }

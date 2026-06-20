@@ -14,6 +14,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
@@ -46,8 +47,11 @@ public class ShappkyService extends Service {
 
     private static final String TAG = "ShappkyService";
     static final String ACTION_IDLE_FREEZE = "com.gree1d.reappzuku.IDLE_FREEZE";
+    static final String ACTION_HEARTBEAT_CHECK = "com.gree1d.reappzuku.HEARTBEAT_CHECK";
     private static final int FREEZE_ALARM_REQUEST_CODE = 1001;
     private static final int RESTART_ALARM_REQUEST_CODE = 1002;
+    private static final int HEARTBEAT_ALARM_REQUEST_CODE = 1003;
+    private static final long HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -186,20 +190,14 @@ public class ShappkyService extends Service {
 
             case "SCREEN_ON":
                 handler.postDelayed(() -> {
-                    android.app.KeyguardManager km = (android.app.KeyguardManager)
-                            getSystemService(Context.KEYGUARD_SERVICE);
-                    boolean isLocked = km != null && km.isKeyguardLocked();
-                    if (!isLocked) {
-                        cancelIdleFreezeAlarm();
-                        if (isFrozen) {
-                            Log.d(TAG, "Screen on after idle freeze, unfreezing apps");
-                            isFrozen = false;
-                            sleepModeManager.unfreezeBackgroundRestrictedApps(null);
-                        } else {
-                            Log.d(TAG, "Screen on before idle threshold, alarm cancelled");
-                        }
+                    cancelIdleFreezeAlarm();
+                    if (isFrozen) {
+                        Log.d(TAG, "Screen on after idle freeze, unfreezing apps");
+                        isFrozen = false;
+                        cancelHeartbeatAlarm();
+                        sleepModeManager.unfreezeBackgroundRestrictedApps(null);
                     } else {
-                        Log.d(TAG, "Screen on but keyguard still active, ignoring");
+                        Log.d(TAG, "Screen on before idle threshold, alarm cancelled");
                     }
                 }, 1500);
                 break;
@@ -213,7 +211,12 @@ public class ShappkyService extends Service {
                 sleepModeManager.freezeBackgroundRestrictedApps(() -> {
                     isFrozen = true;
                     Log.d(TAG, "Apps frozen successfully");
+                    scheduleHeartbeatAlarm();
                 });
+                break;
+
+            case "HEARTBEAT_CHECK":
+                handleHeartbeatCheck();
                 break;
 
             case "SCHEDULER_TICK":
@@ -316,6 +319,55 @@ public class ShappkyService extends Service {
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+    }
+
+    private void scheduleHeartbeatAlarm() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+        PendingIntent pendingIntent = getHeartbeatAlarmIntent();
+        long triggerAt = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+        }
+    }
+
+    private void cancelHeartbeatAlarm() {
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) return;
+        alarmManager.cancel(getHeartbeatAlarmIntent());
+        Log.d(TAG, "Heartbeat alarm cancelled");
+    }
+
+    private PendingIntent getHeartbeatAlarmIntent() {
+        Intent intent = new Intent(this, KillTriggerReceiver.class);
+        intent.setAction(ACTION_HEARTBEAT_CHECK);
+        return PendingIntent.getBroadcast(
+                this,
+                HEARTBEAT_ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    private void handleHeartbeatCheck() {
+        if (!isFrozen) {
+            Log.d(TAG, "Heartbeat check: already unfrozen, stopping heartbeat");
+            return;
+        }
+
+        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        boolean screenOn = pm != null && pm.isInteractive();
+
+        if (screenOn) {
+            Log.d(TAG, "Heartbeat check: screen is on but SCREEN_ON was missed, unfreezing now");
+            isFrozen = false;
+            sleepModeManager.unfreezeBackgroundRestrictedApps(null);
+        } else {
+            Log.d(TAG, "Heartbeat check: screen still off, rescheduling");
+            scheduleHeartbeatAlarm();
+        }
     }
 
     private void scheduleServiceRestart() {
