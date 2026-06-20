@@ -13,6 +13,7 @@ import java.io.RandomAccessFile;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.R;
 import static com.gree1d.reappzuku.core.AppConstants.RAM_MONITOR_UPDATE_INTERVAL_MS;
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
