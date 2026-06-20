@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.gree1d.reappzuku.manager.SleepModeManager;
+import com.gree1d.reappzuku.R;
 
 public final class SleepModeLogManager {
 
