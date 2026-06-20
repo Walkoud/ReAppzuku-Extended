@@ -14,6 +14,9 @@ import android.widget.TextView;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.core.BaseActivity;
 import com.gree1d.reappzuku.manager.BatteryStatsManager;
+import com.gree1d.reappzuku.core.PreferenceKeys;
+import com.gree1d.reappzuku.core.AppConstants;
+import com.gree1d.reappzuku.R;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
