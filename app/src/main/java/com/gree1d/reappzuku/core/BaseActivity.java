@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import com.google.android.material.color.MaterialColors;
 
+import com.gree1d.reappzuku.R;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 
