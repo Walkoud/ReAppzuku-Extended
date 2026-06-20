@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.gree1d.reappzuku.service.ShappkyService;
+
 public class KillShortcutActivity extends Activity {
 
     @Override
