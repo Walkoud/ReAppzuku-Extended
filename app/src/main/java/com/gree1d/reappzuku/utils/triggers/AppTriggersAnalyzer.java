@@ -169,7 +169,7 @@ public class AppTriggersAnalyzer {
         private static final Pattern TOP_ENTRY_PAT  = Pattern.compile(
                 "(\\S+)\\s+running,\\s*(\\d+)\\s+wakeups?,\\s*(\\d+)\\s+alarms?:\\s*\\d+:([\\w.]+)\\s+tag=(\\S+)");
 
-        List<AlarmEntry> parseEntries(String output, String packageName) {
+        public List<AlarmEntry> parseEntries(String output, String packageName) {
             List<AlarmEntry> result = new ArrayList<>();
             String       curType     = null;
             boolean      curIsWakeup = false;
