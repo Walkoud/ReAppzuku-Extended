@@ -116,6 +116,7 @@
         <receiver android:name="com.gree1d.reappzuku.service.KillTriggerReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="com.gree1d.reappzuku.IDLE_FREEZE" />
+                <action android:name="com.gree1d.reappzuku.HEARTBEAT_CHECK" />
             </intent-filter>
         </receiver>
 
