@@ -19,6 +19,8 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
+import com.gree1d.reappzuku.R;
+
 public class ColorPickerDialog {
 
     public interface OnColorPickedListener {
