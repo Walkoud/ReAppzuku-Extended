@@ -5,6 +5,8 @@ import android.content.Context;
 import com.gree1d.reappzuku.db.AppDatabase;
 import com.gree1d.reappzuku.db.BgRestrictionLog;
 
+import com.gree1d.reappzuku.R;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
