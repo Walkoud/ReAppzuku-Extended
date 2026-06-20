@@ -36,6 +36,8 @@ import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
 import com.gree1d.reappzuku.manager.RamKillShortcutManager;
 import com.gree1d.reappzuku.manager.PresetManager;
 import com.gree1d.reappzuku.manager.UpdateChecker;
+import com.gree1d.reappzuku.R;
+import com.gree1d.reappzuku.utils.AppzukuWidget;
 
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
