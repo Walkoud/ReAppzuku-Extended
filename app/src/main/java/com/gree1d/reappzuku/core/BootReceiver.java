@@ -8,6 +8,9 @@ import android.util.Log;
 
 import androidx.core.content.ContextCompat;
 
+import com.gree1d.reappzuku.service.ShappkyService;
+import com.gree1d.reappzuku.manager.RestrictionsScheduler;
+import com.gree1d.reappzuku.service.AutoKillWorker;
 import static com.gree1d.reappzuku.core.PreferenceKeys.KEY_AUTO_KILL_ENABLED;
 import static com.gree1d.reappzuku.core.PreferenceKeys.PREFERENCES_NAME;
 
