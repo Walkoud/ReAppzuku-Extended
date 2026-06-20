@@ -401,8 +401,9 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
                         .setMessage(getString(R.string.settings_sleep_mode_restart_message))
                         .setPositiveButton(getString(R.string.dialog_ok), (dialog, which) -> {
                             sleepModeManager.setSleepModeEnabled(true);
-                            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
-                                    () -> android.os.Process.killProcess(android.os.Process.myPid()), 300);
+                            // TEMP TEST: killProcess removed to verify whether restart is actually required
+                            // new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(
+                            //         () -> android.os.Process.killProcess(android.os.Process.myPid()), 300);
                         })
                         .setNegativeButton(getString(R.string.dialog_cancel), (dialog, which) -> buttonView.setChecked(false))
                         .setCancelable(false)
