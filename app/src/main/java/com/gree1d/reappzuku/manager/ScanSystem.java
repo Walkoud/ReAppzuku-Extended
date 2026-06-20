@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.utils.AppModel;
 import com.gree1d.reappzuku.utils.triggers.AppTriggersAnalyzer;
+import com.gree1d.reappzuku.R;
 
 public class ScanSystem {
 
