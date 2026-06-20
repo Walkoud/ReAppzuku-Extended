@@ -10,6 +10,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.utils.SleepModeLogManager;
+import com.gree1d.reappzuku.utils.BackgroundRestrictionLog;
 
 public class RestrictionsWatchdogManager {
 
