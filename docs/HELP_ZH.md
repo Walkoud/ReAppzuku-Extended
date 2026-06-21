@@ -6,27 +6,27 @@
 
 ## 目录
 
-- [什么是 ReAppzuku？](#what-is-reappzuku)
-- [系统要求](#requirements)
-- [后台存活设置](#background-survival-setup)
-- [快速开始](#quick-start)
-- [手动控制](#manual-control)
-- [主界面](#main)
-  - [工具栏](#toolbar)
-  - [应用触发器](#app-triggers)
-- [设置](#settings)
-  - [信息](#-information)
-  - [外观](#-appearance)
-  - [应用稳定性](#️-app-stability)
-  - [Auto-Kill 设置](#-auto-kill-settings)
-  - [高级工具](#-advanced-tools)
-    - [后台限制](#background-restrictions)
-    - [限制调度器](#restriction-scheduler)
-    - [休眠模式](#sleep-mode)
-  - [关于](#ℹ️-about)
-- [统计与日志](#-statistics--logs)
-- [受保护应用](#protected-apps)
-- [常见问题](#faq)
+- [什么是 ReAppzuku？](#什么是-reappzuku)
+- [系统要求](#系统要求)
+- [后台存活设置](#后台存活设置)
+- [快速开始](#快速开始)
+- [手动控制](#手动控制)
+- [主界面](#主界面)
+  - [工具栏](#工具栏)
+  - [应用触发器](#应用触发器)
+- [设置](#设置)
+  - [信息](#-信息)
+  - [外观](#-外观)
+  - [应用稳定性](#应用稳定性)
+  - [Auto-Kill 设置](#-auto-kill-设置)
+  - [高级工具](#-高级工具)
+    - [后台限制](#后台限制)
+    - [限制调度器](#限制调度器)
+    - [休眠模式](#休眠模式)
+  - [关于](#ℹ️-关于)
+- [统计与日志](#-统计与日志)
+- [受保护应用](#受保护应用)
+- [常见问题](#常见问题)
 
 ---
 
@@ -590,7 +590,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 
 ---
 
-### ⚙️ 应用稳定性
+### ⚙️ 应用稳定性 <a id="应用稳定性"></a>
 🔙[目录](#table-of-contents)
 
 **后台服务**\
