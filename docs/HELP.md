@@ -934,6 +934,17 @@ You can write to ReAppzuku dev in telegram.
 **Special Thanks**\
 An honorary list of users who have contributed to development of ReappZuku.
 
+**Debug**\
+Enable/disable debug logs.\
+To save logs use:
+- aShell (for Shizuku)
+- Qute Terminal Emulator (for Root)
+Or you can use any other terminal emulators that are convenient for you. <br>
+To output logs to console use: `logcat -s ReAppzukuDebug`
+
+**Debug menu**\
+Menu for enable/disable required log categories.
+
 ---
 
 ### 📊 Statistics & Logs
