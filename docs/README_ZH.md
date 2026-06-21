@@ -5,7 +5,7 @@
 ![Logo](https://github.com/gree1d/ReAppzuku/blob/main/docs/images/logo.png)
 <p align="center">
 <img src="https://img.shields.io/github/v/release/gree1d/ReAppzuku?label=Release&" alt="最新版本">
-<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=下载量&color=a855f7" alt="下载量">
+<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=%E4%B8%8B%E8%BD%BD%E9%87%8F&color=a855f7" alt="下载量" />
 <img src="https://img.shields.io/badge/许可证-GPLv3-64748b.svg" alt="许可证">
 <img src="https://img.shields.io/badge/Android-6.0%2B-f97316.svg" alt="Android 版本">
 <img src="https://img.shields.io/badge/Root-支持-brightgreen.svg"/>
