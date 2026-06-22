@@ -1056,4 +1056,23 @@
     <string name="preset_reset_dialog_message">Все настройки пресета %d будут сброшены до значений по умолчанию. Изменения применятся только после нажатия «Сохранить».</string>
     <string name="preset_reset_success">Настройки пресета %d сброшены — нажмите «Сохранить»</string>
     <string name="antichange_settings">Вы не можете изменять основные настройки Auto-Kill когда активен пресет</string>
+
+    <!-- AppDebugManager category names -->
+    <string name="appdebug_main_page">Главная страница</string>
+    <string name="appdebug_settings_page">Страница настроек</string>
+    <string name="appdebug_statistics_page">Страница статистики</string>
+    <string name="appdebug_core">Ядро приложения</string>
+    <string name="appdebug_foreground_service">Фоновый сервис</string>
+    <string name="appdebug_triggers">Триггеры</string>
+    <string name="appdebug_advanced_conditions">Auto-Kill: Дополнительные условия</string>
+    <string name="appdebug_scan">Кнопка Скан</string>
+    <string name="appdebug_auto_kill_base">Auto-Kill базовый</string>
+    <string name="appdebug_auto_kill_presets">Auto-Kill: Пресеты</string>
+    <string name="appdebug_shortcuts_widgets">Ярлыки и виджет</string>
+    <string name="appdebug_background_restrictions">Фоновые ограничения</string>
+    <string name="appdebug_restrictions_scheduler">Планировщик ограничений</string>
+    <string name="appdebug_sleep_mode">Режим сна</string>
+    <string name="appdebug_backup_restore">Бэкапы</string>
+    <string name="appdebug_utils">Прочие утилиты</string>
+    
 </resources>
