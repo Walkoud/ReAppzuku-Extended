@@ -1056,4 +1056,23 @@
     <string name="preset_reset_dialog_message">All settings of preset %d will be reset to defaults. Changes only apply after you tap Save.</string>
     <string name="preset_reset_success">Preset %d settings reset — tap Save to apply</string>
     <string name="antichange_settings">You cannot change main Auto-Kill settings when preset is active</string>
+
+    <!-- AppDebugManager category names -->
+    <string name="appdebug_main_page">Main Page</string>
+    <string name="appdebug_settings_page">Settings Page</string>
+    <string name="appdebug_statistics_page">Statistics Page</string>
+    <string name="appdebug_core">App Core</string>
+    <string name="appdebug_foreground_service">Foreground Service</string>
+    <string name="appdebug_triggers">Triggers</string>
+    <string name="appdebug_advanced_conditions">Auto-Kill: Advanced Conditions</string>
+    <string name="appdebug_scan">Scan button</string>
+    <string name="appdebug_auto_kill_base">Auto-Kill Base</string>
+    <string name="appdebug_auto_kill_presets">Auto-Kill Presets</string>
+    <string name="appdebug_shortcuts_widgets">Shortcuts &amp; Widget</string>
+    <string name="appdebug_background_restrictions">Background Restrictions</string>
+    <string name="appdebug_restrictions_scheduler">Restrictions Scheduler</string>
+    <string name="appdebug_sleep_mode">Sleep Mode</string>
+    <string name="appdebug_backup_restore">Backup &amp; Restore</string>
+    <string name="appdebug_utils">Other Utils</string>
+    
 </resources>
