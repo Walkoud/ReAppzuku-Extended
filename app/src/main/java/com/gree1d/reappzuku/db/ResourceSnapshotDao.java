@@ -8,7 +8,7 @@ import androidx.room.Query;
 import java.util.List;
 
 /**
- * Room DAO for resource snapshots used by BatteryStatsManager.
+ * Room DAO for resource snapshots used by CollectStatsManager.
  *
  * Key queries:
  *  - getLatestSnapshot()              → most recent snapshot (any package)
