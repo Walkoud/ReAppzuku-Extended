@@ -8,7 +8,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 
 import java.util.HashSet;
@@ -17,6 +16,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.manager.AutoKillManager;
 import com.gree1d.reappzuku.manager.BackgroundAppManager;
@@ -27,8 +28,6 @@ import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 
 public class AppLaunchAccessibilityService extends AccessibilityService {
-
-    private static final String TAG = "AppLaunchA11yService";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private ExecutorService executor;
@@ -49,6 +48,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         autoKillManager = new AutoKillManager(
                 getApplicationContext(), handler, executor, shellManager,
                 appManager.getCurrentAppsList());
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Service created, AutoKillManager initialized");
     }
 
     @Override
@@ -60,7 +60,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         info.flags = AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS;
         info.notificationTimeout = 100;
         setServiceInfo(info);
-        Log.d(TAG, "AccessibilityService connected");
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: AccessibilityService connected");
     }
 
     @Override
@@ -84,14 +84,14 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
 
         long now = System.currentTimeMillis();
         if (packageName.equals(lastTriggeredPackage) && (now - lastTriggerTime) < MIN_TRIGGER_INTERVAL_MS) {
-            Log.d(TAG, "Skipping repeated trigger for: " + packageName);
+            AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Skipping repeated trigger for: " + packageName);
             return;
         }
 
         lastTriggeredPackage = packageName;
         lastTriggerTime = now;
 
-        Log.d(TAG, "Target app launched: " + packageName + " — triggering Auto-Kill");
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Target app launched: " + packageName + " — triggering Auto-Kill");
         autoKillManager.performAutoKill(null, new HashSet<String>(targetPackages), resolveKillSource("App Launch Trigger"));
 
         if (prefs.getBoolean(KEY_APP_LAUNCH_CLEAR_CACHE, false)) {
@@ -105,7 +105,7 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
         try {
             installedApps = pm.getInstalledApplications(0);
         } catch (Exception e) {
-            Log.e(TAG, "Failed to get installed apps: " + e.getMessage());
+            AppDebugManager.e(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Failed to get installed apps", e);
             return;
         }
 
@@ -131,22 +131,23 @@ public class AppLaunchAccessibilityService extends AccessibilityService {
                     if (pidStr.isEmpty()) continue;
                     shellManager.runShellCommandAndGetFullOutput(
                             "am send-trim-memory " + pidStr + " RUNNING_CRITICAL");
-                    Log.d(TAG, "Trim memory sent to " + pkg + " (pid " + pidStr + ")");
+                    AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Trim memory sent to " + pkg + " (pid " + pidStr + ")");
                 }
             } catch (Exception e) {
-                Log.w(TAG, "Failed to trim memory for " + pkg + ": " + e.getMessage());
+                AppDebugManager.w(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Failed to trim memory for " + pkg + ": " + e.getMessage());
             }
         }
     }
 
     @Override
     public void onInterrupt() {
-        Log.d(TAG, "AccessibilityService interrupted");
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: AccessibilityService interrupted");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "AppLaunchAccessibilityService: Service destroyed");
         if (executor != null) {
             executor.shutdown();
         }

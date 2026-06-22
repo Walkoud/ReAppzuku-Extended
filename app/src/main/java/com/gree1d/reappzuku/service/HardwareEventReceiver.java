@@ -7,11 +7,12 @@ import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.manager.BackgroundAppManager;
 import com.gree1d.reappzuku.manager.AutoKillManager;
@@ -22,7 +23,6 @@ import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 
 public class HardwareEventReceiver extends BroadcastReceiver {
 
-    private static final String TAG = "HardwareEventReceiver";
     private static final long TRIGGER_DELAY_MS = 10_000L;
 
     private static final Handler debounceHandler = new Handler(Looper.getMainLooper());
@@ -33,7 +33,7 @@ public class HardwareEventReceiver extends BroadcastReceiver {
         if (intent == null || intent.getAction() == null) return;
 
         String action = intent.getAction();
-        Log.d(TAG, "onReceive: " + action);
+        AppDebugManager.d(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: onReceive: " + action);
 
         boolean relevant = false;
         String eventDescription = "";
@@ -107,15 +107,15 @@ public class HardwareEventReceiver extends BroadcastReceiver {
         }
 
         if (!relevant) {
-            Log.d(TAG, "Event ignored (intermediate state): " + action);
+            AppDebugManager.d(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Event ignored (intermediate state): " + action);
             return;
         }
 
-        Log.i(TAG, "Hardware event triggered: " + eventDescription);
+        AppDebugManager.i(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Hardware event triggered: " + eventDescription);
 
         if (pendingKill != null) {
             debounceHandler.removeCallbacks(pendingKill);
-            Log.d(TAG, "Previous Auto-Kill schedule cancelled, rescheduling for: " + eventDescription);
+            AppDebugManager.d(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Previous Auto-Kill schedule cancelled, rescheduling for: " + eventDescription);
         }
 
         final String finalDescription = eventDescription;
@@ -123,7 +123,7 @@ public class HardwareEventReceiver extends BroadcastReceiver {
 
         pendingKill = () -> {
             pendingKill = null;
-            Log.i(TAG, "Executing Auto-Kill triggered by: " + finalDescription);
+            AppDebugManager.i(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Executing Auto-Kill triggered by: " + finalDescription);
             ExecutorService executor = Executors.newSingleThreadExecutor();
             ShellManager shellManager = new ShellManager(appContext, debounceHandler, executor);
             BackgroundAppManager appManager = new BackgroundAppManager(appContext, debounceHandler, executor, shellManager);
@@ -131,12 +131,12 @@ public class HardwareEventReceiver extends BroadcastReceiver {
                     appManager.getCurrentAppsList());
 
             autoKillManager.performAutoKill(() -> {
-                Log.i(TAG, "Auto-Kill completed for event: " + finalDescription);
+                AppDebugManager.i(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Auto-Kill completed for event: " + finalDescription);
                 executor.shutdown();
             }, resolveKillSource(appContext, "Hardware event: " + finalDescription));
         };
 
-        Log.i(TAG, "Scheduling Auto-Kill in " + (TRIGGER_DELAY_MS / 1000) + "s after: " + finalDescription);
+        AppDebugManager.i(Category.ADVANCED_CONDITIONS, "HardwareEventReceiver: Scheduling Auto-Kill in " + (TRIGGER_DELAY_MS / 1000) + "s after: " + finalDescription);
         debounceHandler.postDelayed(pendingKill, TRIGGER_DELAY_MS);
     }
 
