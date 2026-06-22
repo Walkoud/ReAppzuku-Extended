@@ -193,6 +193,8 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             checkHidden.setChecked(inHidden);
             checkBgRestrict.setChecked(bgRestriction);
 
+            updateMutualExclusion(checkWhitelist, itemWhitelist, checkBlacklist, itemBlacklist);
+
             if (bgSupported) {
                 itemBgRestrict.setVisibility(View.VISIBLE);
                 bgRestrictLabel.setText(bgLabel);
@@ -208,6 +210,9 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
                 boolean next = !checkWhitelist.isChecked();
                 checkWhitelist.setChecked(next);
                 AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: whitelist toggled for pkg=" + pkg + " next=" + next);
+                
+                updateMutualExclusion(checkWhitelist, itemWhitelist, checkBlacklist, itemBlacklist);
+                
                 if (listener != null) listener.onToggleWhitelist(next);
             });
 
@@ -215,6 +220,9 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
                 boolean next = !checkBlacklist.isChecked();
                 checkBlacklist.setChecked(next);
                 AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: blacklist toggled for pkg=" + pkg + " next=" + next);
+                
+                updateMutualExclusion(checkWhitelist, itemWhitelist, checkBlacklist, itemBlacklist);
+                
                 if (listener != null) listener.onToggleBlacklist(next);
             });
 
@@ -232,6 +240,20 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
                 if (listener != null) listener.onToggleBackgroundRestriction(next);
             });
         }
+    }
+
+    private void updateMutualExclusion(CheckBox checkWhitelist, LinearLayout itemWhitelist, 
+                                       CheckBox checkBlacklist, LinearLayout itemBlacklist) {
+        boolean isWhitelistChecked = checkWhitelist.isChecked();
+        boolean isBlacklistChecked = checkBlacklist.isChecked();
+
+        itemBlacklist.setEnabled(!isWhitelistChecked);
+        checkBlacklist.setEnabled(!isWhitelistChecked);
+        itemBlacklist.setAlpha(isWhitelistChecked ? 0.4f : 1.0f);
+
+        itemWhitelist.setEnabled(!isBlacklistChecked);
+        checkWhitelist.setEnabled(!isBlacklistChecked);
+        itemWhitelist.setAlpha(isBlacklistChecked ? 0.4f : 1.0f);
     }
 
     private ColorStateList buildCheckboxTint(int color) {

@@ -22,7 +22,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -76,6 +75,7 @@ import com.gree1d.reappzuku.manager.RestrictionsScheduler;
 import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
 import com.gree1d.reappzuku.manager.RamKillShortcutManager;
 import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.core.BaseActivity;
 import com.gree1d.reappzuku.manager.PresetManager;
 import com.gree1d.reappzuku.R;
@@ -89,7 +89,7 @@ import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
 
 public class SettingsActivity extends BaseActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
-    private static final String TAG = "SettingsActivity";
+    private static final String FILE_NAME = "SettingsActivity";
 
     private ActivitySettingsBinding binding;
     private ShellManager shellManager;
@@ -117,9 +117,11 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         updateAutomationOptionsVisibility(isChecked, periodicEnabled);
         applyServiceDependentState(isChecked);
         if (isChecked) {
+            AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": autoKill enabled, starting service");
             startAutomationService();
             AutoKillWorker.schedule(this, "Periodic Kill");
         } else {
+            AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": autoKill disabled, stopping service");
             stopService(new Intent(this, ShappkyService.class));
             AutoKillWorker.cancel(this);
         }
@@ -168,6 +170,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         loadSettings();
         setupListeners();
         setupBottomNavigation();
+        AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": onCreate complete");
     }
 
     private void setupToolbar() {
@@ -323,6 +326,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
             String versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
             binding.textVersion.setText(getString(R.string.settings_version_label, versionName));
         } catch (Exception e) {
+            AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": failed to read package version", e);
             binding.textVersion.setText(R.string.app_name);
         }
 
@@ -1434,7 +1438,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
-            Log.e(TAG, "Failed to open URL: " + url, e);
+            AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": failed to open URL: " + url, e);
             Toast.makeText(this, R.string.url_open_failed, Toast.LENGTH_SHORT).show();
         }
     }
@@ -1782,11 +1786,12 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
                     }
                 }
             } catch (PackageManager.NameNotFoundException e) {
-                Log.e(TAG, "showComponentPickerDialog: package not found: " + packageName, e);
+                AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": showComponentPickerDialog: package not found: " + packageName, e);
             }
 
             handler.post(() -> {
                 if (items.isEmpty()) {
+                    AppDebugManager.w(Category.SETTINGS_PAGE, FILE_NAME + ": showComponentPickerDialog: no exported components found for " + packageName);
                     Toast.makeText(this, getString(R.string.scheduler_component_none_found),
                             Toast.LENGTH_SHORT).show();
                     return;
@@ -1888,20 +1893,24 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
 
     private void exportBackup(Uri uri) {
         executor.execute(() -> {
+            AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": exportBackup started");
             String json = backupManager.createBackupJson();
             if (json == null) {
+                AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": exportBackup: createBackupJson returned null");
                 handler.post(() -> Toast.makeText(this, getString(R.string.settings_backup_create_failed), Toast.LENGTH_SHORT).show());
                 return;
             }
             try (OutputStream os = getContentResolver().openOutputStream(uri)) {
                 if (os != null) {
                     os.write(json.getBytes(StandardCharsets.UTF_8));
+                    AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": exportBackup success");
                     handler.post(() -> Toast.makeText(this, getString(R.string.settings_backup_success), Toast.LENGTH_SHORT).show());
                 } else {
+                    AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": exportBackup: OutputStream is null");
                     handler.post(() -> Toast.makeText(this, getString(R.string.settings_backup_write_failed), Toast.LENGTH_SHORT).show());
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Export failed", e);
+                AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": exportBackup failed", e);
                 handler.post(() -> Toast.makeText(this, getString(R.string.settings_backup_export_failed, e.getMessage()), Toast.LENGTH_SHORT).show());
             }
         });
@@ -1909,6 +1918,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
 
     private void importBackup(Uri uri) {
         executor.execute(() -> {
+            AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": importBackup started");
             try (InputStream is = getContentResolver().openInputStream(uri);
                  BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
                 StringBuilder sb = new StringBuilder();
@@ -1918,6 +1928,7 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
                 boolean success = backupManager.restoreBackupJson(sb.toString());
                 handler.post(() -> {
                     if (success) {
+                        AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": importBackup restore success");
                         Set<String> restoredRestrictedApps = new java.util.HashSet<>(
                                 sharedPreferences.getStringSet(KEY_AUTOSTART_DISABLED_APPS, new java.util.HashSet<>()));
                         Runnable finishRestore = () -> {
@@ -1938,11 +1949,12 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
                             finishRestore.run();
                         }
                     } else {
+                        AppDebugManager.w(Category.SETTINGS_PAGE, FILE_NAME + ": importBackup: restoreBackupJson returned false");
                         Toast.makeText(this, getString(R.string.settings_restore_failed), Toast.LENGTH_SHORT).show();
                     }
                 });
             } catch (Exception e) {
-                Log.e(TAG, "Import failed", e);
+                AppDebugManager.e(Category.SETTINGS_PAGE, FILE_NAME + ": importBackup failed", e);
                 handler.post(() -> Toast.makeText(this, getString(R.string.settings_restore_import_failed, e.getMessage()), Toast.LENGTH_SHORT).show());
             }
         });
