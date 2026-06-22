@@ -1056,4 +1056,23 @@
     <string name="preset_reset_dialog_message">预设 %d 的所有设置将重置为默认值。更改仅在您点击保存后生效。</string>
     <string name="preset_reset_success">预设 %d 设置已重置 — 点击保存以应用</string>
     <string name="antichange_settings">预设活跃时无法更改主 Auto-Kill 设置</string>
+
+    <!-- AppDebugManager category names -->
+    <string name="appdebug_main_page">主页</string>
+    <string name="appdebug_settings_page">设置页</string>
+    <string name="appdebug_statistics_page">统计页</string>
+    <string name="appdebug_core">应用核心</string>
+    <string name="appdebug_foreground_service">后台服务</string>
+    <string name="appdebug_triggers">触发器</string>
+    <string name="appdebug_advanced_conditions">Auto-Kill：高级条件</string>
+    <string name="appdebug_scan">扫描按钮</string>
+    <string name="appdebug_auto_kill_base">Auto-Kill 基础</string>
+    <string name="appdebug_auto_kill_presets">Auto-Kill 预设</string>
+    <string name="appdebug_shortcuts_widgets">快捷方式与小部件</string>
+    <string name="appdebug_background_restrictions">后台限制</string>
+    <string name="appdebug_restrictions_scheduler">限制调度器</string>
+    <string name="appdebug_sleep_mode">休眠模式</string>
+    <string name="appdebug_backup_restore">备份与恢复</string>
+    <string name="appdebug_utils">其他工具</string>
+    
 </resources>
