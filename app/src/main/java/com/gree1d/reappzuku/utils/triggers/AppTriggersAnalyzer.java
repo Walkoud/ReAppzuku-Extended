@@ -5,7 +5,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.SystemClock;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -15,6 +14,8 @@ import java.util.regex.Pattern;
 
 import com.gree1d.reappzuku.R;
 import com.gree1d.reappzuku.core.ShellManager;
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.utils.triggers.analyzers.ProcessAnalyzer;
 import com.gree1d.reappzuku.utils.triggers.analyzers.PowerAnalyzer;
 import com.gree1d.reappzuku.utils.triggers.analyzers.SensorsLocationAnalyzer;
@@ -24,8 +25,6 @@ import com.gree1d.reappzuku.utils.triggers.analyzers.ComponentsAnalyzer;
 import com.gree1d.reappzuku.utils.triggers.analyzers.DozeOpsAnalyzer;
 import com.gree1d.reappzuku.utils.triggers.analyzers.SchedulingAnalyzer;
 import com.gree1d.reappzuku.utils.triggers.analyzers.MiscAnalyzer;
-
-// for debug logcat -s AppTriggersAnalyzer:D ProcessAnalyzer:D PowerAnalyzer:D SensorsLocationAnalyzer:D MediaAnalyzer:D NetworkAnalyzer:D SchedulingAnalyzer:D ComponentsAnalyzer:D DozeOpsAnalyzer:D MiscAnalyzer:D
 
 // AnalysisType — pass to analyze(packageName, types) for targeted analysis.
 // Full list of available values:
@@ -102,7 +101,7 @@ public class AppTriggersAnalyzer {
         USAGE_STATS
     }
 
-    private static final String TAG = "AppTriggersAnalyzer";
+    private static final String FILE_NAME = "AppTriggersAnalyzer";
 
     public static final class TriggerInfo {
 
@@ -337,6 +336,8 @@ public class AppTriggersAnalyzer {
         this.dozeOpsAnalyzer         = new DozeOpsAnalyzer(this);
         this.schedulingAnalyzer      = new SchedulingAnalyzer(this, dozeOpsAnalyzer);
         this.miscAnalyzer            = new MiscAnalyzer(this, componentsAnalyzer);
+
+        AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": initialized, apiLevel=" + this.apiLevel);
     }
 
     public List<TriggerInfo> analyze(String packageName) {
@@ -344,6 +345,8 @@ public class AppTriggersAnalyzer {
     }
 
     public List<TriggerInfo> analyze(String packageName, EnumSet<AnalysisType> types) {
+        AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyze: start pkg=" + packageName + " types=" + types.size());
+
         cachedUid = resolveUid(packageName);
 
         List<TriggerInfo> results = new ArrayList<>();
@@ -424,6 +427,8 @@ public class AppTriggersAnalyzer {
                     TriggerInfo.Severity.INFO));
         }
 
+        AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyze: finished pkg=" + packageName + " totalTriggers=" + results.size());
+
         return results;
     }
 
@@ -437,14 +442,14 @@ public class AppTriggersAnalyzer {
     }
 
     public AppStatus resolveAppStatus(String packageName) {
-        Log.d(TAG, "resolveAppStatus: start pkg=" + packageName);
+        AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: start pkg=" + packageName);
         try {
             String psOutput = shellManager.runShellCommandAndGetFullOutput(
                     "ps -eo pid,name | grep " + packageName);
-            Log.d(TAG, "resolveAppStatus: ps output=" + (psOutput != null ? psOutput.trim() : "null"));
+            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: ps output=" + (psOutput != null ? psOutput.trim() : "null"));
 
             if (psOutput == null || psOutput.trim().isEmpty()) {
-                Log.d(TAG, "resolveAppStatus: result=null (not running)");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (not running)");
                 return null;
             }
 
@@ -457,51 +462,51 @@ public class AppTriggersAnalyzer {
             }
 
             if (pid == null) {
-                Log.d(TAG, "resolveAppStatus: result=null (pid not parsed)");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (pid not parsed)");
                 return null;
             }
 
             String adjStr = shellManager.runShellCommandAndGetFullOutput(
                     "cat /proc/" + pid + "/oom_score_adj");
-            Log.d(TAG, "resolveAppStatus: pid=" + pid + " oom_score_adj=" + (adjStr != null ? adjStr.trim() : "null"));
+            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: pid=" + pid + " oom_score_adj=" + (adjStr != null ? adjStr.trim() : "null"));
 
             if (adjStr == null || adjStr.trim().isEmpty()) {
-                Log.d(TAG, "resolveAppStatus: result=null (oom_score_adj unreadable)");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (oom_score_adj unreadable)");
                 return null;
             }
 
             int adj = Integer.parseInt(adjStr.trim());
 
             if (adj <= 224) {
-                Log.d(TAG, "resolveAppStatus: result=ACTIVE (adj=" + adj + ")");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=ACTIVE (adj=" + adj + ")");
                 return AppStatus.ACTIVE;
             }
 
             if (adj <= 499) {
                 boolean hasFgs = hasActiveService(packageName);
-                Log.d(TAG, "resolveAppStatus: adj=" + adj + " hasFgs=" + hasFgs);
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: adj=" + adj + " hasFgs=" + hasFgs);
                 return hasFgs ? AppStatus.BACKGROUND_SERVICE : AppStatus.BACKGROUND;
             }
 
             boolean hasService = hasActiveService(packageName);
             if (hasService) {
-                Log.d(TAG, "resolveAppStatus: result=CACHED_WITH_SERVICE (adj=" + adj + ")");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=CACHED_WITH_SERVICE (adj=" + adj + ")");
                 return AppStatus.CACHED_WITH_SERVICE;
             }
 
             if (adj < 920) {
-                Log.d(TAG, "resolveAppStatus: result=CACHED_RECENT (adj=" + adj + ")");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=CACHED_RECENT (adj=" + adj + ")");
                 return AppStatus.CACHED_RECENT;
             }
 
-            Log.d(TAG, "resolveAppStatus: result=CACHED_IDLE (adj=" + adj + ")");
+            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=CACHED_IDLE (adj=" + adj + ")");
             return AppStatus.CACHED_IDLE;
 
         } catch (NumberFormatException e) {
-            Log.w(TAG, "resolveAppStatus: oom_score_adj parse error: " + e.getMessage());
+            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: oom_score_adj parse error", e);
             return null;
         } catch (Exception e) {
-            Log.w(TAG, "resolveAppStatus failed: " + e.getMessage());
+            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus failed", e);
             return null;
         }
     }
@@ -513,7 +518,7 @@ public class AppTriggersAnalyzer {
             if (out == null) return false;
             return out.contains("ServiceRecord") && out.contains(packageName);
         } catch (Exception e) {
-            Log.w(TAG, "hasActiveService failed: " + e.getMessage());
+            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": hasActiveService failed", e);
             return false;
         }
     }
@@ -525,13 +530,13 @@ public class AppTriggersAnalyzer {
             List<TriggerInfo> partial = a.run();
             if (partial != null && !partial.isEmpty()) {
                 out.addAll(partial);
-                Log.d(TAG, name + " - OK (" + partial.size() + " trigger(s): "
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": " + name + " - OK (" + partial.size() + " trigger(s): "
                         + summarizeTriggers(partial) + ")");
             } else {
-                Log.d(TAG, name + " - OK (no triggers)");
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": " + name + " - OK (no triggers)");
             }
         } catch (Exception e) {
-            Log.w(TAG, name + " - ERROR: " + e.getMessage());
+            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": " + name + " - ERROR", e);
         }
     }
 
@@ -552,7 +557,7 @@ public class AppTriggersAnalyzer {
                 Matcher m = Pattern.compile("(?:userId|appId|\\buid)=(\\d{4,6})").matcher(out);
                 if (m.find()) return m.group(1);
             }
-        } catch (Exception e) { Log.w(TAG, "resolveUid/dumpsys failed: " + e.getMessage()); }
+        } catch (Exception e) { AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveUid/dumpsys failed", e); }
 
         try {
             String pmOut = shellManager.runShellCommandAndGetFullOutput(
@@ -561,7 +566,7 @@ public class AppTriggersAnalyzer {
                 Matcher m = Pattern.compile("uid:(\\d+)").matcher(pmOut);
                 if (m.find()) return m.group(1);
             }
-        } catch (Exception e) { Log.w(TAG, "resolveUid/pm fallback failed: " + e.getMessage()); }
+        } catch (Exception e) { AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveUid/pm fallback failed", e); }
 
         return null;
     }
@@ -570,7 +575,10 @@ public class AppTriggersAnalyzer {
         try {
             ApplicationInfo info = context.getPackageManager().getApplicationInfo(pkg, 0);
             return context.getPackageManager().getApplicationLabel(info).toString();
-        } catch (PackageManager.NameNotFoundException e) { return pkg; }
+        } catch (PackageManager.NameNotFoundException e) {
+            AppDebugManager.w(Category.TRIGGERS, FILE_NAME + ": resolveAppName: package not found pkg=" + pkg);
+            return pkg;
+        }
     }
 
     public String bucketValueToName(int v) {
