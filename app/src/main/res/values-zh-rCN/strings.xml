@@ -328,7 +328,6 @@
     <string name="settings_sleep_mode_delay_title">冻结延迟时间</string>
     <string name="settings_sleep_mode_delay_subtitle">应用冻结前的空闲时间</string>
     <string name="settings_sleep_mode_delay_fallback">%1$d 分钟后</string>
-    <string name="settings_sleep_mode_restart_message">ReAppzuku 需要重启才能生效。应用将立即强制关闭。</string>
     <string name="settings_clear_cache_title">清除应用缓存</string>
     <string name="settings_clear_cache_subtitle">通过清除应用缓存释放 RAM</string>
     <string name="settings_hidden_apps_title">隐藏应用</string>
