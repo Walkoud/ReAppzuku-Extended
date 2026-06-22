@@ -20,6 +20,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 
 import com.gree1d.reappzuku.R;
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 
 public class ColorPickerDialog {
 
@@ -28,6 +30,7 @@ public class ColorPickerDialog {
     }
 
     public static void show(Context context, int initialColor, OnColorPickedListener listener) {
+        AppDebugManager.d(Category.SETTINGS_PAGE, "ColorPickerDialog: show() called, initialColor=#" + Integer.toHexString(initialColor));
         float[] hsv = new float[3];
         Color.colorToHSV(initialColor, hsv);
 
@@ -45,12 +48,14 @@ public class ColorPickerDialog {
         previewView.setBackgroundColor(Color.HSVToColor(currentHsv));
 
         hueBar.setOnHueChangedListener(hue -> {
+            AppDebugManager.v(Category.SETTINGS_PAGE, "ColorPickerDialog: hue changed -> " + hue);
             currentHsv[0] = hue;
             hsvView.setHue(hue);
             previewView.setBackgroundColor(Color.HSVToColor(currentHsv));
         });
 
         hsvView.setOnSatValChangedListener((sat, val) -> {
+            AppDebugManager.v(Category.SETTINGS_PAGE, "ColorPickerDialog: sat/val changed -> sat=" + sat + ", val=" + val);
             currentHsv[1] = sat;
             currentHsv[2] = val;
             previewView.setBackgroundColor(Color.HSVToColor(currentHsv));
@@ -60,7 +65,9 @@ public class ColorPickerDialog {
                 .setTitle(R.string.settings_accent_custom_picker_title)
                 .setView(view)
                 .setPositiveButton(R.string.dialog_save, (d, w) -> {
-                    if (listener != null) listener.onColorPicked(Color.HSVToColor(currentHsv));
+                    int pickedColor = Color.HSVToColor(currentHsv);
+                    AppDebugManager.d(Category.SETTINGS_PAGE, "ColorPickerDialog: color picked, result=#" + Integer.toHexString(pickedColor));
+                    if (listener != null) listener.onColorPicked(pickedColor);
                 })
                 .setNegativeButton(R.string.dialog_cancel, null)
                 .create();

@@ -17,6 +17,8 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import com.gree1d.reappzuku.utils.AppModel;
 import com.gree1d.reappzuku.R;
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 
 public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
 
@@ -111,6 +113,9 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         String bgLabel       = args.getString(ARG_BG_RESTRICT_LABEL, "");
         int accentColor      = args.getInt(ARG_ACCENT_COLOR);
 
+        AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: opened for pkg=" + pkg
+                + " isProtected=" + isProtected + " isSystem=" + isSystem);
+
         ColorStateList accentTint = buildCheckboxTint(accentColor);
 
         ImageView iconView = view.findViewById(R.id.sheet_app_icon);
@@ -149,11 +154,13 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         checkBgRestrict.setButtonTintList(accentTint);
 
         btnInfo.setOnClickListener(v -> {
+            AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: app info clicked for pkg=" + pkg);
             dismiss();
             if (listener != null) listener.onAppInfo();
         });
 
         btnTriggers.setOnClickListener(v -> {
+            AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: app triggers clicked for pkg=" + pkg);
             dismiss();
             if (listener != null) listener.onAppTriggers();
         });
@@ -162,6 +169,7 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             btnHiddenSingle.setVisibility(View.VISIBLE);
             btnHiddenSingle.setText(getString(R.string.menu_hidden));
             btnHiddenSingle.setOnClickListener(v -> {
+                AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: hidden(single) toggled for pkg=" + pkg);
                 dismiss();
                 if (listener != null) listener.onToggleHiddenSingle();
             });
@@ -174,6 +182,7 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             if (!isSystem) {
                 btnUninstall.setVisibility(View.VISIBLE);
                 btnUninstall.setOnClickListener(v -> {
+                    AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: uninstall clicked for pkg=" + pkg);
                     dismiss();
                     if (listener != null) listener.onUninstall();
                 });
@@ -198,24 +207,28 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
             itemWhitelist.setOnClickListener(v -> {
                 boolean next = !checkWhitelist.isChecked();
                 checkWhitelist.setChecked(next);
+                AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: whitelist toggled for pkg=" + pkg + " next=" + next);
                 if (listener != null) listener.onToggleWhitelist(next);
             });
 
             itemBlacklist.setOnClickListener(v -> {
                 boolean next = !checkBlacklist.isChecked();
                 checkBlacklist.setChecked(next);
+                AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: blacklist toggled for pkg=" + pkg + " next=" + next);
                 if (listener != null) listener.onToggleBlacklist(next);
             });
 
             itemHidden.setOnClickListener(v -> {
                 boolean next = !checkHidden.isChecked();
                 checkHidden.setChecked(next);
+                AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: hidden toggled for pkg=" + pkg + " next=" + next);
                 if (listener != null) listener.onToggleHidden(next);
             });
 
             itemBgRestrict.setOnClickListener(v -> {
                 boolean next = !checkBgRestrict.isChecked();
                 checkBgRestrict.setChecked(next);
+                AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: background restriction toggled for pkg=" + pkg + " next=" + next);
                 if (listener != null) listener.onToggleBackgroundRestriction(next);
             });
         }

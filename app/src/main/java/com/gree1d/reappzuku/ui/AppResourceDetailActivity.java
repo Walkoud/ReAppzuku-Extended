@@ -13,9 +13,11 @@ import android.widget.TextView;
 
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.core.BaseActivity;
-import com.gree1d.reappzuku.manager.BatteryStatsManager;
+import com.gree1d.reappzuku.manager.CollectStatsManager;
 import com.gree1d.reappzuku.core.PreferenceKeys;
 import com.gree1d.reappzuku.core.AppConstants;
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.R;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -40,6 +42,8 @@ import java.util.concurrent.Executors;
 
 public class AppResourceDetailActivity extends BaseActivity {
 
+    private static final String TAG = "AppResourceDetailActivity";
+
     public static final String EXTRA_PACKAGE_NAME  = "extra_package_name";
     public static final String EXTRA_APP_NAME      = "extra_app_name";
     public static final String EXTRA_TOTAL_CPU_PCT = "extra_total_cpu_pct";
@@ -54,7 +58,7 @@ public class AppResourceDetailActivity extends BaseActivity {
     private static final float Y_HIGH   = 3f;
 
     private ActivityAppResourceDetailBinding binding;
-    private BatteryStatsManager batteryStatsManager;
+    private CollectStatsManager collectStatsManager;
     private ShellManager shellManager;
     private final Handler handler         = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newCachedThreadPool();
@@ -76,10 +80,16 @@ public class AppResourceDetailActivity extends BaseActivity {
         totalAllAppsCpuPct = getIntent().getDoubleExtra(EXTRA_TOTAL_CPU_PCT, 0);
         totalAllAppsRamMb  = getIntent().getDoubleExtra(EXTRA_TOTAL_RAM_MB, 0);
         selectedPeriodIdx  = getIntent().getIntExtra(EXTRA_PERIOD_IDX, 0);
-        if (packageName == null) { finish(); return; }
+        AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": onCreate package=" + packageName
+                + " appName=" + appName + " periodIdx=" + selectedPeriodIdx);
+        if (packageName == null) {
+            AppDebugManager.w(Category.STATISTICS_PAGE, TAG + ": onCreate called without EXTRA_PACKAGE_NAME, finishing activity");
+            finish();
+            return;
+        }
 
         shellManager        = new ShellManager(getApplicationContext(), handler, executor);
-        batteryStatsManager = new BatteryStatsManager(getApplicationContext(), handler, executor, shellManager);
+        collectStatsManager = new CollectStatsManager(getApplicationContext(), handler, executor, shellManager);
 
         setupToolbar();
         setupAppCard();
@@ -122,6 +132,7 @@ public class AppResourceDetailActivity extends BaseActivity {
             Drawable icon = getPackageManager().getApplicationIcon(packageName);
             binding.ivAppIcon.setImageDrawable(icon);
         } catch (PackageManager.NameNotFoundException e) {
+            AppDebugManager.e(Category.STATISTICS_PAGE, TAG + ": failed to load app icon for " + packageName, e);
             binding.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
         }
     }
@@ -144,6 +155,8 @@ public class AppResourceDetailActivity extends BaseActivity {
         binding.tabDetailPeriod.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override public void onTabSelected(TabLayout.Tab tab) {
                 selectedPeriodIdx = tab.getPosition();
+                AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": period tab selected idx="
+                        + selectedPeriodIdx + " hours=" + PERIODS_HOURS[selectedPeriodIdx]);
                 loadData(PERIODS_HOURS[selectedPeriodIdx]);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
@@ -152,28 +165,35 @@ public class AppResourceDetailActivity extends BaseActivity {
     }
 
     private void loadData(int hours) {
+        AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": loadData started for package=" + packageName + " hours=" + hours);
         binding.layoutDetailLoading.setVisibility(View.VISIBLE);
         binding.cardDetailStats.setVisibility(View.GONE);
         binding.cardDetailActivity.setVisibility(View.GONE);
 
-        batteryStatsManager.getHourlyStatsAsync(
+        collectStatsManager.getHourlyStatsAsync(
                 packageName, hours, totalAllAppsCpuPct, totalAllAppsRamMb, result -> {
 
             binding.layoutDetailLoading.setVisibility(View.GONE);
 
             if (result.isPartialData) {
+                AppDebugManager.w(Category.STATISTICS_PAGE, TAG + ": loadData received partial data for package=" + packageName);
                 binding.tvDetailPartialWarning.setText(getString(R.string.stats_partial_data_warning));
                 binding.tvDetailPartialWarning.setVisibility(View.VISIBLE);
             } else {
                 binding.tvDetailPartialWarning.setVisibility(View.GONE);
             }
 
-            if (result.stats == null || result.slices.isEmpty()) return;
+            if (result.stats == null || result.slices.isEmpty()) {
+                AppDebugManager.w(Category.STATISTICS_PAGE, TAG + ": loadData has no stats/slices for package="
+                        + packageName + " (stats null=" + (result.stats == null) + ", slices empty="
+                        + (result.slices == null || result.slices.isEmpty()) + ")");
+                return;
+            }
 
             binding.cardDetailStats.setVisibility(View.VISIBLE);
             binding.cardDetailActivity.setVisibility(View.VISIBLE);
 
-            BatteryStatsManager.HourlyPeriodStats s = result.stats;
+            CollectStatsManager.HourlyPeriodStats s = result.stats;
 
             binding.tvBatteryMin.setText(String.format(Locale.US, "%.1f mAh", s.minBatteryMah));
             binding.tvBatteryAvg.setText(String.format(Locale.US, "%.1f mAh", s.avgBatteryMah));
@@ -187,12 +207,17 @@ public class AppResourceDetailActivity extends BaseActivity {
             binding.tvRamAvg.setText(getString(R.string.unit_mbb, s.avgRamMb));
             binding.tvRamMax.setText(getString(R.string.unit_mbb, s.maxRamMb));
 
+            AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": loadData stats applied for package=" + packageName
+                    + " slices=" + result.slices.size());
+
             buildActivityChart(result.slices);
         });
     }
 
 
-    private void buildActivityChart(List<BatteryStatsManager.ActivitySlice> slices) {
+    private void buildActivityChart(List<CollectStatsManager.ActivitySlice> slices) {
+        AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": buildActivityChart building chart with "
+                + slices.size() + " slices for hours=" + hours());
         int h = hours();
         boolean sparseLabels = h >= 12;
 
@@ -202,14 +227,20 @@ public class AppResourceDetailActivity extends BaseActivity {
         String[] labels = new String[slices.size()];
 
         for (int i = 0; i < slices.size(); i++) {
-            BatteryStatsManager.ActivitySlice slice = slices.get(i);
-            boolean active = slice.level != BatteryStatsManager.ActivityLevel.NONE;
+            CollectStatsManager.ActivitySlice slice = slices.get(i);
+            boolean active = slice.level != CollectStatsManager.ActivityLevel.NONE;
             float y;
             switch (slice.level) {
                 case LOW:    y = Y_LOW;    break;
                 case MEDIUM: y = Y_MEDIUM; break;
                 case HIGH:   y = Y_HIGH;   break;
-                default:     y = Y_NONE;   break;
+                default:
+                    if (slice.level != CollectStatsManager.ActivityLevel.NONE) {
+                        AppDebugManager.w(Category.STATISTICS_PAGE, TAG
+                                + ": buildActivityChart encountered unexpected ActivityLevel=" + slice.level);
+                    }
+                    y = Y_NONE;
+                    break;
             }
             entries.add(new Entry(i, y));
 
@@ -226,9 +257,9 @@ public class AppResourceDetailActivity extends BaseActivity {
                     showLabel = true;
                 } else {
                     boolean prevActive = i > 0
-                            && slices.get(i - 1).level != BatteryStatsManager.ActivityLevel.NONE;
+                            && slices.get(i - 1).level != CollectStatsManager.ActivityLevel.NONE;
                     boolean nextActive = i < slices.size() - 1
-                            && slices.get(i + 1).level != BatteryStatsManager.ActivityLevel.NONE;
+                            && slices.get(i + 1).level != CollectStatsManager.ActivityLevel.NONE;
                     showLabel = !(prevActive && nextActive);
                 }
                 labels[i] = showLabel ? timeLabel : "";
@@ -341,6 +372,7 @@ public class AppResourceDetailActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        AppDebugManager.d(Category.STATISTICS_PAGE, TAG + ": onDestroy package=" + packageName + ", shutting down executor");
         executor.shutdownNow();
         binding = null;
     }

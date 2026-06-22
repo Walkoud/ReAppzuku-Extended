@@ -75,6 +75,7 @@ import com.gree1d.reappzuku.core.BackupManager;
 import com.gree1d.reappzuku.manager.RestrictionsScheduler;
 import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
 import com.gree1d.reappzuku.manager.RamKillShortcutManager;
+import com.gree1d.reappzuku.core.AppDebugManager;
 import com.gree1d.reappzuku.core.BaseActivity;
 import com.gree1d.reappzuku.manager.PresetManager;
 import com.gree1d.reappzuku.R;
@@ -434,6 +435,15 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this, sharedPreferences));
         binding.layoutTelegram.setOnClickListener(v -> openUrl("https://t.me/AkM0o"));
         binding.layoutSpecialThanks.setOnClickListener(v -> showSpecialThanksDialog());
+
+        binding.switchDebugEnabled.setChecked(AppDebugManager.isEnabled());
+        binding.switchDebugEnabled.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            AppDebugManager.setEnabled(isChecked);
+            binding.layoutDebugMenu.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
+        binding.layoutDebugMenu.setVisibility(AppDebugManager.isEnabled() ? View.VISIBLE : View.GONE);
+        binding.layoutDebugMenu.setOnClickListener(v -> showDebugMenuDialog());
+
         binding.textVersion.setOnClickListener(v -> {
             easterEggClickCount++;
             if (easterEggClickCount == EASTER_EGG_THRESHOLD) {
@@ -2593,4 +2603,96 @@ public class SettingsActivity extends BaseActivity implements SharedPreferences.
         executor.shutdownNow();
         binding = null;
     }
+
+    private void showDebugMenuDialog() {
+        AppDebugManager.Category[] categories = AppDebugManager.Category.values();
+        int dp4  = (int) (getResources().getDisplayMetrics().density * 4);
+        int dp8  = (int) (getResources().getDisplayMetrics().density * 8);
+        int dp16 = (int) (getResources().getDisplayMetrics().density * 16);
+        int dp24 = (int) (getResources().getDisplayMetrics().density * 24);
+
+        int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        boolean isCustomAccent = accent == ACCENT_CUSTOM;
+        int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
+        android.content.res.ColorStateList switchTint = isCustomAccent
+                ? android.content.res.ColorStateList.valueOf(customColor) : null;
+        int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE);
+        int buttonTextColor = isCustomAccent
+                ? ((onColor == ACCENT_ON_BLACK) ? Color.BLACK : Color.WHITE)
+                : ContextCompat.getColor(this, R.color.dialog_button_text);
+
+        String[] categoryLabels = {
+            getString(R.string.appdebug_main_page),
+            getString(R.string.appdebug_settings_page),
+            getString(R.string.appdebug_statistics_page),
+            getString(R.string.appdebug_core),
+            getString(R.string.appdebug_foreground_service),
+            getString(R.string.appdebug_triggers),
+            getString(R.string.appdebug_advanced_conditions),
+            getString(R.string.appdebug_scan),
+            getString(R.string.appdebug_auto_kill_base),
+            getString(R.string.appdebug_auto_kill_presets),
+            getString(R.string.appdebug_shortcuts_widgets),
+            getString(R.string.appdebug_background_restrictions),
+            getString(R.string.appdebug_restrictions_scheduler),
+            getString(R.string.appdebug_sleep_mode),
+            getString(R.string.appdebug_backup_restore),
+            getString(R.string.appdebug_utils)
+        };
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, dp8, 0, dp8);
+
+        MaterialSwitch[] switches = new MaterialSwitch[categories.length];
+        for (int i = 0; i < categories.length; i++) {
+            AppDebugManager.Category cat = categories[i];
+
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPadding(dp24, dp8, dp16, dp8);
+
+            TextView label = new TextView(this);
+            label.setText(categoryLabels[i]);
+            label.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+            row.addView(label);
+
+            MaterialSwitch sw = new MaterialSwitch(this);
+            sw.setChecked(AppDebugManager.isCategoryEnabled(cat));
+            if (switchTint != null) {
+                int trackColor = darkenColor(customColor, 0.6f);
+                android.content.res.ColorStateList thumbTint = new android.content.res.ColorStateList(
+                    new int[][] { new int[] { android.R.attr.state_checked }, new int[] {} },
+                    new int[] { customColor, 0xFFAAAAAA });
+                android.content.res.ColorStateList trackTintList = new android.content.res.ColorStateList(
+                    new int[][] { new int[] { android.R.attr.state_checked }, new int[] {} },
+                    new int[] { trackColor, 0xFF555555 });
+                sw.setThumbTintList(thumbTint);
+                sw.setTrackTintList(trackTintList);
+            }
+            switches[i] = sw;
+            row.addView(sw);
+            root.addView(row);
+        }
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(root);
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Debug menu")
+                .setView(scrollView)
+                .create();
+        dialog.setButton(AlertDialog.BUTTON_POSITIVE, "OK", (d, w) -> {
+            for (int i = 0; i < categories.length; i++) {
+                AppDebugManager.setCategory(categories[i], switches[i].isChecked());
+            }
+        });
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_cancel), (d, w) -> d.dismiss());
+        dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(buttonTextColor);
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(buttonTextColor);
+    }
+
 }
+

@@ -67,6 +67,9 @@ import com.gree1d.reappzuku.core.AppConstants;
 import com.gree1d.reappzuku.manager.ScanSystem;
 import com.gree1d.reappzuku.service.ShappkyService;
 
+import com.gree1d.reappzuku.core.AppDebugManager;
+import com.gree1d.reappzuku.core.AppDebugManager.Category;
+
 
 public class MainActivity extends BaseActivity {
     private static final String TAG = "MainActivity";
@@ -93,6 +96,7 @@ public class MainActivity extends BaseActivity {
     private int appliedOnColor;
 
     private final Shizuku.OnRequestPermissionResultListener shizukuPermissionListener = (requestCode, grantResult) -> {
+        AppDebugManager.d(Category.CORE, "MainActivity: Shizuku permission result=" + grantResult);
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
             loadBackgroundApps();
         }
@@ -101,6 +105,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: onCreate started");
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this,
@@ -147,10 +152,10 @@ public class MainActivity extends BaseActivity {
                     || currentSortMode == AppConstants.SORT_MODE_CPU_ASC) {
                 appManager.sortAppList(appsDataList, currentSortMode);
             }
-            android.util.Log.d("CpuSort", "mode=" + currentSortMode + " appsDataList.size=" + appsDataList.size());
+            AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: cpu sort mode=" + currentSortMode + " appsDataList.size=" + appsDataList.size());
             for (int i = 0; i < Math.min(4, appsDataList.size()); i++) {
                 AppModel a = appsDataList.get(i);
-                android.util.Log.d("CpuSort", i + ": " + a.getAppName() + " cpu=" + a.getCpuUsage());
+                AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: [" + i + "] " + a.getAppName() + " cpu=" + a.getCpuUsage());
             }
             listAdapter.updateCpu(appsDataList);
         });
@@ -172,6 +177,7 @@ public class MainActivity extends BaseActivity {
         shellManager.setOnRootCheckCompleteListener(() -> shellManager.checkShellPermissions());
         loadBackgroundApps();
         ramMonitor.startMonitoring();
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: onCreate finished");
     }
 
     private void recalculateListHeight() {
@@ -313,7 +319,9 @@ public class MainActivity extends BaseActivity {
                 android.graphics.drawable.Drawable icon = getPackageManager()
                         .getApplicationIcon(packageName);
                 sheet.setAppIcon(icon);
-            } catch (PackageManager.NameNotFoundException ignored) {}
+            } catch (PackageManager.NameNotFoundException e) {
+                AppDebugManager.w(Category.MAIN_PAGE, "MainActivity: failed to load app icon for " + packageName, e);
+            }
     
             sheet.setListener(new AppOptionsBottomSheet.Listener() {
                 @Override
@@ -367,6 +375,7 @@ public class MainActivity extends BaseActivity {
             intent.setData(Uri.parse("package:" + packageName));
             startActivity(intent);
         } catch (Exception e) {
+            AppDebugManager.e(Category.MAIN_PAGE, "MainActivity: failed to open app info for " + packageName, e);
             Toast.makeText(this, getString(R.string.main_open_app_info_error), Toast.LENGTH_SHORT).show();
         }
     }
@@ -376,6 +385,7 @@ public class MainActivity extends BaseActivity {
                 .setTitle(getString(R.string.main_uninstall_title, app.getAppName()))
                 .setMessage(getString(R.string.main_uninstall_message))
                 .setPositiveButton(getString(R.string.main_uninstall_confirm), (d, which) -> {
+                    AppDebugManager.i(Category.MAIN_PAGE, "MainActivity: uninstall confirmed for " + app.getPackageName());
                     autoKillManager.uninstallPackage(app.getPackageName(), this::loadBackgroundApps);
                 })
                 .setNegativeButton(getString(R.string.dialog_cancel), null)
@@ -385,6 +395,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void showAppTriggersDialog(AppModel app) {
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: showAppTriggersDialog for " + app.getPackageName());
         AlertDialog loadingDialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.menu_app_triggers) + ": " + app.getAppName())
                 .setMessage(getString(R.string.triggers_loading))
@@ -393,16 +404,23 @@ public class MainActivity extends BaseActivity {
         loadingDialog.show();
 
         executor.execute(() -> {
-            AppTriggersAnalyzer analyzer = new AppTriggersAnalyzer(MainActivity.this, shellManager);
-            List<AppTriggersAnalyzer.TriggerInfo> triggers = analyzer.analyze(app.getPackageName());
-            AppTriggersAnalyzer.AppStatus status = analyzer.resolveAppStatus(app.getPackageName());
-            int aggressionScore = analyzer.calculateAggressionScore(triggers);
+            try {
+                AppTriggersAnalyzer analyzer = new AppTriggersAnalyzer(MainActivity.this, shellManager);
+                List<AppTriggersAnalyzer.TriggerInfo> triggers = analyzer.analyze(app.getPackageName());
+                AppTriggersAnalyzer.AppStatus status = analyzer.resolveAppStatus(app.getPackageName());
+                int aggressionScore = analyzer.calculateAggressionScore(triggers);
+                AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: triggers analyzed for " + app.getPackageName()
+                        + " count=" + triggers.size() + " status=" + status + " score=" + aggressionScore);
 
-            handler.post(() -> {
-                loadingDialog.dismiss();
-                if (isFinishing() || isDestroyed()) return;
-                showTriggersResult(app, triggers, status, aggressionScore);
-            });
+                handler.post(() -> {
+                    loadingDialog.dismiss();
+                    if (isFinishing() || isDestroyed()) return;
+                    showTriggersResult(app, triggers, status, aggressionScore);
+                });
+            } catch (Exception e) {
+                AppDebugManager.e(Category.MAIN_PAGE, "MainActivity: failed to analyze triggers for " + app.getPackageName(), e);
+                handler.post(loadingDialog::dismiss);
+            }
         });
     }
 
@@ -424,6 +442,7 @@ public class MainActivity extends BaseActivity {
         executor.execute(() -> {
             ScanSystem scanner = new ScanSystem(MainActivity.this, shellManager);
             List<ScanSystem.AppLoad> loads = scanner.scan(snapshot);
+            AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: system scan finished, scanned=" + snapshot.size() + " loads=" + loads.size());
 
             handler.post(() -> {
                 loadingDialog.dismiss();
@@ -652,6 +671,7 @@ public class MainActivity extends BaseActivity {
                 removedMsg = getString(R.string.main_app_visible);
                 break;
             default:
+                AppDebugManager.w(Category.MAIN_PAGE, "MainActivity: toggleListMembership unknown listType=" + listType);
                 return;
         }
 
@@ -661,6 +681,8 @@ public class MainActivity extends BaseActivity {
         } else {
             currentSet.add(packageName);
         }
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: toggleListMembership " + listType + " for " + packageName
+                + " nowInList=" + !wasInList);
 
         switch (listType) {
             case "whitelist":
@@ -737,6 +759,8 @@ public class MainActivity extends BaseActivity {
     }
 
     private void applyBackgroundRestriction(AppModel app, boolean enableRestriction) {
+        AppDebugManager.i(Category.MAIN_PAGE, "MainActivity: applyBackgroundRestriction pkg=" + app.getPackageName()
+                + " enable=" + enableRestriction);
         appManager.setBackgroundRestricted(app.getPackageName(), enableRestriction, this::loadBackgroundApps);
     }
 
@@ -754,6 +778,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void loadBackgroundApps() {
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: loadBackgroundApps started");
         binding.swiperefreshlayout1.setRefreshing(true);
 
         final Set<String> selectedPackages = fullAppsList.stream()
@@ -775,6 +800,7 @@ public class MainActivity extends BaseActivity {
             binding.runningApps.setText(getString(R.string.main_active_apps_count, fullAppsList.size()));
             binding.swiperefreshlayout1.setRefreshing(false);
             cpuMonitor.refreshAppsList(fullAppsList);
+            AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: loadBackgroundApps finished, count=" + fullAppsList.size());
         });
     }
 
@@ -802,6 +828,7 @@ public class MainActivity extends BaseActivity {
                 .filter(AppModel::isSelected)
                 .map(AppModel::getPackageName)
                 .collect(Collectors.toList());
+        AppDebugManager.i(Category.MAIN_PAGE, "MainActivity: killSelectedApps requested, count=" + packagesToKill.size());
 
         binding.killButton.setVisibility(View.GONE);
         binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
@@ -862,6 +889,7 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: onResume");
         setupBottomNavigation();
 
         int newAccent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
@@ -871,6 +899,7 @@ public class MainActivity extends BaseActivity {
         if (newAccent != appliedAccent || newIsAmoled != appliedIsAmoled
                 || (newAccent == ACCENT_CUSTOM && newCustomColor != appliedCustomColor)
                 || (newAccent == ACCENT_CUSTOM && newOnColor != appliedOnColor)) {
+            AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: theme changed, recreating activity");
             recreate();
             return;
         }
@@ -883,12 +912,14 @@ public class MainActivity extends BaseActivity {
     @Override
     protected void onPause() {
         super.onPause();
+        AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: onPause");
         cpuMonitor.stopMonitoring();
     }
 
     private void ensureServiceRunning() {
         if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
                 && !ShappkyService.isRunning()) {
+            AppDebugManager.i(Category.MAIN_PAGE, "MainActivity: starting ShappkyService, was not running");
             Intent intent = new Intent(this, ShappkyService.class);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent);
