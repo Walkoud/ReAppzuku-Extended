@@ -16,7 +16,7 @@ import androidx.annotation.NonNull;
         SchedulerLog.class,
         SleepModeLog.class
     },
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -114,6 +114,15 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    static final Migration MIGRATION_10_11 = new Migration(10, 11) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase db) {
+            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN minRamMb REAL NOT NULL DEFAULT 0.0");
+            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN maxRamMb REAL NOT NULL DEFAULT 0.0");
+            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN isTemporary INTEGER NOT NULL DEFAULT 1");
+        }
+    };
+
     public abstract AppStatsDao appStatsDao();
     public abstract ResourceSnapshotDao resourceSnapshotDao();
     public abstract BgRestrictionLog.Dao bgRestrictionLogDao();
@@ -133,7 +142,8 @@ public abstract class AppDatabase extends RoomDatabase {
                         MIGRATION_6_7,
                         MIGRATION_7_8,
                         MIGRATION_8_9,
-                        MIGRATION_9_10
+                        MIGRATION_9_10,
+                        MIGRATION_10_11
                     )
                     .fallbackToDestructiveMigration()
                     .build();

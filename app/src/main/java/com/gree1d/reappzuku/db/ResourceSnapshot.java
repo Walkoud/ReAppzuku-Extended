@@ -31,11 +31,32 @@ public class ResourceSnapshot {
     public double batteryMah;
 
     /**
-     * Average RAM usage in MB (PSS — Proportional Set Size) over the procstats window.
-     * Sourced from: dumpsys procstats --hours 24.
-     * PSS is the most honest per-app memory metric on Android.
+     * Average RAM usage in MB (PSS — Proportional Set Size).
+     * If isTemporary=true: sourced from dumpsys meminfo -a (current snapshot value).
+     * If isTemporary=false: updated from dumpsys procstats --hours 1 (average PSS over the hour).
      */
     public double ramMb;
+
+    /**
+     * Minimum RAM usage in MB (PSS) over the procstats window.
+     * Only populated after procstats update (isTemporary=false).
+     * 0 while isTemporary=true.
+     */
+    public double minRamMb;
+
+    /**
+     * Peak (maximum) RAM usage in MB (PSS) over the procstats window.
+     * Only populated after procstats update (isTemporary=false).
+     * 0 while isTemporary=true.
+     */
+    public double maxRamMb;
+
+    /**
+     * Whether the RAM fields (ramMb, minRamMb, maxRamMb) in this snapshot are temporary.
+     * true  → sourced from meminfo fallback; will be replaced by procstats at the next full hour.
+     * false → RAM fields have been updated from procstats --hours 1 for the completed hour.
+     */
+    public boolean isTemporary;
 
     /**
      * Cumulative CPU time in milliseconds (user + kernel) since process start.
