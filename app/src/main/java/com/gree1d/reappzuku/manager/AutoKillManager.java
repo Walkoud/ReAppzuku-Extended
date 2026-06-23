@@ -413,6 +413,11 @@ public class AutoKillManager {
                 context.getString(R.string.bg_manager_stopped_apps, count));
     }
 
+    public void recordQuickTileKill(String packageName) {
+        if (packageName == null || packageName.isEmpty()) return;
+        recordSuccessfulKills(Collections.singletonList(packageName), null, "Quick Tile");
+    }
+
     private void recordSuccessfulKills(List<String> packageNames,
             Map<String, Long> recoveredKbByPackage, String source) {
         if (packageNames == null || packageNames.isEmpty()) {
