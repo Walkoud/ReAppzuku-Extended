@@ -744,12 +744,6 @@ public class StatisticsActivity extends BaseActivity {
         SettingsSurfaceAdapter offendersAdapter = new SettingsSurfaceAdapter();
         listView.setAdapter(offendersAdapter);
         listView.setEmptyView(emptyView);
-        listView.setOnItemClickListener((parent, view, position, id) -> {
-            SettingsSurfaceRow row = offendersAdapter.getItem(position);
-            if (row != null && row.packageName != null && !row.packageName.isEmpty()) {
-                openAppInfo(row.packageName);
-            }
-        });
 
         ArrayAdapter<String> filterAdapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_dropdown_item_1line, topOffenderFilterLabels);
@@ -819,13 +813,20 @@ public class StatisticsActivity extends BaseActivity {
                     offenders.size(), totalKills, totalRelaunches,
                     formatRecoveredSize(totalRecoveredKb));
 
+            final List<TopOffender> finalOffenders = offenders;
             handler.post(() -> {
                 if (isFinishing() || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && isDestroyed())) return;
-                adapter.setItems(buildTopOffenderRows(offenders));
+                adapter.setItems(buildTopOffenderRows(finalOffenders));
                 summaryText.setText(summary);
                 loading.setVisibility(View.GONE);
                 listView.setVisibility(View.VISIBLE);
-                emptyView.setVisibility(offenders.isEmpty() ? View.VISIBLE : View.GONE);
+                emptyView.setVisibility(finalOffenders.isEmpty() ? View.VISIBLE : View.GONE);
+                listView.setOnItemClickListener((parent, view, position, id) -> {
+                    if (position < finalOffenders.size()) {
+                        TopOffender o = finalOffenders.get(position);
+                        showKillDetailDialog(o.appName, o.packageName, windowMs);
+                    }
+                });
             });
         });
     }
@@ -909,20 +910,52 @@ public class StatisticsActivity extends BaseActivity {
     }
 
     private void showKillEntryDetails(KillHistoryEntry entry) {
-        java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
-        String killTime = entry.lastEventTime > 0
-                ? timeFormat.format(new java.util.Date(entry.lastEventTime)) : "—";
-        String source = entry.lastKillSource != null ? entry.lastKillSource : "—";
+        showKillDetailDialog(entry.appName, entry.packageName, STATS_HISTORY_DURATION_MS);
+    }
 
-        String message = entry.appName + "\n"
-                + entry.packageName + "\n"
-                + killTime + " · " + source;
+    private void showKillDetailDialog(String appName, String packageName, long windowMs) {
+        executor.execute(() -> {
+            long since = windowMs > 0 ? System.currentTimeMillis() - windowMs : 0L;
+            com.gree1d.reappzuku.db.AppStatsDao dao =
+                    com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao();
+            List<com.gree1d.reappzuku.db.AppStats> kills = dao.getKillsSince(packageName, since);
 
-        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(this)
-                .setMessage(message)
-                .setNegativeButton(getString(R.string.dialog_close), (d, w) -> d.dismiss());
+            java.text.DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(this);
+            java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
 
-        applyCustomAccentToDialogButtons(builder.show());
+            StringBuilder sb = new StringBuilder();
+            for (com.gree1d.reappzuku.db.AppStats kill : kills) {
+                if (kill.lastKillTime <= 0) continue;
+                java.util.Date d = new java.util.Date(kill.lastKillTime);
+                String source = kill.lastKillSource != null && !kill.lastKillSource.isEmpty()
+                        ? kill.lastKillSource : "—";
+                sb.append(dateFormat.format(d))
+                        .append(" | ")
+                        .append(timeFormat.format(d))
+                        .append("  —  ")
+                        .append(source)
+                        .append("\n");
+            }
+
+            String body = sb.length() > 0 ? sb.toString().trim() : "—";
+
+            handler.post(() -> {
+                android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
+                TextView textView = new TextView(this);
+                int pad = (int) (16 * getResources().getDisplayMetrics().density);
+                textView.setPadding(pad, pad, pad, pad);
+                textView.setTextSize(13f);
+                textView.setTypeface(android.graphics.Typeface.MONOSPACE);
+                textView.setText(body);
+                scrollView.addView(textView);
+
+                applyCustomAccentToDialogButtons(new MaterialAlertDialogBuilder(this)
+                        .setTitle(appName)
+                        .setView(scrollView)
+                        .setNegativeButton(getString(R.string.dialog_close), (d, w) -> d.dismiss())
+                        .show());
+            });
+        });
     }
 
     private void showRestrictionLogEntryDetails(BackgroundRestrictionLog.LogEntry entry) {
