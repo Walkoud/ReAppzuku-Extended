@@ -20,7 +20,6 @@ public final class AppConstants {
 
         // Stats & History
         public static final long STATS_HISTORY_DURATION_MS = 12 * 60 * 60 * 1000L;
-        public static final int STATS_MAX_COUNT = 10_000;
         public static final int RELAUNCH_GREEDY_THRESHOLD = 3;
 
         // Delays
