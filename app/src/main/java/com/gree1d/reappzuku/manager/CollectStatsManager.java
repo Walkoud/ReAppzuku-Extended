@@ -49,7 +49,7 @@ public class CollectStatsManager {
 
     private static final Pattern PROCSTATS_PSS =
             Pattern.compile(
-                "(\\d+(?:[.,]\\d+)?)MB-(\\d+(?:[.,]\\d+)?)MB-(\\d+(?:[.,]\\d+)?)MB"
+                "(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?-(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?-(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?"
             );
 
 
@@ -62,6 +62,8 @@ public class CollectStatsManager {
     private volatile double cachedCapacityMah = -1;
 
     private volatile int cachedCpuCoreCount = 0;
+
+    private volatile int snapshotCount = 0;
 
 
     public CollectStatsManager(@NonNull Context context,
@@ -224,61 +226,25 @@ public class CollectStatsManager {
     }
 
 
-    public static long slotStartFor(long timeMs) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(timeMs);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        int minute = cal.get(Calendar.MINUTE);
-        cal.set(Calendar.MINUTE, (minute / 15) * 15);
-        return cal.getTimeInMillis();
-    }
-
-
-    public static long hourStartFor(long timeMs) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(timeMs);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTimeInMillis();
-    }
-
-
-    public static boolean isHourBoundarySlot(long slotStart) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(slotStart);
-        return cal.get(Calendar.MINUTE) == 0;
-    }
-
-
     @WorkerThread
     private void takeSnapshotBlocking() {
         long now = System.currentTimeMillis();
 
         try {
-            long slotStart = slotStartFor(now);
-            long slotEnd   = slotStart + SLOT_MS;
-
-            ResourceSnapshot existing = getDao().getAnySnapshotInSlot(slotStart, slotEnd);
-            if (existing != null) {
+            ResourceSnapshot recentSnap = getDao().getAnySnapshotAfter(now - SLOT_MS);
+            if (recentSnap != null) {
                 AppDebugManager.d(Category.UTILS, FILE_NAME
-                        + ": Snapshot skipped — slot already collected: "
-                        + formatSlot(slotStart));
+                        + ": Snapshot skipped — recent snapshot exists at "
+                        + formatSlot(recentSnap.timestamp));
                 return;
             }
 
-            AppDebugManager.d(Category.UTILS, FILE_NAME
-                    + ": Starting snapshot for slot " + formatSlot(slotStart));
+            snapshotCount++;
+            boolean isCycleEnd = (snapshotCount % SLOTS_PER_HOUR) == 1 && snapshotCount > 1;
 
-            if (isHourBoundarySlot(slotStart)) {
-                long prevHourEnd   = slotStart;              // == current :00
-                long prevHourStart = prevHourEnd - 3600_000L;
-                AppDebugManager.d(Category.UTILS, FILE_NAME
-                        + ": Hour boundary — running procstats for previous hour ["
-                        + formatSlot(prevHourStart) + " – " + formatSlot(prevHourEnd) + ")");
-                applyProcStatsToHour(prevHourStart, prevHourEnd);
-            }
+            AppDebugManager.d(Category.UTILS, FILE_NAME
+                    + ": Starting snapshot #" + snapshotCount
+                    + (isCycleEnd ? " [cycle-end, will run procstats]" : ""));
 
             Map<String, Double> batteryMahByPkg = new HashMap<>();
             Map<String, Long>   cpuMsByPkg      = new HashMap<>();
@@ -287,14 +253,6 @@ public class CollectStatsManager {
             } catch (Exception e) {
                 AppDebugManager.e(Category.UTILS,
                         FILE_NAME + ": collectCheckinStats failed, battery/cpu will be empty", e);
-            }
-
-            Map<String, Double> ramMbByPkg = new HashMap<>();
-            try {
-                collectMeminfoRam(ramMbByPkg);
-            } catch (Exception e) {
-                AppDebugManager.e(Category.UTILS,
-                        FILE_NAME + ": collectMeminfoRam failed, RAM data will be empty", e);
             }
 
             long[] jiffies = readProcStatJiffies();
@@ -307,7 +265,6 @@ public class CollectStatsManager {
 
             java.util.Set<String> allPkgs = new java.util.HashSet<>();
             allPkgs.addAll(batteryMahByPkg.keySet());
-            allPkgs.addAll(ramMbByPkg.keySet());
             allPkgs.addAll(cpuMsByPkg.keySet());
 
             double totalRawPwiBatch = 0;
@@ -315,13 +272,10 @@ public class CollectStatsManager {
 
             for (String pkg : allPkgs) {
                 ResourceSnapshot snap = new ResourceSnapshot();
-                snap.timestamp        = slotStart;
+                snap.timestamp        = now;
                 snap.packageName      = pkg;
                 snap.batteryMah       = getOrZero(batteryMahByPkg, pkg);
-                snap.ramMb            = getOrZero(ramMbByPkg, pkg); 
-                snap.minRamMb         = getOrZero(ramMbByPkg, pkg); 
-                snap.maxRamMb         = getOrZero(ramMbByPkg, pkg);  
-                snap.isTemporary      = true;
+                snap.ramMb            = 0;
                 snap.cpuTimeMs        = cpuMsByPkg.containsKey(pkg) ? cpuMsByPkg.get(pkg) : 0L;
                 snap.totalCpuJiffies  = jiffies[0];
                 snap.activeCpuJiffies = jiffies[1];
@@ -330,12 +284,20 @@ public class CollectStatsManager {
                 getDao().insert(snap);
             }
 
+            if (isCycleEnd) {
+                long cycleEnd   = now;
+                long cycleStart = cycleEnd - (long) SLOTS_PER_HOUR * SLOT_MS;
+                AppDebugManager.d(Category.UTILS, FILE_NAME
+                        + ": Cycle end — running procstats for ["
+                        + formatSlot(cycleStart) + " – " + formatSlot(cycleEnd) + "]");
+                applyProcStatsToCycle(cycleStart, cycleEnd);
+            }
+
             getDao().deleteOlderThan(now - 24 * 3600_000L);
 
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Snapshot saved for slot "
-                    + formatSlot(slotStart) + ": " + allPkgs.size() + " apps"
+            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Snapshot saved #" + snapshotCount
+                    + " at " + formatSlot(now) + ": " + allPkgs.size() + " apps"
                     + "  battery=" + batteryMahByPkg.size()
-                    + "  ram=" + ramMbByPkg.size()
                     + "  cpu=" + cpuMsByPkg.size());
 
         } catch (Exception e) {
@@ -345,38 +307,35 @@ public class CollectStatsManager {
     }
 
     @WorkerThread
-    private void applyProcStatsToHour(long hourStart, long hourEnd) {
+    private void applyProcStatsToCycle(long cycleStart, long cycleEnd) {
         try {
             Map<String, double[]> procStatsRam = new HashMap<>();
             collectProcStatsRam(1, procStatsRam);
 
             if (procStatsRam.isEmpty()) {
                 AppDebugManager.d(Category.UTILS, FILE_NAME
-                        + ": applyProcStatsToHour: procstats returned no data, "
-                        + "meminfo values retained for hour " + formatSlot(hourStart));
+                        + ": applyProcStatsToCycle: procstats returned no data, "
+                        + "RAM remains 0 for cycle [" + formatSlot(cycleStart)
+                        + " – " + formatSlot(cycleEnd) + "]");
                 return;
             }
 
-            List<String> pkgsInHour = getDao().getPackagesInHour(hourStart, hourEnd);
             int updated = 0;
-            for (String pkg : pkgsInHour) {
-                double[] pss = procStatsRam.get(pkg);
-                if (pss == null) {
-                    continue;
-                }
-                double avgRam = pss[1];
-                double maxRam = pss[2];
-                getDao().updateRamFields(avgRam, maxRam, pkg, hourStart, hourEnd);
+            for (Map.Entry<String, double[]> entry : procStatsRam.entrySet()) {
+                String pkg    = entry.getKey();
+                double avgRam = entry.getValue()[1];
+                getDao().updateRamForCycle(avgRam, pkg, cycleStart, cycleEnd);
                 updated++;
             }
 
             AppDebugManager.d(Category.UTILS, FILE_NAME
-                    + ": applyProcStatsToHour: updated RAM for " + updated + "/"
-                    + pkgsInHour.size() + " packages in hour " + formatSlot(hourStart));
+                    + ": applyProcStatsToCycle: back-filled RAM for " + updated
+                    + " packages in cycle [" + formatSlot(cycleStart)
+                    + " – " + formatSlot(cycleEnd) + "]");
 
         } catch (Exception e) {
             AppDebugManager.e(Category.UTILS,
-                    FILE_NAME + ": applyProcStatsToHour: failed, meminfo values retained", e);
+                    FILE_NAME + ": applyProcStatsToCycle: failed", e);
         }
     }
 
@@ -637,10 +596,11 @@ public class CollectStatsManager {
             Matcher pssMatcher = PROCSTATS_PSS.matcher(line);
             if (pssMatcher.find()) {
                 try {
-                    double minPss = parseLocaleDouble(pssMatcher.group(1));
-                    double avgPss = parseLocaleDouble(pssMatcher.group(2));
-                    double maxPss = parseLocaleDouble(pssMatcher.group(3));
+                    double minPss = parsePssMb(pssMatcher.group(1), pssMatcher.group(2));
+                    double avgPss = parsePssMb(pssMatcher.group(3), pssMatcher.group(4));
+                    double maxPss = parsePssMb(pssMatcher.group(5), pssMatcher.group(6));
 
+                    if (avgPss <= 0) continue;
                     double[] existing = ramOut.get(currentPkg);
                     if (existing == null || avgPss > existing[1]) {
                         ramOut.put(currentPkg, new double[]{minPss, avgPss, maxPss});
@@ -654,38 +614,14 @@ public class CollectStatsManager {
                 + parsedCount + " TOTAL lines → " + ramOut.size() + " packages");
     }
 
-
-    private static final Pattern MEMINFO_PKG =
-            Pattern.compile("^\\s*(\\d+)\\s+kB:\\s+([\\w.:]+)\\s+\\(pid");
-
-    @WorkerThread
-    private void collectMeminfoRam(@NonNull Map<String, Double> ramMbOut) {
-        String output = shellManager.runCommandAndGetOutput("dumpsys meminfo -a");
-        if (output == null || output.isEmpty()) {
-            AppDebugManager.w(Category.UTILS,
-                    FILE_NAME + ": collectMeminfoRam: empty output from dumpsys meminfo -a");
-            return;
+    private static double parsePssMb(@Nullable String number, @Nullable String suffix) {
+        double value = parseLocaleDouble(number);
+        if (suffix == null || suffix.isEmpty()) return value;
+        switch (suffix.toUpperCase(Locale.ROOT)) {
+            case "KB": return value / 1024.0;
+            case "GB": return value * 1024.0;
+            default:   return value;
         }
-
-        int parsedCount = 0;
-        for (String line : output.split("\n")) {
-            Matcher m = MEMINFO_PKG.matcher(line);
-            if (!m.find()) continue;
-            try {
-                double pssKb = parseLocaleDouble(m.group(1));
-                String pkg   = m.group(2);
-                if (pkg == null || pkg.isEmpty() || pssKb <= 0) continue;
-
-                int colon = pkg.indexOf(':');
-                if (colon > 0) pkg = pkg.substring(0, colon);
-                double pssMb = pssKb / 1024.0;
-                ramMbOut.merge(pkg, pssMb, Math::max);
-                parsedCount++;
-            } catch (Exception ignored) {}
-        }
-        AppDebugManager.d(Category.UTILS, FILE_NAME
-                + ": meminfo fallback: parsed RAM for " + parsedCount + " entries → "
-                + ramMbOut.size() + " packages");
     }
 
 
@@ -789,7 +725,7 @@ public class CollectStatsManager {
                 acc[0] += dBat;
                 acc[1] += snap.ramMb;
                 acc[2] += dCpu;
-                acc[3]  = Math.max(acc[3], snap.maxRamMb > 0 ? snap.maxRamMb : snap.ramMb);
+                acc[3]  = Math.max(acc[3], snap.ramMb);
                 acc[4] += 1;
                 prevByPkg.put(pkg, snap);
             }
