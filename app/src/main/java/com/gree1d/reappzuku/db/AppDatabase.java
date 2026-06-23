@@ -16,7 +16,7 @@ import androidx.annotation.NonNull;
         SchedulerLog.class,
         SleepModeLog.class
     },
-    version = 12,
+    version = 11,
     exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -117,29 +117,6 @@ public abstract class AppDatabase extends RoomDatabase {
     static final Migration MIGRATION_10_11 = new Migration(10, 11) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase db) {
-            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN minRamMb REAL NOT NULL DEFAULT 0.0");
-            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN maxRamMb REAL NOT NULL DEFAULT 0.0");
-            db.execSQL("ALTER TABLE resource_snapshots ADD COLUMN isTemporary INTEGER NOT NULL DEFAULT 1");
-        }
-    };
-
-    /**
-     * Миграция 11 → 12: пересоздаём таблицу app_stats.
-     *
-     * Изменения схемы:
-     *  - PK: packageName TEXT → id INTEGER AUTOINCREMENT
-     *  - packageName становится обычным NOT NULL столбцом
-     *  - Удалён столбец killCount (теперь считается через COUNT(*) в DAO)
-     *  - Добавлены индексы: packageName, (packageName, lastKillTime), lastKillTime
-     *
-     * Перенос данных:
-     *  Каждая существующая строка (агрегат по пакету) превращается
-     *  в одну kill-запись с relaunchCount и totalRecoveredKb «как есть».
-     */
-    static final Migration MIGRATION_11_12 = new Migration(11, 12) {
-        @Override
-        public void migrate(@NonNull SupportSQLiteDatabase db) {
-            // 1. Создаём новую таблицу с autoincrement PK
             db.execSQL("CREATE TABLE IF NOT EXISTS `app_stats_new` (" +
                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
                        "`packageName` TEXT NOT NULL, " +
@@ -150,9 +127,6 @@ public abstract class AppDatabase extends RoomDatabase {
                        "`lastRelaunchTime` INTEGER NOT NULL DEFAULT 0, " +
                        "`lastKillSource` TEXT)");
 
-            // 2. Переносим существующие данные.
-            //    killCount в старой схеме отсутствует как отдельная запись —
-            //    каждая строка становится одной kill-записью.
             db.execSQL("INSERT INTO `app_stats_new` " +
                        "(`packageName`, `appName`, `relaunchCount`, `totalRecoveredKb`, " +
                        "`lastKillTime`, `lastRelaunchTime`, `lastKillSource`) " +
@@ -160,13 +134,10 @@ public abstract class AppDatabase extends RoomDatabase {
                        "`lastKillTime`, `lastRelaunchTime`, `lastKillSource` " +
                        "FROM `app_stats`");
 
-            // 3. Удаляем старую таблицу
             db.execSQL("DROP TABLE `app_stats`");
 
-            // 4. Переименовываем новую
             db.execSQL("ALTER TABLE `app_stats_new` RENAME TO `app_stats`");
 
-            // 5. Создаём индексы для быстрого поиска по пакету и времени
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_app_stats_packageName` " +
                        "ON `app_stats` (`packageName`)");
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_app_stats_packageName_lastKillTime` " +
@@ -196,8 +167,7 @@ public abstract class AppDatabase extends RoomDatabase {
                         MIGRATION_7_8,
                         MIGRATION_8_9,
                         MIGRATION_9_10,
-                        MIGRATION_10_11,
-                        MIGRATION_11_12
+                        MIGRATION_10_11
                     )
                     .fallbackToDestructiveMigration()
                     .build();
