@@ -45,11 +45,11 @@ public class CollectStatsManager {
     private static final Pattern CPU_UID_LINE = Pattern.compile("^9,\\d+,l,cpu,");
 
     private static final Pattern PROCSTATS_PKG =
-            Pattern.compile("^\\s{2}\\*\\s([\\w.]+)\\s*/\\su\\d+a(\\d+)");
+            Pattern.compile("^\\s{2}\\*\\s([\\w.][\\w.:/-]*)\\s*/\\s(?:u\\d+a\\d+|\\d+)(?:\\s|/)");
 
     private static final Pattern PROCSTATS_PSS =
             Pattern.compile(
-                "(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?-(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?-(\\d+(?:[.,]\\d+)?)\\s*(?i:([KMG]B))?"
+                "(\\d+(?:[.,]\\d+)?)([KMG]B)-(\\d+(?:[.,]\\d+)?)([KMG]B)-(\\d+(?:[.,]\\d+)?)([KMG]B)"
             );
 
 
@@ -583,15 +583,27 @@ public class CollectStatsManager {
         }
 
         String currentPkg = null;
+        boolean currentIsSubprocess = false;
         int parsedCount = 0;
         for (String line : output.split("\n")) {
             Matcher pkgMatcher = PROCSTATS_PKG.matcher(line);
             if (pkgMatcher.find()) {
-                currentPkg = pkgMatcher.group(1);
+                String rawPkg = pkgMatcher.group(1);
+                int colonIdx = rawPkg.indexOf(':');
+                if (colonIdx > 0) {
+                    currentPkg = rawPkg.substring(0, colonIdx);
+                    currentIsSubprocess = true;
+                } else {
+                    currentPkg = rawPkg;
+                    currentIsSubprocess = false;
+                }
+                if (currentPkg.indexOf('.') < 1) {
+                    currentPkg = null;
+                }
                 continue;
             }
             if (currentPkg == null) continue;
-            if (!line.contains("TOTAL")) continue;
+            if (!line.contains("TOTAL") || !line.contains("(")) continue;
 
             Matcher pssMatcher = PROCSTATS_PSS.matcher(line);
             if (pssMatcher.find()) {
@@ -602,8 +614,18 @@ public class CollectStatsManager {
 
                     if (avgPss <= 0) continue;
                     double[] existing = ramOut.get(currentPkg);
-                    if (existing == null || avgPss > existing[1]) {
-                        ramOut.put(currentPkg, new double[]{minPss, avgPss, maxPss});
+                    if (currentIsSubprocess) {
+                        if (existing == null) {
+                            ramOut.put(currentPkg, new double[]{minPss, avgPss, maxPss});
+                        } else {
+                            existing[0] += minPss;
+                            existing[1] += avgPss;
+                            existing[2] += maxPss;
+                        }
+                    } else {
+                        if (existing == null || avgPss > existing[1]) {
+                            ramOut.put(currentPkg, new double[]{minPss, avgPss, maxPss});
+                        }
                     }
                     parsedCount++;
                 } catch (NumberFormatException ignored) {}
@@ -619,6 +641,7 @@ public class CollectStatsManager {
         if (suffix == null || suffix.isEmpty()) return value;
         switch (suffix.toUpperCase(Locale.ROOT)) {
             case "KB": return value / 1024.0;
+            case "MB": return value;
             case "GB": return value * 1024.0;
             default:   return value;
         }
