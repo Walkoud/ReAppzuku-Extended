@@ -92,10 +92,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Public data classes
-    // -------------------------------------------------------------------------
-
     public static class AppResourceStats {
         public final String packageName;
         public final String appName;
@@ -228,31 +224,17 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Slot alignment helpers
-    // -------------------------------------------------------------------------
-
-    /**
-     * Returns the start timestamp (ms) of the 15-minute slot that contains {@code timeMs}.
-     * Slots are aligned to the wall clock: :00, :15, :30, :45 within each hour.
-     *
-     * Example: 15:23 → slot start = 15:15:00.000
-     */
     public static long slotStartFor(long timeMs) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(timeMs);
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         int minute = cal.get(Calendar.MINUTE);
-        // Round down to nearest 15-minute boundary
         cal.set(Calendar.MINUTE, (minute / 15) * 15);
         return cal.getTimeInMillis();
     }
 
-    /**
-     * Returns the start of the current hour (wall-clock) for the given timestamp.
-     * Example: 15:42 → 15:00:00.000
-     */
+
     public static long hourStartFor(long timeMs) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(timeMs);
@@ -262,10 +244,7 @@ public class CollectStatsManager {
         return cal.getTimeInMillis();
     }
 
-    /**
-     * Returns true if the given timestamp falls on an exact hour boundary (:00 slot).
-     * Tolerates up to 2 minutes of drift from the service timer.
-     */
+
     public static boolean isHourBoundarySlot(long slotStart) {
         Calendar cal = Calendar.getInstance();
         cal.setTimeInMillis(slotStart);
@@ -273,25 +252,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Core snapshot logic
-    // -------------------------------------------------------------------------
-
-    /**
-     * Main entry point called every ~15 minutes from ShappkyService.
-     *
-     * Behaviour:
-     *  1. Compute the current 15-minute slot.
-     *  2. If a snapshot batch already exists for this slot — skip (idempotent guard).
-     *  3. If this slot is the :00 slot (hour boundary):
-     *       a. Run procstats --hours 1 for the PREVIOUS hour.
-     *       b. Update RAM fields (ramMb/minRamMb/maxRamMb) for all snapshots in that hour.
-     *       c. Clear isTemporary flag on those snapshots.
-     *  4. Collect battery + CPU stats (batterystats checkin).
-     *  5. Collect RAM via meminfo (temporary values).
-     *  6. Save snapshot batch with isTemporary=true.
-     *  7. Prune rows older than 24 hours.
-     */
     @WorkerThread
     private void takeSnapshotBlocking() {
         long now = System.currentTimeMillis();
@@ -300,7 +260,6 @@ public class CollectStatsManager {
             long slotStart = slotStartFor(now);
             long slotEnd   = slotStart + SLOT_MS;
 
-            // --- Slot guard: skip if this slot already has data ---
             ResourceSnapshot existing = getDao().getAnySnapshotInSlot(slotStart, slotEnd);
             if (existing != null) {
                 AppDebugManager.d(Category.UTILS, FILE_NAME
@@ -312,7 +271,6 @@ public class CollectStatsManager {
             AppDebugManager.d(Category.UTILS, FILE_NAME
                     + ": Starting snapshot for slot " + formatSlot(slotStart));
 
-            // --- Step 3: procstats update at hour boundary ---
             if (isHourBoundarySlot(slotStart)) {
                 long prevHourEnd   = slotStart;              // == current :00
                 long prevHourStart = prevHourEnd - 3600_000L;
@@ -322,7 +280,6 @@ public class CollectStatsManager {
                 applyProcStatsToHour(prevHourStart, prevHourEnd);
             }
 
-            // --- Step 4: Battery + CPU ---
             Map<String, Double> batteryMahByPkg = new HashMap<>();
             Map<String, Long>   cpuMsByPkg      = new HashMap<>();
             try {
@@ -332,7 +289,6 @@ public class CollectStatsManager {
                         FILE_NAME + ": collectCheckinStats failed, battery/cpu will be empty", e);
             }
 
-            // --- Step 5: RAM via meminfo (temporary) ---
             Map<String, Double> ramMbByPkg = new HashMap<>();
             try {
                 collectMeminfoRam(ramMbByPkg);
@@ -341,7 +297,6 @@ public class CollectStatsManager {
                         FILE_NAME + ": collectMeminfoRam failed, RAM data will be empty", e);
             }
 
-            // --- Step 6: Save snapshot batch ---
             long[] jiffies = readProcStatJiffies();
 
             android.os.BatteryManager bm =
@@ -358,16 +313,14 @@ public class CollectStatsManager {
             double totalRawPwiBatch = 0;
             for (double v : batteryMahByPkg.values()) totalRawPwiBatch += v;
 
-            // Use slotStart as the canonical timestamp for all rows in this batch
-            // so that slot-boundary queries are exact.
             for (String pkg : allPkgs) {
                 ResourceSnapshot snap = new ResourceSnapshot();
                 snap.timestamp        = slotStart;
                 snap.packageName      = pkg;
                 snap.batteryMah       = getOrZero(batteryMahByPkg, pkg);
-                snap.ramMb            = getOrZero(ramMbByPkg, pkg);   // temporary meminfo value
-                snap.minRamMb         = 0;  // filled later by procstats
-                snap.maxRamMb         = 0;  // filled later by procstats
+                snap.ramMb            = getOrZero(ramMbByPkg, pkg); 
+                snap.minRamMb         = getOrZero(ramMbByPkg, pkg); 
+                snap.maxRamMb         = getOrZero(ramMbByPkg, pkg);  
                 snap.isTemporary      = true;
                 snap.cpuTimeMs        = cpuMsByPkg.containsKey(pkg) ? cpuMsByPkg.get(pkg) : 0L;
                 snap.totalCpuJiffies  = jiffies[0];
@@ -377,7 +330,6 @@ public class CollectStatsManager {
                 getDao().insert(snap);
             }
 
-            // --- Step 7: Prune ---
             getDao().deleteOlderThan(now - 24 * 3600_000L);
 
             AppDebugManager.d(Category.UTILS, FILE_NAME + ": Snapshot saved for slot "
@@ -392,23 +344,9 @@ public class CollectStatsManager {
         }
     }
 
-    /**
-     * Runs {@code dumpsys procstats --hours 1} and updates the RAM fields of all snapshots
-     * recorded during {@code [hourStart, hourEnd)}.
-     *
-     * For each package found in procstats output:
-     *   - ramMb    ← average PSS over the hour
-     *   - minRamMb ← minimum PSS over the hour
-     *   - maxRamMb ← peak PSS over the hour
-     *   - isTemporary ← false
-     *
-     * CPU, battery, and all other fields are left untouched.
-     * If procstats returns no data or fails, the meminfo values remain as-is.
-     */
     @WorkerThread
     private void applyProcStatsToHour(long hourStart, long hourEnd) {
         try {
-            // min-avg-max PSS per package from procstats
             Map<String, double[]> procStatsRam = new HashMap<>();
             collectProcStatsRam(1, procStatsRam);
 
@@ -424,13 +362,11 @@ public class CollectStatsManager {
             for (String pkg : pkgsInHour) {
                 double[] pss = procStatsRam.get(pkg);
                 if (pss == null) {
-                    // procstats has no record for this package in the last hour; leave meminfo
                     continue;
                 }
-                double minRam = pss[0];
                 double avgRam = pss[1];
                 double maxRam = pss[2];
-                getDao().updateRamFields(avgRam, minRam, maxRam, pkg, hourStart, hourEnd);
+                getDao().updateRamFields(avgRam, maxRam, pkg, hourStart, hourEnd);
                 updated++;
             }
 
@@ -444,10 +380,6 @@ public class CollectStatsManager {
         }
     }
 
-
-    // -------------------------------------------------------------------------
-    // Battery capacity helpers
-    // -------------------------------------------------------------------------
 
     @WorkerThread
     public double getBatteryCapacityMah() {
@@ -524,10 +456,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // CPU core count
-    // -------------------------------------------------------------------------
-
     @WorkerThread
     private int getCpuCoreCount() {
         if (cachedCpuCoreCount > 0) return cachedCpuCoreCount;
@@ -549,10 +477,6 @@ public class CollectStatsManager {
         return cachedCpuCoreCount;
     }
 
-
-    // -------------------------------------------------------------------------
-    // Data collection: battery + CPU (batterystats checkin)
-    // -------------------------------------------------------------------------
 
     @WorkerThread
     private void collectCheckinStats(@NonNull Map<String, Double> batteryMahOut,
@@ -689,24 +613,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Data collection: RAM
-    // -------------------------------------------------------------------------
-
-    /**
-     * Collects RAM data from {@code dumpsys procstats --hours N}.
-     *
-     * Populates {@code ramOut} with a double[3] per package:
-     *   [0] = min PSS (MB)
-     *   [1] = avg PSS (MB)
-     *   [2] = max PSS (MB)
-     *
-     * The "min-avg-max" triple comes directly from the procstats PSS pattern
-     * "minMB-avgMB-maxMB" found on TOTAL lines.
-     *
-     * @param hours number of hours to query (use 1 for the hourly update pass)
-     * @param ramOut output map: packageName → double[]{minMb, avgMb, maxMb}
-     */
     @WorkerThread
     private void collectProcStatsRam(int hours, @NonNull Map<String, double[]> ramOut) {
         String cmd = "dumpsys procstats --hours " + hours;
@@ -735,7 +641,6 @@ public class CollectStatsManager {
                     double avgPss = parseLocaleDouble(pssMatcher.group(2));
                     double maxPss = parseLocaleDouble(pssMatcher.group(3));
 
-                    // Keep the entry with the highest average if the package appears twice
                     double[] existing = ramOut.get(currentPkg);
                     if (existing == null || avgPss > existing[1]) {
                         ramOut.put(currentPkg, new double[]{minPss, avgPss, maxPss});
@@ -784,10 +689,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // /proc/stat jiffies
-    // -------------------------------------------------------------------------
-
     @WorkerThread
     @NonNull
     private long[] readProcStatJiffies() {
@@ -818,10 +719,6 @@ public class CollectStatsManager {
         }
     }
 
-
-    // -------------------------------------------------------------------------
-    // Period stats (aggregated view, unchanged logic)
-    // -------------------------------------------------------------------------
 
     @WorkerThread
     @NonNull
@@ -957,10 +854,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Hourly chart stats (per-app detail view)
-    // -------------------------------------------------------------------------
-
     public void getHourlyStatsAsync(String packageName, int hours,
                                     double totalAllAppsCpuPct, double totalAllAppsRamMb,
                                     @NonNull HourlyCallback callback) {
@@ -1028,7 +921,6 @@ public class CollectStatsManager {
                 ? (periodTotalBatRaw / avgPeriodBatch) * periodDrainMah : 0;
         boolean batValid       = periodAppMah > 0 && periodTotalCpuMs > 0;
 
-        // Use 15-min slots (SLOT_MS) for chart granularity
         int numSlots = hours * SLOTS_PER_HOUR;
         double avgAllCpuPerSlot = totalAllAppsCpuPct > 0 ? totalAllAppsCpuPct / numSlots : 0;
         double avgAllRamPerSlot = totalAllAppsRamMb  > 0 ? totalAllAppsRamMb  / numSlots : 0;
@@ -1116,10 +1008,6 @@ public class CollectStatsManager {
     }
 
 
-    // -------------------------------------------------------------------------
-    // Utilities
-    // -------------------------------------------------------------------------
-
     private static double parseLocaleDouble(@Nullable String s) {
         if (s == null || s.isEmpty()) return 0.0;
         try {
@@ -1153,7 +1041,6 @@ public class CollectStatsManager {
         }
     }
 
-    /** Formats a slot timestamp as HH:mm for log messages. */
     private static String formatSlot(long tsMs) {
         Calendar c = Calendar.getInstance();
         c.setTimeInMillis(tsMs);

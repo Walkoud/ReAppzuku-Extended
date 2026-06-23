@@ -36,6 +36,8 @@ import static com.gree1d.reappzuku.core.AppConstants.*;
 
 public class AutoKillManager {
     private static final String TAG = "AutoKillManager";
+  
+    private static final int STATS_LIMIT = 15_000;
 
     private final Context context;
     private final Handler handler;
@@ -411,7 +413,8 @@ public class AutoKillManager {
                 context.getString(R.string.bg_manager_stopped_apps, count));
     }
 
-    private void recordSuccessfulKills(List<String> packageNames, Map<String, Long> recoveredKbByPackage, String source) {
+    private void recordSuccessfulKills(List<String> packageNames,
+            Map<String, Long> recoveredKbByPackage, String source) {
         if (packageNames == null || packageNames.isEmpty()) {
             return;
         }
@@ -422,42 +425,45 @@ public class AutoKillManager {
         long now = System.currentTimeMillis();
 
         Set<String> uniquePackages = new HashSet<>(packageNames);
-        int newEntries = 0;
-        for (String pkg : uniquePackages) {
-            if (pkg != null && !pkg.isEmpty() && appStatsDao.getStats(pkg) == null) {
-                newEntries++;
-            }
+        int newEntries = uniquePackages.size();
+
+        int currentCount = appStatsDao.getCount();
+        int excess = (currentCount + newEntries) - STATS_LIMIT;
+        if (excess > 0) {
+            appStatsDao.deleteOldestStats(excess);
+            AppDebugManager.d(Category.AUTO_KILL_BASE,
+                    "AutoKillManager: DB limit reached, deleted " + excess + " oldest records");
         }
-        if (newEntries > 0) {
-            int currentCount = appStatsDao.getCount();
-            int excess = (currentCount + newEntries) - STATS_MAX_COUNT;
-            if (excess > 0) {
-                appStatsDao.deleteOldestStats(excess);
-            }
-        }
+
         for (String packageName : uniquePackages) {
             if (packageName == null || packageName.isEmpty()) {
                 continue;
             }
 
-            com.gree1d.reappzuku.db.AppStats stats = appStatsDao.getStats(packageName);
             String appName = resolveInstalledAppName(packageManager, packageName);
 
-            if (stats == null) {
-                stats = new com.gree1d.reappzuku.db.AppStats(packageName);
-                stats.appName = appName;
-                appStatsDao.insert(stats);
-            } else if ((stats.appName == null || stats.appName.trim().isEmpty())
-                    && appName != null && !appName.trim().isEmpty()) {
+            if (appName != null && !appName.trim().isEmpty()) {
                 appStatsDao.updateAppName(packageName, appName);
             }
 
-            appStatsDao.incrementKill(packageName, now, source);
+            com.gree1d.reappzuku.db.AppStats stats =
+                    new com.gree1d.reappzuku.db.AppStats(packageName);
+            stats.appName = appName;
+            stats.lastKillTime = now;
+            stats.lastKillSource = source;
+            stats.relaunchCount = 0;
+            stats.lastRelaunchTime = 0;
 
-            long recoveredKb = recoveredKbByPackage != null ? recoveredKbByPackage.getOrDefault(packageName, 0L) : 0L;
-            if (recoveredKb > 0) {
-                appStatsDao.addRecoveredKb(packageName, recoveredKb);
-            }
+            long recoveredKb = recoveredKbByPackage != null
+                    ? recoveredKbByPackage.getOrDefault(packageName, 0L)
+                    : 0L;
+            stats.totalRecoveredKb = recoveredKb;
+
+            appStatsDao.insert(stats);
+
+            AppDebugManager.d(Category.AUTO_KILL_BASE,
+                    "AutoKillManager: Inserted kill record for " + packageName
+                    + " recoveredKb=" + recoveredKb + " source=" + source);
         }
     }
 
@@ -467,6 +473,9 @@ public class AutoKillManager {
                 com.gree1d.reappzuku.db.AppDatabase.getInstance(context).appStatsDao();
         for (Map.Entry<String, Long> entry : confirmedFreedKb.entrySet()) {
             appStatsDao.addRecoveredKb(entry.getKey(), entry.getValue());
+            AppDebugManager.d(Category.AUTO_KILL_BASE,
+                    "AutoKillManager: Confirmed RAM added for " + entry.getKey()
+                    + ": " + entry.getValue() + " KB");
         }
     }
 
@@ -563,7 +572,6 @@ public class AutoKillManager {
         else
             return String.format(java.util.Locale.US, "%.2f GB", kb / (1024f * 1024f));
     }
-
 
     private Map<String, Long> loadPendingRss() {
         Map<String, Long> result = new HashMap<>();
