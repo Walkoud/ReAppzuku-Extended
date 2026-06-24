@@ -76,6 +76,9 @@ public interface AppStatsDao {
            "SELECT id FROM app_stats ORDER BY lastKillTime ASC LIMIT :deleteCount)")
     void deleteOldestStats(int deleteCount);
 
+    @Query("DELETE FROM app_stats WHERE lastKillTime >= :sinceTime")
+    void deleteStatsSince(long sinceTime);
+
     @Query("DELETE FROM app_stats")
     void deleteAll();
 }
