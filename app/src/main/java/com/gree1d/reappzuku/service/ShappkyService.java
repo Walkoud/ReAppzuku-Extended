@@ -163,8 +163,7 @@ public class ShappkyService extends Service {
                 AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": reapplySavedBackgroundRestrictions finished"));
         watchdog.startIfNeeded();
 
-        UpdateChecker.checkForUpdatesAuto(getApplicationContext());
-        schedulePeriodicUpdateCheck();
+        UpdateChecker.schedulePeriodicCheck(getApplicationContext());
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onCreate completed");
     }
 
@@ -443,7 +442,6 @@ public class ShappkyService extends Service {
     }
 
     private static final long SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000L;
-    private static final long UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L;
     private static final long WIDGET_UPDATE_INTERVAL_MS = 60 * 1000L;
 
     private void scheduleSnapshotAlarm() {
@@ -519,17 +517,6 @@ public class ShappkyService extends Service {
             }
         };
         handler.post(widgetRunnable);
-    }
-
-    private void schedulePeriodicUpdateCheck() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!isRunning) return;
-                UpdateChecker.checkForUpdatesAuto(getApplicationContext());
-                handler.postDelayed(this, UPDATE_CHECK_INTERVAL_MS);
-            }
-        }, UPDATE_CHECK_INTERVAL_MS);
     }
 
     private void scheduleNextKill() {
