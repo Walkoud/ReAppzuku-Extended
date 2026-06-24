@@ -110,12 +110,16 @@ public class MiscAnalyzer {
                         callers.add(caller); actions.add(action);
                     }
                 }
-                for (int i = 0; i < Math.min(callers.size(), 3); i++) {
+                int shown = Math.min(callers.size(), 3);
+                for (int i = 0; i < shown; i++) {
                     String pkg  = callers.get(i);
                     String name = analyzer.resolveAppName(pkg);
+                    String detail = analyzer.getContext().getString(R.string.triggers_chain_broadcast_detail, name+"("+pkg+")", actions.get(i));
+                    if (i == shown - 1 && callers.size() > shown)
+                        detail += analyzer.getContext().getString(R.string.triggers_chain_overflow, callers.size() - shown);
                     list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
                             analyzer.getContext().getString(R.string.triggers_cat_chain_launch),
-                            analyzer.getContext().getString(R.string.triggers_chain_broadcast_detail, name+"("+pkg+")", actions.get(i)),
+                            detail,
                             analyzer.getContext().getString(R.string.triggers_chain_broadcast_explanation, name, actions.get(i)),
                             TriggerInfo.Severity.MEDIUM));
                 }
