@@ -18,7 +18,6 @@
     <string name="widget_ram">RAM</string>
     <string name="settings_add_ram_shortcut_title">RAM Kill shortcut</string>
     <string name="settings_add_ram_shortcut_subtitle">Add shortcut to home screen</string>
-    <string name="ram_kill_widget_description">RAM usage widget. Tap to kill background apps.</string>
     
     <plurals name="toast_killed_apps">
         <item quantity="one">%1$d app closed · %2$s freed</item>
@@ -49,11 +48,8 @@
     <string name="unit_mb">%d MB</string>
     <string name="unit_mbb">%1$.0f MB</string>
     <string name="unit_mb_precise">%.2f MB</string>
-    <string name="unit_mb_short">MB</string>
     <string name="unit_gb">%.1f GB</string>
     <string name="unit_gb_precise">%.2f GB</string>
-    <string name="unit_mah">mAh</string>
-    <string name="unit_percent">%</string>
 
     <!-- Time units -->
     <string name="time_unit_sec">s</string>
@@ -151,7 +147,6 @@
     <string name="dialog_unsafe_whitelist_title">Unsafe Configuration</string>
     <string name="dialog_unsafe_whitelist_message">Whitelist mode is selected, but whitelist is empty. In Root mode this will kill all system processes, causing a reboot (Kernel/System panic). Add essential apps to whitelist first.</string>
     <string name="dialog_unsafe_whitelist_ok">Got it</string>
-    <string name="toast_error_whitelist_empty">Auto-Kill aborted — whitelist is empty</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_main">Main</string>
@@ -435,7 +430,6 @@
     <string name="restriction_badge_hard">Hard</string>
     <string name="restriction_badge_soft">Soft</string>
     <string name="restriction_badge_removed">Removed</string>
-    <string name="restriction_badge_retry">Retry</string>
     <string name="restriction_badge_medium">Medium</string>
 
     <!-- Restriction type dialog -->
@@ -520,10 +514,8 @@
     <string name="log_badge_restore">Restore</string>
 
     <!-- ── Charts ── -->
-    <string name="stats_tab_title_charts">Statistics</string>
     <string name="stats_loading_charts">Loading data…</string>
     <string name="stats_no_data_hint">Not enough data yet.\nSnapshots collected every 30–60 min.\nCheck back later.</string>
-    <string name="stats_no_data_hint_short">Collecting data…</string>
     <string name="stats_no_data_hint_no_snapshot">No data collected yet. Please wait ~30 mins.</string>
     <string name="stats_no_data_hint_no_history">Not enough history yet — check back later.</string>
     <string name="stats_no_data_hint_too_close">Snapshots are too close. Try again later.</string>
@@ -542,29 +534,15 @@
     <string name="chart_title_cpu">CPU usage</string>
     <string name="chart_title_ram">RAM usage</string>
     <string name="chart_others_label">Others</string>
-    <string name="chart_others_expand">Low-consumption apps (%1$d)</string>
     <string name="chart_others_dialog_title">Low-consumption apps</string>
 
     <!-- Info cards -->
-    <string name="info_card_kills">Processes killed</string>
-    <string name="info_card_relaunches">Relaunched</string>
-    <string name="info_card_ram_recovered">RAM freed</string>
-    <string name="info_card_self_drain">ReAppzuku drain</string>
 
     <!-- Stats info tiles -->
-    <string name="stats_battery_trace">&lt; 0.1%</string>
     <string name="stats_chart_total_battery">%.1f mAh</string>
-    <string name="stats_chart_total_ram">Avg. %s</string>
     <string name="stats_self_overhead_label">ReAppzuku overhead:</string>
-    <string name="stats_self_overhead">ReAppzuku overhead: %1$s · %2$s · %3$s</string>
 
     <!-- ── Detail Activity ── -->
-    <string name="detail_chart_battery">Battery (mAh / hour)</string>
-    <string name="detail_chart_cpu">CPU (% / hour)</string>
-    <string name="detail_chart_ram">RAM — avg PSS (MB)</string>
-    <string name="detail_avg_battery">Avg. %.2f mAh/h</string>
-    <string name="detail_avg_cpu">Avg. %.1f%%</string>
-    <string name="detail_avg_ram">Avg. %.0f MB</string>
     <string name="detail_stat_min">min</string>
     <string name="detail_stat_avg">avg</string>
     <string name="detail_stat_max">max</string>
@@ -614,10 +592,6 @@
     <string name="triggers_receivers_explanation_network"> Watches for network changes — wakes up when internet becomes available.</string>
 
     <!-- Alarms -->
-    <string name="triggers_alarms_detail_wakeup">%1$d wake-up</string>
-    <string name="triggers_alarms_detail_normal">%1$d regular</string>
-    <string name="triggers_alarms_detail_repeat"> · repeat %1$s</string>
-    <string name="triggers_alarms_detail_exact"> · setExact</string>
     <string name="triggers_alarms_interval_sec">every %1$d sec</string>
     <string name="triggers_alarms_interval_min">every %1$d min</string>
     <string name="triggers_alarms_interval_hour">every %1$d h</string>
@@ -641,9 +615,6 @@
     <string name="triggers_doze_user_explanation">App requested Doze exemption ("don\'t optimize battery"). Can run in background anytime. Revoke at: Settings → Battery → Battery optimization.</string>
 
     <!-- WakeLocks -->
-    <string name="triggers_wakelock_partial_type">PARTIAL</string>
-    <string name="triggers_wakelock_full_type">FULL</string>
-    <string name="triggers_wakelock_generic_type">WAKE_LOCK</string>
     <string name="triggers_wakelock_partial_explain">prevents CPU from sleeping</string>
     <string name="triggers_wakelock_full_explain">keeps screen and CPU on</string>
     <string name="triggers_wakelock_generic_explain">keeps the system active</string>
@@ -695,7 +666,6 @@
     <string name="triggers_batterystats_explanation">Battery usage since last charge reset.</string>
 
     <!-- Network Activity -->
-    <string name="triggers_network_active_connections">Active TCP connections</string>
     <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s traffic</string>
     <string name="triggers_network_explanation">App has active background network activity. Open TCP connections mean ongoing data exchange with server — typical for messengers, push clients, sync apps.</string>
 
@@ -709,9 +679,7 @@
     <string name="triggers_fg_service_not_killable">cannot be killed</string>
     
     <!-- WakeLock: new types -->
-    <string name="triggers_wakelock_screen_type">Screen</string>
     <string name="triggers_wakelock_screen_explain">keeps the screen on</string>
-    <string name="triggers_wakelock_proximity_type">Proximity</string>
     <string name="triggers_wakelock_proximity_explain">turns off screen near face (call)</string>
     <!-- acquire / release counters -->
     <string name="triggers_wakelock_acq_rel">acq %1$d / rel %2$d</string>
@@ -868,7 +836,6 @@
     <string name="triggers_cat_appops">AppOps</string>
     <string name="triggers_appops_last_used">%1$s ago</string>
     <string name="triggers_appops_wakelock_explanation">App acquired WakeLock via AppOps — CPU was kept awake on its behalf.</string>
-    <string name="triggers_appops_fg_explanation">App started a Foreground Service recently — was explicitly brought to active state.</string>
     <string name="triggers_appops_run_bg_explanation">App is permitted to run in background by system battery policy.</string>
     <string name="triggers_appops_run_any_bg_explanation">App has unrestricted background execution — fully exempted from battery optimization.</string>
     <string name="triggers_appops_exact_alarm_explanation">App can schedule exact alarms — wakes device at precise times regardless of Doze.</string>
@@ -940,7 +907,6 @@
     <string name="app_status_hint_cached_service">holds service</string>
     <string name="app_status_hint_cached_recent">recently used</string>
     <string name="app_status_hint_cached_idle">inactive</string>
-    <string name="app_status_hint_not_running">not running</string>
     <string name="triggers_aggression_label_prefix">Aggression score:</string>
     
     <!-- ══════════════════════════════════════════════
@@ -954,7 +920,6 @@
     <string name="easter_egg_hunter">🐱 Easter Egg Hunter!</string>
     
     <!-- Scan System -->
-    <string name="scansystem_menu_title">Scan</string>
     <string name="scansystem_dialog_title">Current Load</string>
     <string name="scansystem_scanning">Scanning…</string>
     <string name="scansystem_no_load">No apps with active load</string>
@@ -1008,10 +973,8 @@
     <string name="scenarios_app_launch_enable">Run Auto-Kill when target app launches</string>
     <string name="scenarios_app_launch_clear_cache">Clear RAM on launch</string>
     <string name="scenarios_app_launch_target_apps">Target apps</string>
-    <string name="scenarios_app_launch_add">Add app</string>
     <string name="scenarios_app_launch_add_title">Select target apps</string>
     <string name="scenarios_app_launch_empty">No apps selected</string>
-    <string name="scenarios_remove_target_app">Remove</string>
 
     <!-- Accessibility service -->
     <string name="accessibility_service_description">Detects when target apps are launched to trigger Auto-Kill and free RAM</string>
@@ -1040,7 +1003,6 @@
     <string name="preset_app_list_mode_switch_hint">Switch to "Own list" to edit</string>
     <string name="preset_list_count_current">%d apps (from current settings)</string>
     <string name="preset_list_count_own">%d apps selected</string>
-    <string name="preset_save_button">Save preset</string>
     <string name="preset_saved">Preset %d saved</string>
     <string name="preset_export_json_button">Export to JSON</string>
     <string name="preset_export_success">Preset exported successfully</string>
