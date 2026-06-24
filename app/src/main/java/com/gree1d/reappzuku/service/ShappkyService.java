@@ -330,6 +330,14 @@ public class ShappkyService extends Service {
         }
     }
 
+    private boolean canScheduleExactAlarms() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            return am != null && am.canScheduleExactAlarms();
+        }
+        return true;
+    }
+
     private void scheduleIdleFreezeAlarm() {
         cancelIdleFreezeAlarm();
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
@@ -342,7 +350,12 @@ public class ShappkyService extends Service {
         PendingIntent pendingIntent = getFreezeAlarmIntent();
         long triggerAt = System.currentTimeMillis() + delayMs;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            if (canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                AppDebugManager.w(Category.SLEEP_MODE, FILE_NAME + ": scheduleIdleFreezeAlarm: exact alarm not permitted, using inexact");
+            }
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
         }
@@ -376,7 +389,12 @@ public class ShappkyService extends Service {
         PendingIntent pendingIntent = getHeartbeatAlarmIntent();
         long triggerAt = System.currentTimeMillis() + HEARTBEAT_INTERVAL_MS;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            if (canScheduleExactAlarms()) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+            } else {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
+                AppDebugManager.w(Category.SLEEP_MODE, FILE_NAME + ": scheduleHeartbeatAlarm: exact alarm not permitted, using inexact");
+            }
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent);
         }
@@ -448,7 +466,12 @@ public class ShappkyService extends Service {
         long triggerAt = now + SNAPSHOT_INTERVAL_MS;
         PendingIntent pi = getSnapshotAlarmIntent();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            if (canScheduleExactAlarms()) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+            } else {
+                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+                AppDebugManager.w(Category.UTILS, FILE_NAME + ": scheduleSnapshotAlarm: exact alarm not permitted, using inexact");
+            }
         } else {
             am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
         }
