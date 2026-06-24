@@ -320,10 +320,10 @@ public class UpdateChecker {
     }
 
     public static class ReleaseInfo {
-        final String tagName;
-        final String changelog;
-        final String downloadUrl;
-        final String releasePageUrl;
+        public final String tagName;
+        public final String changelog;
+        public final String downloadUrl;
+        public final String releasePageUrl;
 
         ReleaseInfo(String tagName, String changelog, String downloadUrl, String releasePageUrl) {
             this.tagName        = tagName;
