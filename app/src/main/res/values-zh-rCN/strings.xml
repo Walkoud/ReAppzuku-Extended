@@ -18,7 +18,6 @@
     <string name="widget_ram">RAM</string>
     <string name="settings_add_ram_shortcut_title">释放内存快捷方式</string>
     <string name="settings_add_ram_shortcut_subtitle">添加快捷方式到主屏幕</string>
-    <string name="ram_kill_widget_description">RAM 使用量小部件。点按终止后台应用。</string>
     
     <plurals name="toast_killed_apps">
         <item quantity="one">已关闭 %1$d 个应用 · 释放 %2$s</item>
@@ -49,11 +48,8 @@
     <string name="unit_mb">%d MB</string>
     <string name="unit_mbb">%1$.0f MB</string>
     <string name="unit_mb_precise">%.2f MB</string>
-    <string name="unit_mb_short">MB</string>
     <string name="unit_gb">%.1f GB</string>
     <string name="unit_gb_precise">%.2f GB</string>
-    <string name="unit_mah">mAh</string>
-    <string name="unit_percent">%</string>
 
     <!-- Time units -->
     <string name="time_unit_sec">秒</string>
@@ -151,7 +147,6 @@
     <string name="dialog_unsafe_whitelist_title">不安全的配置</string>
     <string name="dialog_unsafe_whitelist_message">已选择白名单模式，但白名单为空。在 Root 模式下，这将终止所有系统进程，导致重启（内核/系统崩溃）。请先将必要应用添加到白名单。</string>
     <string name="dialog_unsafe_whitelist_ok">知道了</string>
-    <string name="toast_error_whitelist_empty">自动终止已中止 — 白名单为空</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_main">主页</string>
@@ -435,7 +430,6 @@
     <string name="restriction_badge_hard">深度</string>
     <string name="restriction_badge_soft">轻度</string>
     <string name="restriction_badge_removed">已移除</string>
-    <string name="restriction_badge_retry">重试</string>
     <string name="restriction_badge_medium">中度</string>
 
     <!-- Restriction type dialog -->
@@ -520,10 +514,8 @@
     <string name="log_badge_restore">恢复</string>
 
     <!-- ── Charts ── -->
-    <string name="stats_tab_title_charts">统计</string>
     <string name="stats_loading_charts">正在加载数据…</string>
     <string name="stats_no_data_hint">数据不足。\n快照每 30–60 分钟采集一次。\n稍后再来看看。</string>
-    <string name="stats_no_data_hint_short">正在采集数据…</string>
     <string name="stats_no_data_hint_no_snapshot">尚未采集到数据。请等待约 30 分钟。</string>
     <string name="stats_no_data_hint_no_history">历史数据不足 — 稍后再来看看。</string>
     <string name="stats_no_data_hint_too_close">快照间隔太近。请稍后再试。</string>
@@ -542,29 +534,15 @@
     <string name="chart_title_cpu">CPU 用量</string>
     <string name="chart_title_ram">RAM 用量</string>
     <string name="chart_others_label">其他</string>
-    <string name="chart_others_expand">低功耗应用（%1$d）</string>
     <string name="chart_others_dialog_title">低功耗应用</string>
 
     <!-- Info cards -->
-    <string name="info_card_kills">已终止进程</string>
-    <string name="info_card_relaunches">已重新启动</string>
-    <string name="info_card_ram_recovered">已释放 RAM</string>
-    <string name="info_card_self_drain">ReAppzuku 耗电</string>
 
     <!-- Stats info tiles -->
-    <string name="stats_battery_trace">&lt; 0.1%</string>
     <string name="stats_chart_total_battery">%.1f mAh</string>
-    <string name="stats_chart_total_ram">平均 %s</string>
     <string name="stats_self_overhead_label">ReAppzuku 开销：</string>
-    <string name="stats_self_overhead">ReAppzuku 开销：%1$s · %2$s · %3$s</string>
 
     <!-- ── Detail Activity ── -->
-    <string name="detail_chart_battery">电池（mAh / 小时）</string>
-    <string name="detail_chart_cpu">CPU（% / 小时）</string>
-    <string name="detail_chart_ram">RAM — 平均 PSS（MB）</string>
-    <string name="detail_avg_battery">平均 %.2f mAh/h</string>
-    <string name="detail_avg_cpu">平均 %.1f%%</string>
-    <string name="detail_avg_ram">平均 %.0f MB</string>
     <string name="detail_stat_min">最小</string>
     <string name="detail_stat_avg">平均</string>
     <string name="detail_stat_max">最大</string>
@@ -614,10 +592,6 @@
     <string name="triggers_receivers_explanation_network"> 监听网络变化 — 网络可用时唤醒。</string>
 
     <!-- Alarms -->
-    <string name="triggers_alarms_detail_wakeup">%1$d 个唤醒</string>
-    <string name="triggers_alarms_detail_normal">%1$d 个普通</string>
-    <string name="triggers_alarms_detail_repeat"> · 重复 %1$s</string>
-    <string name="triggers_alarms_detail_exact"> · setExact</string>
     <string name="triggers_alarms_interval_sec">每 %1$d 秒</string>
     <string name="triggers_alarms_interval_min">每 %1$d 分钟</string>
     <string name="triggers_alarms_interval_hour">每 %1$d 小时</string>
@@ -641,9 +615,6 @@
     <string name="triggers_doze_user_explanation">应用请求了 Doze 豁免（\u201c不优化电池\u201d）。可随时在后台运行。可在 设置 → 电池 → 电池优化 中撤销。</string>
 
     <!-- WakeLocks -->
-    <string name="triggers_wakelock_partial_type">PARTIAL</string>
-    <string name="triggers_wakelock_full_type">FULL</string>
-    <string name="triggers_wakelock_generic_type">WAKE_LOCK</string>
     <string name="triggers_wakelock_partial_explain">阻止 CPU 睡眠</string>
     <string name="triggers_wakelock_full_explain">保持屏幕和 CPU 开启</string>
     <string name="triggers_wakelock_generic_explain">保持系统活跃</string>
@@ -695,7 +666,6 @@
     <string name="triggers_batterystats_explanation">自上次充电重置以来的电池用量。</string>
 
     <!-- Network Activity -->
-    <string name="triggers_network_active_connections">活跃的 TCP 连接</string>
     <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s 流量</string>
     <string name="triggers_network_explanation">应用有活跃的后台网络活动。开放的 TCP 连接意味着与服务器进行持续数据交换 — 常见于通讯、推送客户端、同步应用。</string>
 
@@ -709,9 +679,7 @@
     <string name="triggers_fg_service_not_killable">不可终止</string>
     
     <!-- WakeLock: new types -->
-    <string name="triggers_wakelock_screen_type">屏幕</string>
     <string name="triggers_wakelock_screen_explain">保持屏幕开启</string>
-    <string name="triggers_wakelock_proximity_type">接近</string>
     <string name="triggers_wakelock_proximity_explain">靠近面部时关闭屏幕（通话）</string>
     <!-- acquire / release counters -->
     <string name="triggers_wakelock_acq_rel">获取 %1$d / 释放 %2$d</string>
@@ -868,7 +836,6 @@
     <string name="triggers_cat_appops">AppOps</string>
     <string name="triggers_appops_last_used">%1$s 前</string>
     <string name="triggers_appops_wakelock_explanation">应用通过 AppOps 获取了唤醒锁 — 持有期间 CPU 保持唤醒。</string>
-    <string name="triggers_appops_fg_explanation">应用最近启动了前台服务 — 被明确带入活跃状态。</string>
     <string name="triggers_appops_run_bg_explanation">系统电池策略允许应用在后台运行。</string>
     <string name="triggers_appops_run_any_bg_explanation">应用具有不受限制的后台执行权限 — 完全豁免电池优化。</string>
     <string name="triggers_appops_exact_alarm_explanation">应用可以调度精确闹钟 — 在精确时间唤醒设备，不受 Doze 影响。</string>
@@ -940,7 +907,6 @@
     <string name="app_status_hint_cached_service">持有服务</string>
     <string name="app_status_hint_cached_recent">最近使用</string>
     <string name="app_status_hint_cached_idle">不活跃</string>
-    <string name="app_status_hint_not_running">未运行</string>
     <string name="triggers_aggression_label_prefix">影响度评分：</string>
     
     <!-- ══════════════════════════════════════════════
@@ -954,7 +920,6 @@
     <string name="easter_egg_hunter">🐱 彩蛋猎人！</string>
     
     <!-- Scan System -->
-    <string name="scansystem_menu_title">扫描</string>
     <string name="scansystem_dialog_title">当前负载</string>
     <string name="scansystem_scanning">正在扫描…</string>
     <string name="scansystem_no_load">没有活跃负载的应用</string>
@@ -1008,10 +973,8 @@
     <string name="scenarios_app_launch_enable">目标应用启动时运行自动终止</string>
     <string name="scenarios_app_launch_clear_cache">启动时清除 RAM</string>
     <string name="scenarios_app_launch_target_apps">目标应用</string>
-    <string name="scenarios_app_launch_add">添加应用</string>
     <string name="scenarios_app_launch_add_title">选择目标应用</string>
     <string name="scenarios_app_launch_empty">未选择应用</string>
-    <string name="scenarios_remove_target_app">移除</string>
 
     <!-- Accessibility service -->
     <string name="accessibility_service_description">检测目标应用启动以触发自动终止并释放 RAM</string>
@@ -1040,7 +1003,6 @@
     <string name="preset_app_list_mode_switch_hint">切换到\u201c自有列表\u201d以编辑</string>
     <string name="preset_list_count_current">%d 个应用（来自当前设置）</string>
     <string name="preset_list_count_own">已选择 %d 个应用</string>
-    <string name="preset_save_button">保存预设</string>
     <string name="preset_saved">预设 %d 已保存</string>
     <string name="preset_export_json_button">导出为 JSON</string>
     <string name="preset_export_success">预设导出成功</string>
