@@ -253,6 +253,16 @@ public class ShappkyService extends Service {
             case "WIDGET_KILL":
                 ramKillShortcutManager.performKillAndUpdate(autoKillManager);
                 break;
+                
+            case "SHORTCUT_KILL_FOREGROUND":
+                String targetPkg = intent.getStringExtra("target_package");
+                if (targetPkg != null && !targetPkg.isEmpty()) {
+                    AppDebugManager.d(Category.SHORTCUTS_WIDGETS, FILE_NAME + ": SHORTCUT_KILL_FOREGROUND received for " + targetPkg);
+                    autoKillManager.killApp(targetPkg, null);
+                } else {
+                    AppDebugManager.w(Category.SHORTCUTS_WIDGETS, FILE_NAME + ": SHORTCUT_KILL_FOREGROUND received but target_package is null");
+                }
+                break;
 
             case "UPDATE_HW_RECEIVERS":
                 AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": UPDATE_HW_RECEIVERS received, updating hardware receiver state");
