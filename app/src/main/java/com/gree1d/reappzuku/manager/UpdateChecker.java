@@ -7,21 +7,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
-
 import android.widget.ScrollView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
+import androidx.work.BackoffPolicy;
+import androidx.work.Constraints;
+import androidx.work.ExistingPeriodicWorkPolicy;
+import androidx.work.NetworkType;
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import com.gree1d.reappzuku.R;
@@ -44,71 +46,51 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class UpdateChecker {
 
     private static final String FILE_NAME = "UpdateChecker";
 
-    private static final String GITHUB_API_URL =
+    static final String GITHUB_API_URL =
             "https://api.github.com/repos/gree1d/ReAppzuku/releases/latest";
     private static final String RELEASES_URL =
             "https://github.com/gree1d/ReAppzuku/releases";
 
-    private static final String CHANNEL_ID   = "reappzuku_updates";
-    private static final int    NOTIF_ID     = 9001;
-
-    private static final String PREFS_NAME         = "update_checker_prefs";
-    private static final String KEY_LAST_CHECK_MS  = "last_check_ms";
-    private static final long   CHECK_INTERVAL_MS  = 24 * 60 * 60 * 1000L; // 1 day
+    private static final String CHANNEL_ID = "reappzuku_updates";
+    private static final int    NOTIF_ID   = 9001;
 
     private static final int CONNECT_TIMEOUT_MS = 8_000;
     private static final int READ_TIMEOUT_MS    = 8_000;
 
-    public static void checkForUpdatesAuto(Context context) {
-        if (!isAppInForeground(context)) {
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Auto-check skipped: app is in background");
-            return;
-        }
+    private static final String WORK_NAME          = "update_check_periodic";
+    private static final long   CHECK_INTERVAL_DAYS = 1;
+    private static final long   RETRY_BACKOFF_MINS  = 5;
 
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        long lastCheck = prefs.getLong(KEY_LAST_CHECK_MS, 0);
-        if (System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Auto-check skipped: within throttle window");
-            return;
-        }
+    public static void schedulePeriodicCheck(Context context) {
+        Constraints constraints = new Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build();
 
-        if (!isConnected(context)) {
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Auto-check skipped: no internet");
-            return;
-        }
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+                UpdateCheckWorker.class,
+                CHECK_INTERVAL_DAYS, TimeUnit.DAYS)
+                .setConstraints(constraints)
+                .setBackoffCriteria(
+                        BackoffPolicy.LINEAR,
+                        RETRY_BACKOFF_MINS, TimeUnit.MINUTES)
+                .build();
 
-        prefs.edit().putLong(KEY_LAST_CHECK_MS, System.currentTimeMillis()).apply();
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                request);
 
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-        exec.execute(() -> {
-            ReleaseInfo info = fetchLatestRelease();
-            if (info == null) {
-                AppDebugManager.w(Category.UTILS, FILE_NAME + ": Auto-check: fetchLatestRelease returned null, skipping");
-                return;
-            }
-
-            String currentVersion = getAppVersion(context);
-            if (isNewer(info.tagName, currentVersion)) {
-                AppDebugManager.i(Category.UTILS, FILE_NAME + ": Auto-check: new version found: " + info.tagName);
-                postUpdateNotification(context, info);
-            } else {
-                AppDebugManager.d(Category.UTILS, FILE_NAME + ": Auto-check: already up to date (" + currentVersion + ")");
-            }
-        });
+        AppDebugManager.d(Category.UTILS, FILE_NAME + ": Periodic update check scheduled (interval=" +
+                CHECK_INTERVAL_DAYS + "d, backoff=" + RETRY_BACKOFF_MINS + "m)");
     }
 
     public static void checkForUpdatesManual(Context context, SharedPreferences prefs) {
-        if (!isConnected(context)) {
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Manual check skipped: no internet");
-            showToast(context, "No internet");
-            return;
-        }
-
         ExecutorService exec = Executors.newSingleThreadExecutor();
         Handler main = new Handler(Looper.getMainLooper());
 
@@ -130,20 +112,7 @@ public class UpdateChecker {
         });
     }
 
-    private static boolean isAppInForeground(Context context) {
-        android.app.ActivityManager am =
-                (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (am == null) return false;
-        for (android.app.ActivityManager.RunningAppProcessInfo proc : am.getRunningAppProcesses()) {
-            if (proc.processName.equals(context.getPackageName())) {
-                return proc.importance ==
-                        android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
-            }
-        }
-        return false;
-    }
-
-    private static ReleaseInfo fetchLatestRelease() {
+    static ReleaseInfo fetchLatestRelease() {
         HttpURLConnection conn = null;
         try {
             URL url = new URL(GITHUB_API_URL);
@@ -166,9 +135,9 @@ public class UpdateChecker {
             reader.close();
 
             JSONObject json = new JSONObject(sb.toString());
-            String tagName = json.optString("tag_name", "").replaceFirst("^v", "");
-            String body    = json.optString("body", "");
-            String htmlUrl = json.optString("html_url", RELEASES_URL);
+            String tagName  = json.optString("tag_name", "").replaceFirst("^v", "");
+            String body     = json.optString("body", "");
+            String htmlUrl  = json.optString("html_url", RELEASES_URL);
 
             String downloadUrl = htmlUrl;
             JSONArray assets = json.optJSONArray("assets");
@@ -215,7 +184,7 @@ public class UpdateChecker {
                 if (rv > lv) return true;
                 if (rv < lv) return false;
             }
-            return false; // equal
+            return false;
         } catch (Exception e) {
             AppDebugManager.w(Category.UTILS, FILE_NAME + ": Version parse failed: remote=" + remote + " local=" + local);
             return false;
@@ -231,7 +200,7 @@ public class UpdateChecker {
         return nums;
     }
 
-    private static String getAppVersion(Context context) {
+    static String getAppVersion(Context context) {
         try {
             return context.getPackageManager()
                     .getPackageInfo(context.getPackageName(), 0).versionName;
@@ -241,33 +210,7 @@ public class UpdateChecker {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static boolean isConnected(Context context) {
-        ConnectivityManager cm =
-                (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Network network = cm.getActiveNetwork();
-            if (network == null) return false;
-            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-            return caps != null
-                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
-        } else {
-            NetworkInfo ni = cm.getActiveNetworkInfo();
-            return ni != null && ni.isConnected();
-        }
-    }
-
-    private static void showToast(Context context, String message) {
-        new Handler(Looper.getMainLooper()).post(() ->
-                android.widget.Toast.makeText(context, message,
-                        android.widget.Toast.LENGTH_SHORT).show());
-    }
-
-
-    private static void postUpdateNotification(Context context, ReleaseInfo info) {
+    static void postUpdateNotification(Context context, ReleaseInfo info) {
         NotificationManager nm =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
@@ -308,7 +251,6 @@ public class UpdateChecker {
 
         nm.notify(NOTIF_ID, builder.build());
     }
-
 
     private static void showUpdateDialog(Context context, ReleaseInfo info, SharedPreferences prefs) {
         String bodyMd = info.changelog.isEmpty()
@@ -361,6 +303,12 @@ public class UpdateChecker {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(btnColor);
     }
 
+    private static void showToast(Context context, String message) {
+        new Handler(Looper.getMainLooper()).post(() ->
+                android.widget.Toast.makeText(context, message,
+                        android.widget.Toast.LENGTH_SHORT).show());
+    }
+
     private static String stripGitHubAlerts(String markdown) {
         if (markdown == null) return "";
         return markdown
@@ -370,8 +318,7 @@ public class UpdateChecker {
                 .trim();
     }
 
-
-    private static class ReleaseInfo {
+    static class ReleaseInfo {
         final String tagName;
         final String changelog;
         final String downloadUrl;

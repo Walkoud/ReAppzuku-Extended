@@ -130,6 +130,8 @@
         <receiver
             android:name="com.gree1d.reappzuku.service.ShappkyService$RestartReceiver"
             android:exported="false" />
+            
+        <receiver android:name=".service.CollectStatsReceiver" android:exported="false" />
 
         <receiver
             android:name="com.gree1d.reappzuku.manager.RestrictionsScheduler$SchedulerReceiver"

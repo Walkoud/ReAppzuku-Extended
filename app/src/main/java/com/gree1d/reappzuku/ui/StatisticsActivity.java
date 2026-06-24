@@ -140,8 +140,10 @@ public class StatisticsActivity extends BaseActivity {
 
         batteryCapacityMah = collectStatsManager.getBatteryCapacityMah();
         AppDebugManager.d(Category.STATISTICS_PAGE, FILE + ": battery capacity mAh=" + batteryCapacityMah);
-        collectStatsManager.takeSnapshotAsync(() -> loadCharts(CHART_PERIODS_HOURS[selectedPeriodIdx]));
+        
+        loadCharts(CHART_PERIODS_HOURS[selectedPeriodIdx]);
     }
+
 
 
     private void setupToolbar() {
@@ -919,36 +921,97 @@ public class StatisticsActivity extends BaseActivity {
             com.gree1d.reappzuku.db.AppStatsDao dao =
                     com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao();
             List<com.gree1d.reappzuku.db.AppStats> kills = dao.getKillsSince(packageName, since);
-
+    
             java.text.DateFormat dateFormat = android.text.format.DateFormat.getDateFormat(this);
             java.text.DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
-
-            StringBuilder sb = new StringBuilder();
-            for (com.gree1d.reappzuku.db.AppStats kill : kills) {
-                if (kill.lastKillTime <= 0) continue;
-                java.util.Date d = new java.util.Date(kill.lastKillTime);
-                String source = kill.lastKillSource != null && !kill.lastKillSource.isEmpty()
-                        ? kill.lastKillSource : "—";
-                sb.append(dateFormat.format(d))
-                        .append(" | ")
-                        .append(timeFormat.format(d))
-                        .append("  —  ")
-                        .append(source)
-                        .append("\n");
-            }
-
-            String body = sb.length() > 0 ? sb.toString().trim() : "—";
-
+    
             handler.post(() -> {
+                float dp = getResources().getDisplayMetrics().density;
+    
                 android.widget.ScrollView scrollView = new android.widget.ScrollView(this);
-                TextView textView = new TextView(this);
-                int pad = (int) (16 * getResources().getDisplayMetrics().density);
-                textView.setPadding(pad, pad, pad, pad);
-                textView.setTextSize(13f);
-                textView.setTypeface(android.graphics.Typeface.MONOSPACE);
-                textView.setText(body);
-                scrollView.addView(textView);
-
+                android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+                container.setOrientation(android.widget.LinearLayout.VERTICAL);
+                int padH = Math.round(16 * dp);
+                int padV = Math.round(8 * dp);
+                container.setPadding(padH, padV, padH, padV);
+                scrollView.addView(container);
+    
+                List<com.gree1d.reappzuku.db.AppStats> validKills = new ArrayList<>();
+                for (com.gree1d.reappzuku.db.AppStats kill : kills) {
+                    if (kill.lastKillTime > 0) validKills.add(kill);
+                }
+    
+                if (validKills.isEmpty()) {
+                    TextView empty = new TextView(this);
+                    empty.setText("—");
+                    empty.setTextSize(14f);
+                    empty.setPadding(0, Math.round(8 * dp), 0, Math.round(8 * dp));
+                    empty.setTextColor(ContextCompat.getColor(this, R.color.text_primary));
+                    container.addView(empty);
+                } else {
+                    int accentRaw = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+                    int badgeColor = accentRaw == ACCENT_CUSTOM
+                            ? sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR)
+                            : com.google.android.material.color.MaterialColors.getColor(
+                                    container, com.google.android.material.R.attr.colorSecondary);
+    
+                    for (int i = 0; i < validKills.size(); i++) {
+                        com.gree1d.reappzuku.db.AppStats kill = validKills.get(i);
+                        java.util.Date d = new java.util.Date(kill.lastKillTime);
+                        String source = kill.lastKillSource != null && !kill.lastKillSource.isEmpty()
+                                ? kill.lastKillSource : "—";
+    
+                        android.widget.LinearLayout row = new android.widget.LinearLayout(this);
+                        row.setOrientation(android.widget.LinearLayout.VERTICAL);
+                        android.widget.LinearLayout.LayoutParams rowLp =
+                                new android.widget.LinearLayout.LayoutParams(
+                                        android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                        rowLp.topMargin = Math.round(10 * dp);
+                        rowLp.bottomMargin = Math.round(10 * dp);
+                        row.setLayoutParams(rowLp);
+    
+                        android.widget.LinearLayout badgesRow = new android.widget.LinearLayout(this);
+                        badgesRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
+                        badgesRow.setGravity(android.view.Gravity.CENTER_VERTICAL);
+                        android.widget.LinearLayout.LayoutParams badgesLp =
+                                new android.widget.LinearLayout.LayoutParams(
+                                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                        android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                        badgesLp.bottomMargin = Math.round(5 * dp);
+                        badgesRow.setLayoutParams(badgesLp);
+    
+                        badgesRow.addView(makeBadge(dateFormat.format(d), badgeColor, dp));
+                        android.widget.Space space = new android.widget.Space(this);
+                        space.setLayoutParams(new android.widget.LinearLayout.LayoutParams(
+                                Math.round(6 * dp), 1));
+                        badgesRow.addView(space);
+                        badgesRow.addView(makeBadge(timeFormat.format(d), badgeColor, dp));
+    
+                        TextView sourceTv = new TextView(this);
+                        sourceTv.setText(source);
+                        sourceTv.setTextSize(13f);
+                        sourceTv.setTextColor(ContextCompat.getColor(this, R.color.text_secondary));
+    
+                        row.addView(badgesRow);
+                        row.addView(sourceTv);
+                        container.addView(row);
+    
+                        if (i < validKills.size() - 1) {
+                            View divider = new View(this);
+                            android.widget.LinearLayout.LayoutParams divLp =
+                                    new android.widget.LinearLayout.LayoutParams(
+                                            android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                                            Math.round(1 * dp));
+                            divider.setLayoutParams(divLp);
+                            divider.setBackgroundColor(
+                                    androidx.core.graphics.ColorUtils.setAlphaComponent(
+                                            ContextCompat.getColor(this, R.color.text_primary), 30));
+                            container.addView(divider);
+                        }
+                    }
+                }
+    
                 applyCustomAccentToDialogButtons(new MaterialAlertDialogBuilder(this)
                         .setTitle(appName)
                         .setView(scrollView)
@@ -956,6 +1019,23 @@ public class StatisticsActivity extends BaseActivity {
                         .show());
             });
         });
+    }
+    
+    private TextView makeBadge(String text, int badgeColor, float dp) {
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextSize(12f);
+        tv.setTextColor(badgeColor);
+        int padH = Math.round(8 * dp);
+        int padV = Math.round(3 * dp);
+        tv.setPadding(padH, padV, padH, padV);
+        android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+        bg.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(6 * dp);
+        bg.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 30));
+        bg.setStroke(Math.round(dp), androidx.core.graphics.ColorUtils.setAlphaComponent(badgeColor, 70));
+        tv.setBackground(bg);
+        return tv;
     }
 
     private void showRestrictionLogEntryDetails(BackgroundRestrictionLog.LogEntry entry) {

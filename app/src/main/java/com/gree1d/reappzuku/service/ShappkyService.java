@@ -30,6 +30,7 @@ import com.gree1d.reappzuku.manager.BackgroundAppManager;
 import com.gree1d.reappzuku.manager.AutoKillManager;
 import com.gree1d.reappzuku.manager.SleepModeManager;
 import com.gree1d.reappzuku.manager.CollectStatsManager;
+import com.gree1d.reappzuku.service.CollectStatsReceiver;
 import com.gree1d.reappzuku.manager.RestrictionsScheduler;
 import com.gree1d.reappzuku.manager.RestrictionsWatchdogManager;
 import com.gree1d.reappzuku.manager.AdditionalScenariosManager;
@@ -52,6 +53,7 @@ public class ShappkyService extends Service {
     private static final int FREEZE_ALARM_REQUEST_CODE = 1001;
     private static final int RESTART_ALARM_REQUEST_CODE = 1002;
     private static final int HEARTBEAT_ALARM_REQUEST_CODE = 1003;
+    private static final int SNAPSHOT_ALARM_REQUEST_CODE = 1004;
     private static final long HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000L;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -153,7 +155,7 @@ public class ShappkyService extends Service {
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Shizuku-lost notification cancelled on service create");
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Registering onRootCheckCompleteListener -> scheduleShizukuCheck");
         shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
-        scheduleSnapshotCollection();
+        scheduleSnapshotAlarm();
         scheduleWidgetUpdate();
 
         AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": reapplySavedBackgroundRestrictions starting on service create");
@@ -161,8 +163,7 @@ public class ShappkyService extends Service {
                 AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": reapplySavedBackgroundRestrictions finished"));
         watchdog.startIfNeeded();
 
-        UpdateChecker.checkForUpdatesAuto(getApplicationContext());
-        schedulePeriodicUpdateCheck();
+        UpdateChecker.schedulePeriodicCheck(getApplicationContext());
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onCreate completed");
     }
 
@@ -256,6 +257,14 @@ public class ShappkyService extends Service {
             case "UPDATE_HW_RECEIVERS":
                 AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": UPDATE_HW_RECEIVERS received, updating hardware receiver state");
                 additionalScenariosManager.updateHardwareReceiverState();
+                break;
+
+            case "TAKE_SNAPSHOT":
+                AppDebugManager.d(Category.UTILS, FILE_NAME + ": TAKE_SNAPSHOT received");
+                collectStatsManager.takeSnapshotAsync(() -> {
+                    releaseSnapshotWakeLock();
+                    scheduleSnapshotAlarm();
+                });
                 break;
         }
 
@@ -425,8 +434,50 @@ public class ShappkyService extends Service {
     }
 
     private static final long SNAPSHOT_INTERVAL_MS = 15 * 60 * 1000L;
-    private static final long UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L;
     private static final long WIDGET_UPDATE_INTERVAL_MS = 60 * 1000L;
+
+    private void scheduleSnapshotAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am == null) {
+            AppDebugManager.e(Category.UTILS, FILE_NAME
+                    + ": scheduleSnapshotAlarm: AlarmManager is null, cannot schedule");
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        long triggerAt = now + SNAPSHOT_INTERVAL_MS;
+        PendingIntent pi = getSnapshotAlarmIntent();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+        } else {
+            am.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi);
+        }
+        AppDebugManager.d(Category.UTILS, FILE_NAME
+                + ": scheduleSnapshotAlarm: armed, triggerAt=" + triggerAt
+                + " (in " + ((triggerAt - now) / 60_000) + " min)");
+    }
+
+    private void releaseSnapshotWakeLock() {
+        CollectStatsReceiver.releaseSnapshotWakeLock();
+    }
+
+    private void cancelSnapshotAlarm() {
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
+        am.cancel(getSnapshotAlarmIntent());
+        AppDebugManager.d(Category.UTILS, FILE_NAME + ": cancelSnapshotAlarm: cancelled");
+    }
+
+    private PendingIntent getSnapshotAlarmIntent() {
+        Intent intent = new Intent(this, CollectStatsReceiver.class);
+        intent.setAction(CollectStatsReceiver.ACTION_COLLECT_SNAPSHOT);
+        return PendingIntent.getBroadcast(
+                this,
+                SNAPSHOT_ALARM_REQUEST_CODE,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
 
     private void scheduleWidgetUpdate() {
         Runnable widgetRunnable = new Runnable() {
@@ -439,29 +490,6 @@ public class ShappkyService extends Service {
             }
         };
         handler.post(widgetRunnable);
-    }
-
-    private void scheduleSnapshotCollection() {
-        Runnable snapshotRunnable = new Runnable() {
-            @Override
-            public void run() {
-                if (!isRunning) return;
-                collectStatsManager.takeSnapshotAsync(null);
-                handler.postDelayed(this, SNAPSHOT_INTERVAL_MS);
-            }
-        };
-        handler.postDelayed(snapshotRunnable, SNAPSHOT_INTERVAL_MS);
-    }
-
-    private void schedulePeriodicUpdateCheck() {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (!isRunning) return;
-                UpdateChecker.checkForUpdatesAuto(getApplicationContext());
-                handler.postDelayed(this, UPDATE_CHECK_INTERVAL_MS);
-            }
-        }, UPDATE_CHECK_INTERVAL_MS);
     }
 
     private void scheduleNextKill() {
@@ -527,9 +555,6 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
-
-
-
     @Override
     public void onDestroy() {
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onDestroy called, stopping service");
@@ -537,6 +562,7 @@ public class ShappkyService extends Service {
         scheduleServiceRestart();
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": Service restart scheduled via AlarmManager");
         cancelIdleFreezeAlarm();
+        cancelSnapshotAlarm();
         cancelShizukuLostNotification();
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Shizuku-lost notification cancelled on service destroy");
         if (screenOffReceiver != null) {

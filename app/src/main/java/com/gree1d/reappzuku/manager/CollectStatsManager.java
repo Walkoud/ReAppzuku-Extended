@@ -1,6 +1,7 @@
 package com.gree1d.reappzuku.manager;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -32,39 +33,35 @@ public class CollectStatsManager {
 
     private static final String FILE_NAME = "CollectStatsManager";
 
-    private static final long SLOT_MS = 15 * 60 * 1000L;
+    private static final long SLOT_MS         = 15 * 60 * 1000L;
+    private static final long PROCSTATS_INTERVAL_MS = 60 * 60 * 1000L; 
+
+    private static final String STATS_PREFS_NAME      = "collect_stats_prefs";
+    private static final String KEY_LAST_SNAPSHOT_MS  = "last_snapshot_ms";
+    private static final String KEY_LAST_PROCSTATS_MS = "last_procstats_ms";
+
+    public static final float OTHERS_THRESHOLD_PCT = 5.0f;
+    public static final int   MIN_TOP_SLICES        = 3;
 
     private static final int SLOTS_PER_HOUR = 4;
 
-    public static final float OTHERS_THRESHOLD_PCT = 5.0f;
-
-    public static final int MIN_TOP_SLICES = 3;
-
-    private static final Pattern PWI_UID_LINE = Pattern.compile("^9,\\d+,l,pwi,uid,");
-
-    private static final Pattern CPU_UID_LINE = Pattern.compile("^9,\\d+,l,cpu,");
-
-    private static final Pattern PROCSTATS_PKG =
+    private static final Pattern PWI_UID_LINE   = Pattern.compile("^9,\\d+,l,pwi,uid,");
+    private static final Pattern CPU_UID_LINE   = Pattern.compile("^9,\\d+,l,cpu,");
+    private static final Pattern PROCSTATS_PKG  =
             Pattern.compile("^\\s{2}\\*\\s([\\w.][\\w.:/-]*)\\s*/\\s(?:u\\d+a\\d+|\\d+)(?:\\s|/)");
-
-    private static final Pattern PROCSTATS_PSS =
+    private static final Pattern PROCSTATS_PSS  =
             Pattern.compile(
                 "(\\d+(?:[.,]\\d+)?)([KMG]B)-(\\d+(?:[.,]\\d+)?)([KMG]B)-(\\d+(?:[.,]\\d+)?)([KMG]B)"
             );
 
-
-    private final Context context;
-    private final Handler handler;
+    private final Context         context;
+    private final Handler         handler;
     private final ExecutorService executor;
-    private final ShellManager shellManager;
+    private final ShellManager    shellManager;
     private volatile ResourceSnapshotDao dao;
 
-    private volatile double cachedCapacityMah = -1;
-
-    private volatile int cachedCpuCoreCount = 0;
-
-    private volatile int snapshotCount = 0;
-
+    private volatile double cachedCapacityMah  = -1;
+    private volatile int    cachedCpuCoreCount = 0;
 
     public CollectStatsManager(@NonNull Context context,
                                @NonNull Handler handler,
@@ -76,7 +73,6 @@ public class CollectStatsManager {
         this.shellManager = shellManager;
     }
 
-
     public CollectStatsManager(@NonNull Context context,
                                @NonNull ShellManager shellManager) {
         this.context      = context.getApplicationContext();
@@ -85,7 +81,6 @@ public class CollectStatsManager {
         this.shellManager = shellManager;
     }
 
-
     private ResourceSnapshotDao getDao() {
         if (dao == null) {
             dao = AppDatabase.getInstance(context).resourceSnapshotDao();
@@ -93,14 +88,76 @@ public class CollectStatsManager {
         return dao;
     }
 
+    private long getLastSnapshotMs() {
+        return getStatsPrefs().getLong(KEY_LAST_SNAPSHOT_MS, 0L);
+    }
+
+    private void saveLastSnapshotMs(long timestampMs) {
+        getStatsPrefs().edit().putLong(KEY_LAST_SNAPSHOT_MS, timestampMs).apply();
+        AppDebugManager.d(Category.UTILS,
+                FILE_NAME + ": saveLastSnapshotMs: saved " + formatSlot(timestampMs));
+    }
+
+    private long getLastProcstatsMs() {
+        return getStatsPrefs().getLong(KEY_LAST_PROCSTATS_MS, 0L);
+    }
+
+    private void saveLastProcstatsMs(long timestampMs) {
+        getStatsPrefs().edit().putLong(KEY_LAST_PROCSTATS_MS, timestampMs).apply();
+        AppDebugManager.d(Category.UTILS,
+                FILE_NAME + ": saveLastProcstatsMs: saved " + formatSlot(timestampMs));
+    }
+
+    private SharedPreferences getStatsPrefs() {
+        return context.getSharedPreferences(STATS_PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    @WorkerThread
+    private boolean shouldRunProcstats(long nowMs) {
+        long last = getLastProcstatsMs();
+        if (last == 0L) {
+            AppDebugManager.d(Category.UTILS,
+                    FILE_NAME + ": shouldRunProcstats: no previous timestamp → run");
+            return true;
+        }
+        if (nowMs < last) {
+            AppDebugManager.w(Category.UTILS,
+                    FILE_NAME + ": shouldRunProcstats: clock jumped backwards"
+                    + " (now=" + nowMs + " < last=" + last + ") → run anyway");
+            return true;
+        }
+        long elapsed = nowMs - last;
+        boolean due = elapsed >= PROCSTATS_INTERVAL_MS;
+        AppDebugManager.d(Category.UTILS,
+                FILE_NAME + ": shouldRunProcstats: elapsed=" + (elapsed / 60_000) + "min"
+                + " → " + (due ? "RUN" : "skip"));
+        return due;
+    }
+
+    public void takeSnapshotAsync(@Nullable Runnable onComplete) {
+        executor.execute(() -> {
+            takeSnapshotBlocking();
+            if (onComplete != null) handler.post(onComplete);
+        });
+    }
+
+    public void getStatsForPeriodAsync(int hours, @NonNull StatsCallback callback) {
+        executor.execute(() -> {
+            PeriodStats result = getStatsForPeriodBlocking(hours);
+            handler.post(() -> callback.onResult(result));
+        });
+    }
+
+    public interface StatsCallback  { void onResult(PeriodStats stats); }
+    public interface HourlyCallback { void onResult(HourlyResult result); }
 
     public static class AppResourceStats {
-        public final String packageName;
-        public final String appName;
-        public final double batteryMah;
-        public final double cpuPct;
-        public final double ramMb;
-        public final double peakRamMb;
+        public final String  packageName;
+        public final String  appName;
+        public final double  batteryMah;
+        public final double  cpuPct;
+        public final double  ramMb;
+        public final double  peakRamMb;
         public final boolean isSelf;
 
         public AppResourceStats(String packageName, String appName,
@@ -116,12 +173,11 @@ public class CollectStatsManager {
         }
     }
 
-
     public static class PeriodStats {
         public final List<AppResourceStats> sorted;
         public final boolean hasData;
-        public final double actualHours;
-        public final String dataHint;
+        public final double  actualHours;
+        public final String  dataHint;
         public final boolean isPartialData;
 
         PeriodStats(List<AppResourceStats> sorted, boolean hasData,
@@ -134,42 +190,16 @@ public class CollectStatsManager {
         }
     }
 
-
-    public void takeSnapshotAsync(@Nullable Runnable onComplete) {
-        executor.execute(() -> {
-            takeSnapshotBlocking();
-            if (onComplete != null) handler.post(onComplete);
-        });
-    }
-
-
-    public void getStatsForPeriodAsync(int hours, @NonNull StatsCallback callback) {
-        executor.execute(() -> {
-            PeriodStats result = getStatsForPeriodBlocking(hours);
-            handler.post(() -> callback.onResult(result));
-        });
-    }
-
-
-    public interface StatsCallback  { void onResult(PeriodStats stats); }
-    public interface HourlyCallback { void onResult(HourlyResult result); }
-
-
-    public enum ActivityLevel {
-        NONE,
-        LOW,
-        MEDIUM,
-        HIGH
-    }
-
+    public enum ActivityLevel { NONE, LOW, MEDIUM, HIGH }
 
     public static class ActivitySlice {
-        public final long slotTimestamp;
+        public final long          slotTimestamp;
         public final ActivityLevel level;
-        public final double cpuPercent;
-        public final double ramMb;
+        public final double        cpuPercent;
+        public final double        ramMb;
 
-        ActivitySlice(long slotTimestamp, ActivityLevel level, double cpuPercent, double ramMb) {
+        ActivitySlice(long slotTimestamp, ActivityLevel level,
+                      double cpuPercent, double ramMb) {
             this.slotTimestamp = slotTimestamp;
             this.level         = level;
             this.cpuPercent    = cpuPercent;
@@ -177,28 +207,27 @@ public class CollectStatsManager {
         }
     }
 
-
     public static class HourlyPeriodStats {
         public final double minBatteryMah, avgBatteryMah, maxBatteryMah;
         public final double minCpuPct,     avgCpuPct,     maxCpuPct;
         public final double minRamMb,      avgRamMb,      maxRamMb;
 
         HourlyPeriodStats(double minBat, double avgBat, double maxBat,
-                    double minCpu, double avgCpu, double maxCpu,
-                    double minRam, double avgRam, double maxRam) {
+                          double minCpu, double avgCpu, double maxCpu,
+                          double minRam, double avgRam, double maxRam) {
             minBatteryMah = minBat; avgBatteryMah = avgBat; maxBatteryMah = maxBat;
             minCpuPct     = minCpu; avgCpuPct     = avgCpu; maxCpuPct     = maxCpu;
             minRamMb      = minRam; avgRamMb      = avgRam; maxRamMb      = maxRam;
         }
     }
 
-
     public static class HourlyResult {
-        public final List<ActivitySlice> slices;
-        public final HourlyPeriodStats stats;
-        public final boolean isPartialData;
+        public final List<ActivitySlice>  slices;
+        public final HourlyPeriodStats    stats;
+        public final boolean              isPartialData;
 
-        HourlyResult(List<ActivitySlice> slices, HourlyPeriodStats stats, boolean isPartialData) {
+        HourlyResult(List<ActivitySlice> slices, HourlyPeriodStats stats,
+                     boolean isPartialData) {
             this.slices        = slices;
             this.stats         = stats;
             this.isPartialData = isPartialData;
@@ -209,7 +238,6 @@ public class CollectStatsManager {
         }
     }
 
-
     @Deprecated
     public static class HourlyPoint {
         public final String hourLabel;
@@ -217,7 +245,8 @@ public class CollectStatsManager {
         public final double cpuPercent;
         public final double ramMb;
 
-        HourlyPoint(String hourLabel, double batteryMah, double cpuPercent, double ramMb) {
+        HourlyPoint(String hourLabel, double batteryMah,
+                    double cpuPercent, double ramMb) {
             this.hourLabel  = hourLabel;
             this.batteryMah = batteryMah;
             this.cpuPercent = cpuPercent;
@@ -225,26 +254,13 @@ public class CollectStatsManager {
         }
     }
 
-
     @WorkerThread
     private void takeSnapshotBlocking() {
         long now = System.currentTimeMillis();
 
         try {
-            ResourceSnapshot recentSnap = getDao().getAnySnapshotAfter(now - SLOT_MS);
-            if (recentSnap != null) {
-                AppDebugManager.d(Category.UTILS, FILE_NAME
-                        + ": Snapshot skipped — recent snapshot exists at "
-                        + formatSlot(recentSnap.timestamp));
-                return;
-            }
-
-            snapshotCount++;
-            boolean isCycleEnd = (snapshotCount % SLOTS_PER_HOUR) == 1 && snapshotCount > 1;
-
-            AppDebugManager.d(Category.UTILS, FILE_NAME
-                    + ": Starting snapshot #" + snapshotCount
-                    + (isCycleEnd ? " [cycle-end, will run procstats]" : ""));
+            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Starting snapshot at "
+                    + formatSlot(now));
 
             Map<String, Double> batteryMahByPkg = new HashMap<>();
             Map<String, Long>   cpuMsByPkg      = new HashMap<>();
@@ -271,32 +287,35 @@ public class CollectStatsManager {
             for (double v : batteryMahByPkg.values()) totalRawPwiBatch += v;
 
             for (String pkg : allPkgs) {
-                ResourceSnapshot snap = new ResourceSnapshot();
-                snap.timestamp        = now;
-                snap.packageName      = pkg;
-                snap.batteryMah       = getOrZero(batteryMahByPkg, pkg);
-                snap.ramMb            = 0;
-                snap.cpuTimeMs        = cpuMsByPkg.containsKey(pkg) ? cpuMsByPkg.get(pkg) : 0L;
-                snap.totalCpuJiffies  = jiffies[0];
-                snap.activeCpuJiffies = jiffies[1];
-                snap.batteryLevelPct  = batteryLevel;
-                snap.totalRawPwiBatch = totalRawPwiBatch;
+                ResourceSnapshot snap  = new ResourceSnapshot();
+                snap.timestamp         = now;
+                snap.packageName       = pkg;
+                snap.batteryMah        = getOrZero(batteryMahByPkg, pkg);
+                snap.ramMb             = 0;
+                snap.cpuTimeMs         = cpuMsByPkg.containsKey(pkg) ? cpuMsByPkg.get(pkg) : 0L;
+                snap.totalCpuJiffies   = jiffies[0];
+                snap.activeCpuJiffies  = jiffies[1];
+                snap.batteryLevelPct   = batteryLevel;
+                snap.totalRawPwiBatch  = totalRawPwiBatch;
                 getDao().insert(snap);
             }
 
-            if (isCycleEnd) {
+            saveLastSnapshotMs(now);
+
+            if (shouldRunProcstats(now)) {
                 long cycleEnd   = now;
-                long cycleStart = cycleEnd - (long) SLOTS_PER_HOUR * SLOT_MS;
+                long cycleStart = cycleEnd - PROCSTATS_INTERVAL_MS;
                 AppDebugManager.d(Category.UTILS, FILE_NAME
-                        + ": Cycle end — running procstats for ["
+                        + ": Running procstats for ["
                         + formatSlot(cycleStart) + " – " + formatSlot(cycleEnd) + "]");
                 applyProcStatsToCycle(cycleStart, cycleEnd);
+                saveLastProcstatsMs(now);
             }
 
             getDao().deleteOlderThan(now - 24 * 3600_000L);
 
-            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Snapshot saved #" + snapshotCount
-                    + " at " + formatSlot(now) + ": " + allPkgs.size() + " apps"
+            AppDebugManager.d(Category.UTILS, FILE_NAME + ": Snapshot saved at "
+                    + formatSlot(now) + ": " + allPkgs.size() + " apps"
                     + "  battery=" + batteryMahByPkg.size()
                     + "  cpu=" + cpuMsByPkg.size());
 
@@ -339,7 +358,6 @@ public class CollectStatsManager {
         }
     }
 
-
     @WorkerThread
     public double getBatteryCapacityMah() {
         if (cachedCapacityMah > 0) return cachedCapacityMah;
@@ -356,7 +374,8 @@ public class CollectStatsManager {
                     if (uah > 100_000) {
                         cachedCapacityMah = uah / 1000.0;
                         AppDebugManager.d(Category.UTILS, FILE_NAME
-                                + ": Battery capacity from " + path + ": " + cachedCapacityMah + " mAh");
+                                + ": Battery capacity from " + path + ": "
+                                + cachedCapacityMah + " mAh");
                         return cachedCapacityMah;
                     }
                 }
@@ -388,9 +407,11 @@ public class CollectStatsManager {
             android.os.BatteryManager bm =
                     (android.os.BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
             if (bm != null) {
-                int chargeUah = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
+                int chargeUah =
+                        bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER);
                 if (chargeUah > 500_000) {
-                    int levelPct = bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY);
+                    int levelPct =
+                            bm.getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY);
                     if (levelPct > 5 && levelPct <= 100) {
                         double estimatedCapacity = (chargeUah / 1000.0) / (levelPct / 100.0);
                         if (estimatedCapacity > 500 && estimatedCapacity < 30_000) {
@@ -414,7 +435,6 @@ public class CollectStatsManager {
         return cachedCapacityMah;
     }
 
-
     @WorkerThread
     private int getCpuCoreCount() {
         if (cachedCpuCoreCount > 0) return cachedCpuCoreCount;
@@ -426,7 +446,8 @@ public class CollectStatsManager {
                 cachedCpuCoreCount = parts.length == 2
                         ? Integer.parseInt(parts[1]) + 1
                         : 1;
-                AppDebugManager.d(Category.UTILS, FILE_NAME + ": CPU cores: " + cachedCpuCoreCount);
+                AppDebugManager.d(Category.UTILS,
+                        FILE_NAME + ": CPU cores: " + cachedCpuCoreCount);
                 return cachedCpuCoreCount;
             }
         } catch (Exception e) {
@@ -436,11 +457,10 @@ public class CollectStatsManager {
         return cachedCpuCoreCount;
     }
 
-
     @WorkerThread
     private void collectCheckinStats(@NonNull Map<String, Double> batteryMahOut,
                                      @NonNull Map<String, Long> cpuMsOut) {
-        String cmd = "dumpsys batterystats --charged --checkin";
+        String cmd    = "dumpsys batterystats --charged --checkin";
         String output = shellManager.runCommandAndGetOutput(cmd);
 
         boolean hasCheckinData = output != null
@@ -489,10 +509,9 @@ public class CollectStatsManager {
         mapUidsToPkgs(uidToMah, uidToCpuMs, batteryMahOut, cpuMsOut);
     }
 
-
     private static final Pattern HR_UID_HEADER =
             Pattern.compile("^\\s+Uid\\s+u0a(\\d+):");
-    private static final Pattern HR_CPU_LINE =
+    private static final Pattern HR_CPU_LINE   =
             Pattern.compile("cpu=(\\d+(?:[.,]\\d+)?)ms\\s+usr\\s*\\+\\s*(\\d+(?:[.,]\\d+)?)ms\\s+krn");
 
     @WorkerThread
@@ -534,12 +553,11 @@ public class CollectStatsManager {
         mapUidsToPkgs(new HashMap<>(), uidToCpuMs, batteryMahOut, cpuMsOut);
     }
 
-
     @WorkerThread
     private void mapUidsToPkgs(@NonNull Map<Integer, Double> uidToMah,
-                                @NonNull Map<Integer, Long> uidToCpuMs,
-                                @NonNull Map<String, Double> batteryMahOut,
-                                @NonNull Map<String, Long> cpuMsOut) {
+                                @NonNull Map<Integer, Long>   uidToCpuMs,
+                                @NonNull Map<String, Double>  batteryMahOut,
+                                @NonNull Map<String, Long>    cpuMsOut) {
         android.content.pm.PackageManager pm = context.getPackageManager();
 
         for (Map.Entry<Integer, Double> e : uidToMah.entrySet()) {
@@ -571,10 +589,9 @@ public class CollectStatsManager {
         }
     }
 
-
     @WorkerThread
     private void collectProcStatsRam(int hours, @NonNull Map<String, double[]> ramOut) {
-        String cmd = "dumpsys procstats --hours " + hours;
+        String cmd    = "dumpsys procstats --hours " + hours;
         String output = shellManager.runCommandAndGetOutput(cmd);
         if (output == null || output.isEmpty()) {
             AppDebugManager.d(Category.UTILS, FILE_NAME
@@ -582,24 +599,23 @@ public class CollectStatsManager {
             return;
         }
 
-        String currentPkg = null;
+        String  currentPkg         = null;
         boolean currentIsSubprocess = false;
-        int parsedCount = 0;
+        int     parsedCount         = 0;
+
         for (String line : output.split("\n")) {
             Matcher pkgMatcher = PROCSTATS_PKG.matcher(line);
             if (pkgMatcher.find()) {
-                String rawPkg = pkgMatcher.group(1);
-                int colonIdx = rawPkg.indexOf(':');
+                String rawPkg   = pkgMatcher.group(1);
+                int    colonIdx = rawPkg.indexOf(':');
                 if (colonIdx > 0) {
-                    currentPkg = rawPkg.substring(0, colonIdx);
+                    currentPkg          = rawPkg.substring(0, colonIdx);
                     currentIsSubprocess = true;
                 } else {
-                    currentPkg = rawPkg;
+                    currentPkg          = rawPkg;
                     currentIsSubprocess = false;
                 }
-                if (currentPkg.indexOf('.') < 1) {
-                    currentPkg = null;
-                }
+                if (currentPkg.indexOf('.') < 1) currentPkg = null;
                 continue;
             }
             if (currentPkg == null) continue;
@@ -647,7 +663,6 @@ public class CollectStatsManager {
         }
     }
 
-
     @WorkerThread
     @NonNull
     private long[] readProcStatJiffies() {
@@ -678,7 +693,6 @@ public class CollectStatsManager {
         }
     }
 
-
     @WorkerThread
     @NonNull
     private PeriodStats getStatsForPeriodBlocking(int hours) {
@@ -686,7 +700,6 @@ public class CollectStatsManager {
         long target = now - (long) hours * 3600_000L;
 
         ResourceSnapshot current = getDao().getLatestSnapshot();
-
         if (current == null) {
             AppDebugManager.d(Category.UTILS, FILE_NAME
                     + ": getStatsForPeriodBlocking(" + hours + "h): no snapshot available");
@@ -695,7 +708,6 @@ public class CollectStatsManager {
         }
 
         ResourceSnapshot previous = getDao().getClosestSnapshotBefore(target);
-
         if (previous == null) {
             ResourceSnapshot oldest = getDao().getOldestSnapshot();
             if (oldest != null && oldest.timestamp < current.timestamp) {
@@ -708,7 +720,8 @@ public class CollectStatsManager {
 
         if (previous == null || previous.timestamp >= current.timestamp) {
             AppDebugManager.d(Category.UTILS, FILE_NAME
-                    + ": getStatsForPeriodBlocking(" + hours + "h): no usable history before current snapshot");
+                    + ": getStatsForPeriodBlocking(" + hours
+                    + "h): no usable history before current snapshot");
             return new PeriodStats(Collections.emptyList(), false, 0,
                     context.getString(R.string.stats_no_data_hint_no_history), false);
         }
@@ -718,7 +731,6 @@ public class CollectStatsManager {
             return new PeriodStats(Collections.emptyList(), false, 0,
                     context.getString(R.string.stats_no_data_hint_too_close), false);
         }
-
         if (hours > 2 && actualHours < hours * 0.9) {
             return new PeriodStats(Collections.emptyList(), false, 0,
                     context.getString(R.string.stats_no_data_hint_no_history), false);
@@ -729,14 +741,14 @@ public class CollectStatsManager {
         List<ResourceSnapshot> windowSnaps =
                 getDao().getSnapshotsBetween(previous.timestamp, current.timestamp);
 
-        Map<String, double[]> perPkg     = new HashMap<>();
+        Map<String, double[]>        perPkg    = new HashMap<>();
         Map<String, ResourceSnapshot> prevByPkg = new HashMap<>();
 
         for (ResourceSnapshot snap : windowSnaps) {
             String pkg = snap.packageName;
             if (!prevByPkg.containsKey(pkg)) {
                 prevByPkg.put(pkg, snap);
-                perPkg.put(pkg, new double[]{ 0, snap.ramMb, 0, snap.ramMb, 1 });
+                perPkg.put(pkg, new double[]{0, snap.ramMb, 0, snap.ramMb, 1});
             } else {
                 ResourceSnapshot prev = prevByPkg.get(pkg);
                 double dBat = snap.batteryMah >= prev.batteryMah
@@ -762,27 +774,23 @@ public class CollectStatsManager {
 
         java.util.TreeMap<Long, Integer> levelByTime = new java.util.TreeMap<>();
         for (ResourceSnapshot s : windowSnaps) {
-            if (s.batteryLevelPct > 0) {
-                levelByTime.put(s.timestamp, s.batteryLevelPct);
-            }
+            if (s.batteryLevelPct > 0) levelByTime.put(s.timestamp, s.batteryLevelPct);
         }
 
-        double drainMah = 0;
-        boolean batteryNormalizationValid = false;
-        long dTotalJiffies = current.totalCpuJiffies - previous.totalCpuJiffies;
+        double  drainMah                   = 0;
+        boolean batteryNormalizationValid   = false;
+        long    dTotalJiffies = current.totalCpuJiffies - previous.totalCpuJiffies;
 
         if (totalRawPwi > 0 && levelByTime.size() >= 2) {
-            double capacityMah = getBatteryCapacityMah();
-            double totalDrainPct = 0;
-            Integer prevLevel = null;
+            double  capacityMah     = getBatteryCapacityMah();
+            double  totalDrainPct   = 0;
+            Integer prevLevel       = null;
             for (Integer lvl : levelByTime.values()) {
-                if (prevLevel != null && lvl < prevLevel) {
-                    totalDrainPct += prevLevel - lvl;
-                }
+                if (prevLevel != null && lvl < prevLevel) totalDrainPct += prevLevel - lvl;
                 prevLevel = lvl;
             }
             if (totalDrainPct > 0) {
-                drainMah = totalDrainPct / 100.0 * capacityMah;
+                drainMah                 = totalDrainPct / 100.0 * capacityMah;
                 batteryNormalizationValid = true;
             }
         }
@@ -792,16 +800,15 @@ public class CollectStatsManager {
                 : actualHours * 3600_000.0;
 
         for (Map.Entry<String, double[]> e : perPkg.entrySet()) {
-            String pkg = e.getKey();
-            double[] v = e.getValue();
-            String name = resolveAppName(pm, pkg);
+            String   pkg  = e.getKey();
+            double[] v    = e.getValue();
+            String   name = resolveAppName(pm, pkg);
 
-            double avgRamMb  = v[4] > 0 ? v[1] / v[4] : 0;
-            double peakRamMb = v[3];
+            double avgRamMb   = v[4] > 0 ? v[1] / v[4] : 0;
+            double peakRamMb  = v[3];
             double batteryMah = batteryNormalizationValid && totalRawPwi > 0
-                    ? (v[0] / totalRawPwi) * drainMah
-                    : 0;
-            double cpuPct = Math.min(100.0,
+                    ? (v[0] / totalRawPwi) * drainMah : 0;
+            double cpuPct     = Math.min(100.0,
                     cpuDenominatorMs > 0 ? v[2] / cpuDenominatorMs * 100.0 : 0);
 
             result.add(new AppResourceStats(pkg, name, batteryMah, cpuPct, avgRamMb, peakRamMb,
@@ -811,7 +818,6 @@ public class CollectStatsManager {
         result.sort((a, b) -> Double.compare(b.batteryMah, a.batteryMah));
         return new PeriodStats(result, true, actualHours, null, isPartialData);
     }
-
 
     public void getHourlyStatsAsync(String packageName, int hours,
                                     double totalAllAppsCpuPct, double totalAllAppsRamMb,
@@ -841,17 +847,17 @@ public class CollectStatsManager {
         List<ResourceSnapshot> snaps =
                 getDao().getSnapshotsForPackageBetween(packageName, startAligned, endAligned);
 
-        ResourceSnapshot oldestForPkg = getDao().getOldestSnapshotForPackage(packageName);
-        long oldestPkgTime = oldestForPkg != null ? oldestForPkg.timestamp : endAligned;
-        double pkgAgeHours = (endAligned - oldestPkgTime) / 3600_000.0;
-        boolean isPartialData = (hours == 2) && (pkgAgeHours < hours * 0.9);
+        ResourceSnapshot oldestForPkg  = getDao().getOldestSnapshotForPackage(packageName);
+        long             oldestPkgTime = oldestForPkg != null ? oldestForPkg.timestamp : endAligned;
+        double           pkgAgeHours   = (endAligned - oldestPkgTime) / 3600_000.0;
+        boolean          isPartialData = (hours == 2) && (pkgAgeHours < hours * 0.9);
 
         if (snaps.size() < 2) return HourlyResult.empty(isPartialData);
         if (hours > 2 && pkgAgeHours < hours * 0.9) return HourlyResult.empty(false);
 
-        double periodTotalDrainPct = 0, periodTotalBatRaw = 0, periodTotalCpuMs = 0;
+        double periodTotalDrainPct   = 0, periodTotalBatRaw = 0, periodTotalCpuMs = 0;
         double periodTotalRawPwiBatch = 0;
-        int    periodBatchCount = 0;
+        int    periodBatchCount       = 0;
         {
             Integer prevLevel = null;
             for (int i = 0; i < snaps.size(); i++) {
@@ -874,28 +880,29 @@ public class CollectStatsManager {
                 }
             }
         }
-        double periodDrainMah  = periodTotalDrainPct / 100.0 * getBatteryCapacityMah();
-        double avgPeriodBatch  = periodBatchCount > 0 ? periodTotalRawPwiBatch / periodBatchCount : 0;
-        double periodAppMah    = (periodTotalDrainPct > 0 && avgPeriodBatch > 0 && periodTotalBatRaw > 0)
+        double  periodDrainMah = periodTotalDrainPct / 100.0 * getBatteryCapacityMah();
+        double  avgPeriodBatch = periodBatchCount > 0
+                ? periodTotalRawPwiBatch / periodBatchCount : 0;
+        double  periodAppMah   = (periodTotalDrainPct > 0 && avgPeriodBatch > 0
+                && periodTotalBatRaw > 0)
                 ? (periodTotalBatRaw / avgPeriodBatch) * periodDrainMah : 0;
         boolean batValid       = periodAppMah > 0 && periodTotalCpuMs > 0;
 
-        int numSlots = hours * SLOTS_PER_HOUR;
+        int    numSlots        = hours * SLOTS_PER_HOUR;
         double avgAllCpuPerSlot = totalAllAppsCpuPct > 0 ? totalAllAppsCpuPct / numSlots : 0;
         double avgAllRamPerSlot = totalAllAppsRamMb  > 0 ? totalAllAppsRamMb  / numSlots : 0;
 
-        List<ActivitySlice> slices = new ArrayList<>();
-        List<Double> slotBatList = new ArrayList<>();
-        List<Double> slotCpuList = new ArrayList<>();
-        List<Double> slotRamList = new ArrayList<>();
+        List<ActivitySlice> slices     = new ArrayList<>();
+        List<Double>        slotBatList = new ArrayList<>();
+        List<Double>        slotCpuList = new ArrayList<>();
+        List<Double>        slotRamList = new ArrayList<>();
 
         for (int s = 0; s < numSlots; s++) {
-            long slotStart = startAligned + (long) s * SLOT_MS;
-            long slotEnd   = slotStart + SLOT_MS;
-
-            double slotCpuMs = 0, slotRamSum = 0;
+            long   slotStart    = startAligned + (long) s * SLOT_MS;
+            long   slotEnd      = slotStart + SLOT_MS;
+            double slotCpuMs    = 0, slotRamSum = 0;
             int    slotRamCount = 0;
-            long   slotJiffies = 0, slotFirstTs = -1, slotLastTs = -1;
+            long   slotJiffies  = 0, slotFirstTs = -1, slotLastTs = -1;
 
             for (int i = 1; i < snaps.size(); i++) {
                 ResourceSnapshot prev = snaps.get(i - 1);
@@ -904,7 +911,6 @@ public class CollectStatsManager {
 
                 slotCpuMs    += Math.max(0, curr.cpuTimeMs - prev.cpuTimeMs);
                 slotJiffies  += Math.max(0, curr.totalCpuJiffies - prev.totalCpuJiffies);
-                // Prefer the procstats avg (ramMb) if it has been updated
                 slotRamSum   += curr.ramMb;
                 slotRamCount++;
                 if (slotFirstTs < 0) slotFirstTs = prev.timestamp;
@@ -916,10 +922,9 @@ public class CollectStatsManager {
                 slotBat = (slotCpuMs / periodTotalCpuMs) * periodAppMah;
 
             double slotCpuDenMs = slotJiffies > 0 ? slotJiffies * 10.0
-                    : (slotFirstTs >= 0 ? (double)(slotLastTs - slotFirstTs) : 0);
+                    : (slotFirstTs >= 0 ? (double) (slotLastTs - slotFirstTs) : 0);
             double slotCpu = (slotRamCount > 0 && slotCpuDenMs > 0)
                     ? Math.min(100.0, slotCpuMs / slotCpuDenMs * 100.0) : 0;
-
             double slotRam = slotRamCount > 0 ? slotRamSum / slotRamCount : 0;
 
             ActivityLevel level;
@@ -928,11 +933,11 @@ public class CollectStatsManager {
             } else {
                 double cpuRatio = avgAllCpuPerSlot > 0 ? slotCpu / avgAllCpuPerSlot : 0;
                 double ramRatio = avgAllRamPerSlot > 0 ? slotRam / avgAllRamPerSlot : 0;
-                double score = cpuRatio * 0.6 + ramRatio * 0.4;
-                if (score <= 0.0)       level = ActivityLevel.NONE;
-                else if (score < 0.5)   level = ActivityLevel.LOW;
-                else if (score < 1.5)   level = ActivityLevel.MEDIUM;
-                else                    level = ActivityLevel.HIGH;
+                double score    = cpuRatio * 0.6 + ramRatio * 0.4;
+                if      (score <= 0.0) level = ActivityLevel.NONE;
+                else if (score < 0.5)  level = ActivityLevel.LOW;
+                else if (score < 1.5)  level = ActivityLevel.MEDIUM;
+                else                   level = ActivityLevel.HIGH;
             }
 
             slices.add(new ActivitySlice(slotStart, level, slotCpu, slotRam));
@@ -952,7 +957,9 @@ public class CollectStatsManager {
             double minRam = Double.MAX_VALUE, maxRam = 0, sumRam = 0;
             int n = slotBatList.size();
             for (int i = 0; i < n; i++) {
-                double bat = slotBatList.get(i), cpu = slotCpuList.get(i), ram = slotRamList.get(i);
+                double bat = slotBatList.get(i),
+                       cpu = slotCpuList.get(i),
+                       ram = slotRamList.get(i);
                 minBat = Math.min(minBat, bat); maxBat = Math.max(maxBat, bat); sumBat += bat;
                 minCpu = Math.min(minCpu, cpu); maxCpu = Math.max(maxCpu, cpu); sumCpu += cpu;
                 minRam = Math.min(minRam, ram); maxRam = Math.max(maxRam, ram); sumRam += ram;
@@ -966,7 +973,6 @@ public class CollectStatsManager {
         return new HourlyResult(slices, periodStats, isPartialData);
     }
 
-
     private static double parseLocaleDouble(@Nullable String s) {
         if (s == null || s.isEmpty()) return 0.0;
         try {
@@ -979,8 +985,7 @@ public class CollectStatsManager {
     private static long parseLocaleDoubleToLong(@Nullable String s) {
         if (s == null || s.isEmpty()) return 0L;
         try {
-            String normalized = s.trim().replace(',', '.');
-            return (long) Double.parseDouble(normalized);
+            return (long) Double.parseDouble(s.trim().replace(',', '.'));
         } catch (NumberFormatException e) {
             return 0L;
         }
@@ -993,8 +998,7 @@ public class CollectStatsManager {
 
     private static String resolveAppName(android.content.pm.PackageManager pm, String pkg) {
         try {
-            return pm.getApplicationLabel(
-                    pm.getApplicationInfo(pkg, 0)).toString();
+            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
         } catch (android.content.pm.PackageManager.NameNotFoundException e) {
             return pkg;
         }
