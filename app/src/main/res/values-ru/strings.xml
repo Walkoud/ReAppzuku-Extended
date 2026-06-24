@@ -12,7 +12,6 @@
     <string name="tile_background_kill_subtitle">Запускает настроенный Auto-Kill</string>
     <string name="shortcut_kill_short_label">Остановить приложение</string>
     <string name="shortcut_kill_long_label">Завершить работу приложения в фоновом режиме</string>
-    <string name="ram_kill_widget_description">Виджет загруженности ОЗУ. Нажмите для очистки от фоновых приложений.</string>
 
     <string name="settings_add_ram_shortcut_title">RAM Kill ярлык</string>
     <string name="settings_add_ram_shortcut_subtitle">Добавить ярлык на рабочий стол</string>
@@ -49,11 +48,8 @@
     <string name="unit_mb">%d МБ</string>
     <string name="unit_mbb">%1$.0f МБ</string>
     <string name="unit_mb_precise">%.2f МБ</string>
-    <string name="unit_mb_short">МБ</string>
     <string name="unit_gb">%.1f ГБ</string>
     <string name="unit_gb_precise">%.2f ГБ</string>
-    <string name="unit_mah">mAh</string>
-    <string name="unit_percent">%</string>
 
     <!-- Единицы времени -->
     <string name="time_unit_sec">с</string>
@@ -146,7 +142,6 @@
     <string name="dialog_unsafe_whitelist_title">Опасная конфигурация</string>
     <string name="dialog_unsafe_whitelist_message">Вы выбрали режим Белый список, но ваш список пуст. В режиме Root это приведет к попытке завершения всех системных процессов, что вызовет перезагрузку устройства (Kernel/System panic). Сначала добавьте важные приложения в белый список.</string>
     <string name="dialog_unsafe_whitelist_ok">Понятно</string>
-    <string name="toast_error_whitelist_empty">Auto-Kill отменен: Белый список пуст</string>
 
     <!-- Нижняя навигация -->
     <string name="nav_main">Главная</string>
@@ -434,7 +429,6 @@
     <string name="restriction_badge_medium">Среднее</string>
     <string name="restriction_badge_manual">Ручное</string>
     <string name="restriction_badge_removed">Снято</string>
-    <string name="restriction_badge_retry">Повтор</string>
 
     <!-- Диалог типа ограничения -->
     <string name="manual_bucket_rare">Standby Bucket: Rare</string>
@@ -522,7 +516,6 @@
     <!-- ── Графики ── -->
     <string name="stats_loading_charts">Загрузка данных…</string>
     <string name="stats_no_data_hint">Недостаточно данных.\nСнапшоты собираются каждые 30–60 мин.\nЗайдите позже.</string>
-    <string name="stats_no_data_hint_short">Накапливаются данные…</string>
     <string name="stats_no_data_hint_no_snapshot">Данные ещё не собраны. Подождите ~30 минут.</string>
     <string name="stats_no_data_hint_no_history">Недостаточно истории. Данные накапливаются — зайдите позже.</string>
     <string name="stats_no_data_hint_too_close">Снапшоты слишком близко. Попробуйте позже.</string>
@@ -541,29 +534,15 @@
     <string name="chart_title_cpu">Использование CPU</string>
     <string name="chart_title_ram">Использование ОЗУ</string>
     <string name="chart_others_label">Прочие</string>
-    <string name="chart_others_expand">Экономичные приложения (%1$d)</string>
     <string name="chart_others_dialog_title">Экономичные приложения</string>
 
     <!-- Информационные карточки -->
-    <string name="info_card_kills">Убито процессов</string>
-    <string name="info_card_relaunches">Перезапусков</string>
-    <string name="info_card_ram_recovered">Освобождено ОЗУ</string>
-    <string name="info_card_self_drain">Расход ReAppzuku</string>
 
     <!-- Плитки статистики -->
-    <string name="stats_battery_trace">&lt; 0.1%</string>
     <string name="stats_chart_total_battery">%.1f mAh</string>
-    <string name="stats_chart_total_ram">Ср. %s</string>
     <string name="stats_self_overhead_label">Потребление ReAppzuku:</string>
-    <string name="stats_self_overhead">Потребление ReAppzuku: %1$s · %2$s · %3$s</string>
 
     <!-- ── Экран деталей ── -->
-    <string name="detail_chart_battery">Батарея (mAh / час)</string>
-    <string name="detail_chart_cpu">CPU (% / час)</string>
-    <string name="detail_chart_ram">ОЗУ — средний PSS (МБ)</string>
-    <string name="detail_avg_battery">Ср. %.2f mAh/ч</string>
-    <string name="detail_avg_cpu">Ср. %.1f%%</string>
-    <string name="detail_avg_ram">Ср. %.0f МБ</string>
     <string name="detail_stat_min">мин</string>
     <string name="detail_stat_avg">сред</string>
     <string name="detail_stat_max">макс</string>
@@ -613,10 +592,6 @@
     <string name="triggers_receivers_explanation_network"> Следит за сетью — просыпается при появлении интернета.</string>
 
     <!-- Alarms -->
-    <string name="triggers_alarms_detail_wakeup">%1$d будящих</string>
-    <string name="triggers_alarms_detail_normal">%1$d обычных</string>
-    <string name="triggers_alarms_detail_repeat"> · повтор %1$s</string>
-    <string name="triggers_alarms_detail_exact"> · setExact</string>
     <string name="triggers_alarms_interval_sec">каждые %1$d сек</string>
     <string name="triggers_alarms_interval_min">каждые %1$d мин</string>
     <string name="triggers_alarms_interval_hour">каждые %1$d ч</string>
@@ -640,9 +615,6 @@
     <string name="triggers_doze_user_explanation">Приложение запросило исключение из режима Doze («не оптимизировать батарею»). Работает в фоне когда угодно. Можно отозвать: Настройки → Батарея → Оптимизация батареи.</string>
 
     <!-- WakeLocks -->
-    <string name="triggers_wakelock_partial_type">PARTIAL</string>
-    <string name="triggers_wakelock_full_type">FULL</string>
-    <string name="triggers_wakelock_generic_type">WAKE_LOCK</string>
     <string name="triggers_wakelock_partial_explain">не даёт CPU засыпать</string>
     <string name="triggers_wakelock_full_explain">держит экран и CPU включёнными</string>
     <string name="triggers_wakelock_generic_explain">удерживает систему активной</string>
@@ -694,7 +666,6 @@
     <string name="triggers_batterystats_explanation">Статистика с момента последнего сброса заряда батареи.</string>
 
     <!-- Network Activity -->
-    <string name="triggers_network_active_connections">Активные TCP-соединения</string>
     <string name="triggers_network_traffic">↓ %1$s / ↑ %2$s трафика</string>
     <string name="triggers_network_explanation">Приложение имеет активную сетевую активность в фоне. Открытые TCP-соединения означают постоянный обмен данными с сервером — типично для мессенджеров, push-клиентов и приложений с real-time синхронизацией.</string>
 
@@ -709,9 +680,7 @@
     <string name="triggers_fg_service_not_killable">нельзя убить</string>
     
     <!-- WakeLock: new types -->
-    <string name="triggers_wakelock_screen_type">Screen</string>
     <string name="triggers_wakelock_screen_explain">удерживает экран включённым</string>
-    <string name="triggers_wakelock_proximity_type">Proximity</string>
     <string name="triggers_wakelock_proximity_explain">гасит экран при поднесении к лицу (звонок)</string>
     <!-- acquire / release counters -->
     <string name="triggers_wakelock_acq_rel">захватов %1$d / освобождений %2$d</string>
@@ -870,7 +839,6 @@
     <string name="triggers_cat_appops">AppOps</string>
     <string name="triggers_appops_last_used">%1$s назад</string>
     <string name="triggers_appops_wakelock_explanation">Приложение получило WakeLock через AppOps — процессор удерживался активным в его интересах.</string>
-    <string name="triggers_appops_fg_explanation">Приложение недавно запустило службу переднего плана — оно явно переводилось в активное состояние.</string>
     <string name="triggers_appops_run_bg_explanation">Системная политика батареи разрешает приложению работать в фоне.</string>
     <string name="triggers_appops_run_any_bg_explanation">Приложение имеет неограниченное право на фоновую работу — полностью исключено из оптимизации батареи.</string>
     <string name="triggers_appops_exact_alarm_explanation">Приложение имеет разрешение на точные будильники, которые могут будить устройство в заданное время даже в режиме Doze.</string>
@@ -941,7 +909,6 @@
     <string name="app_status_hint_cached_service">держит службу</string>
     <string name="app_status_hint_cached_recent">недавно использовалось</string>
     <string name="app_status_hint_cached_idle">неактивно</string>
-    <string name="app_status_hint_not_running">не запущено</string>
     <string name="triggers_aggression_label_prefix">Агрессивность:</string>
     
     <!-- ══════════════════════════════════════════════
@@ -955,7 +922,6 @@
     <string name="easter_egg_hunter">🐱 Поздравляю, вы нашли пасхалку!</string>
 
     <!-- Scan System -->
-    <string name="scansystem_menu_title">Сканировать</string>
     <string name="scansystem_dialog_title">Текущая нагрузка</string>
     <string name="scansystem_scanning">Сканирование…</string>
     <string name="scansystem_no_load">Нет приложений с активной нагрузкой</string>    
@@ -1009,10 +975,8 @@
     <string name="scenarios_app_launch_enable">Запускать Auto-Kill при открытии целевого приложения</string>
     <string name="scenarios_app_launch_clear_cache">Очищать ОЗУ при запуске</string>
     <string name="scenarios_app_launch_target_apps">Целевые приложения</string>
-    <string name="scenarios_app_launch_add">Добавить</string>
     <string name="scenarios_app_launch_add_title">Выбор целевых приложений</string>
     <string name="scenarios_app_launch_empty">Приложения не выбраны</string>
-    <string name="scenarios_remove_target_app">Удалить</string>
 
     <!-- Accessibility service -->
     <string name="accessibility_service_description">Определяет запуск целевых приложений для запуска Auto-Kill и освобождения RAM</string>
@@ -1041,7 +1005,6 @@
     <string name="preset_app_list_mode_switch_hint">Переключитесь на «Собственный список» для редактирования</string>
     <string name="preset_list_count_current">%d прил. (из текущих настроек)</string>
     <string name="preset_list_count_own">%d прил. выбрано</string>
-    <string name="preset_save_button">Сохранить пресет</string>
     <string name="preset_saved">Пресет %d сохранён</string>
     <string name="preset_export_json_button">Экспорт в JSON</string>
     <string name="preset_export_success">Пресет успешно экспортирован</string>
