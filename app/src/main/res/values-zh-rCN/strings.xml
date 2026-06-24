@@ -186,11 +186,11 @@
     <!-- ══════════════════════════════════════════════
          BACKGROUND SERVICE (ShappkyService)
          ══════════════════════════════════════════════ -->
-    <string name="service_notification_title" translatable="false">ReAppzuku Service</string>
+    <string name="service_notification_title">ReAppzuku Service</string>
     <string name="service_notification_text">正在监控后台应用</string>
     <string name="service_shizuku_lost_title">ReAppzuku 服务</string>
     <string name="service_shizuku_lost_text">无 Shizuku 访问权限 — 应用无法继续运行。</string>
-    <string name="service_channel_foreground_name" translatable="false">ReAppzuku 前台服务</string>
+    <string name="service_channel_foreground_name">ReAppzuku 前台服务</string>
     <string name="service_channel_actions_name">ReAppzuku 通知</string>
 
     <!-- ══════════════════════════════════════════════
@@ -531,7 +531,6 @@
     <string name="stats_disclaimer">来自 Android batterystats / procstats 的估算数据。实际值可能有所不同。长时间充电后电池统计可能不准确。</string>
     <string name="stats_service_inactive_hint">仅后台服务活动时采集统计。在设置中启用它。</string>
 
-    <string name="chart_period_labels" translatable="false">2h,6h,12h,24h</string>
     <string-array name="chart_period_labels">
         <item>2h</item>
         <item>6h</item>
