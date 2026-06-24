@@ -186,11 +186,11 @@
     <!-- ══════════════════════════════════════════════
          BACKGROUND SERVICE (ShappkyService)
          ══════════════════════════════════════════════ -->
-    <string name="service_notification_title" translatable="false">ReAppzuku Service</string>
+    <string name="service_notification_title" >ReAppzuku Service</string>
     <string name="service_notification_text">Monitoring background apps</string>
     <string name="service_shizuku_lost_title">ReAppzuku services</string>
     <string name="service_shizuku_lost_text">No Shizuku access — app can\'t continue.</string>
-    <string name="service_channel_foreground_name" translatable="false">ReAppzuku Foreground Service</string>
+    <string name="service_channel_foreground_name" >ReAppzuku Foreground Service</string>
     <string name="service_channel_actions_name">ReAppzuku Notifications</string>
 
     <!-- ══════════════════════════════════════════════
@@ -531,7 +531,7 @@
     <string name="stats_disclaimer">Estimated data from Android batterystats / procstats. Actual values may differ. Battery stats may be inaccurate after long charging sessions.</string>
     <string name="stats_service_inactive_hint">Stats are only collected while background service is active. Enable it in settings.</string>
 
-    <string name="chart_period_labels" translatable="false">2h,6h,12h,24h</string>
+    <string name="chart_period_labels" >2h,6h,12h,24h</string>
     <string-array name="chart_period_labels">
         <item>2h</item>
         <item>6h</item>
