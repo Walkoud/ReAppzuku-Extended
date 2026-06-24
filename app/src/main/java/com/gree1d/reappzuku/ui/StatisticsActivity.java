@@ -368,7 +368,7 @@ public class StatisticsActivity extends BaseActivity {
                 centerText = getString(R.string.stats_chart_total_battery, totalBat);
                 break;
             case CHART_CPU:
-                centerText = String.format(Locale.US, "%.1f%%", Math.min(100.0, totalCpu));
+                centerText = String.format(Locale.getDefault(), "%.1f%%", Math.min(100.0, totalCpu));
                 break;
             case CHART_RAM:
                 centerText = formatRamMb(totalRam);
@@ -377,7 +377,6 @@ public class StatisticsActivity extends BaseActivity {
                 centerText = "";
         }
         binding.tvChartCenterValue.setText(centerText);
-        // Keep hidden tv_chart_total in sync for any legacy references
         binding.tvChartTotal.setText(centerText);
     }
 
@@ -645,7 +644,27 @@ public class StatisticsActivity extends BaseActivity {
 
     private void showStatsDialog() {
         AppDebugManager.d(Category.STATISTICS_PAGE, FILE + ": showStatsDialog");
-        executor.execute(() -> {
+        SettingsListContent content = createSettingsListContent(
+                getString(R.string.stats_no_activity_12h), false);
+        SettingsSurfaceAdapter adapter = new SettingsSurfaceAdapter();
+        content.listView.setAdapter(adapter);
+        content.listView.setEmptyView(content.emptyView);
+        content.loading.setVisibility(View.VISIBLE);
+        content.listView.setVisibility(View.GONE);
+        content.summaryText.setText(getString(R.string.stats_loading));
+
+        AlertDialog dialog = createSettingsSurfaceDialog(
+                getString(R.string.settings_kill_history_title),
+                getString(R.string.stats_dialog_subtitle),
+                content.rootView);
+        dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
+        dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
+        dialog.show();
+        applyCustomAccentToDialogButtons(dialog);
+
+        final List<KillHistoryEntry> sortedEntries = new ArrayList<>();
+
+        Runnable reloadStats = () -> executor.execute(() -> {
             long twelveHoursAgo = System.currentTimeMillis() - STATS_HISTORY_DURATION_MS;
             com.gree1d.reappzuku.db.AppStatsDao appStatsDao = com.gree1d.reappzuku.db.AppDatabase
                     .getInstance(this).appStatsDao();
@@ -695,41 +714,35 @@ public class StatisticsActivity extends BaseActivity {
             }
 
             Collections.sort(historyEntries, (a, b) -> Long.compare(b.lastEventTime, a.lastEventTime));
-            final List<KillHistoryEntry> sortedEntries = new ArrayList<>(historyEntries);
-            List<SettingsSurfaceRow> rows = buildKillHistoryRows(sortedEntries);
-            String summary = getString(R.string.stats_summary_12h,
+            final List<KillHistoryEntry> loaded = new ArrayList<>(historyEntries);
+            List<SettingsSurfaceRow> rows = buildKillHistoryRows(loaded);
+            final String summary = getString(R.string.stats_summary_12h,
                     rows.size(), totalKills, totalRelaunches, formatRecoveredSize(totalRecoveredKb));
 
             handler.post(() -> {
-                SettingsListContent content = createSettingsListContent(
-                        getString(R.string.stats_no_activity_12h), false);
-                SettingsSurfaceAdapter adapter = new SettingsSurfaceAdapter();
+                sortedEntries.clear();
+                sortedEntries.addAll(loaded);
                 adapter.setItems(rows);
-                content.listView.setAdapter(adapter);
-                content.listView.setEmptyView(content.emptyView);
+                content.summaryText.setText(summary);
+                content.loading.setVisibility(View.GONE);
+                content.listView.setVisibility(View.VISIBLE);
+                content.emptyView.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
                 content.listView.setOnItemClickListener((parent, view, position, id) -> {
                     if (position < sortedEntries.size()) {
                         showKillEntryDetails(sortedEntries.get(position));
                     }
                 });
-                content.summaryText.setText(summary);
-                content.loading.setVisibility(View.GONE);
-                content.listView.setVisibility(View.VISIBLE);
-                content.emptyView.setVisibility(rows.isEmpty() ? View.VISIBLE : View.GONE);
+            });
+        });
 
-                AlertDialog dialog = createSettingsSurfaceDialog(
-                        getString(R.string.settings_kill_history_title),
-                        getString(R.string.stats_dialog_subtitle),
-                        content.rootView);
-                dialog.setButton(AlertDialog.BUTTON_NEGATIVE, getString(R.string.dialog_close), (d, w) -> d.dismiss());
-                dialog.setButton(AlertDialog.BUTTON_NEUTRAL, getString(R.string.settings_restriction_log_clear), (d, w) -> {});
-                dialog.show();
-                applyCustomAccentToDialogButtons(dialog);
-                dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
-                    AppDebugManager.i(Category.STATISTICS_PAGE, FILE + ": kill history stats cleared by user");
-                    executor.execute(() ->
-                            com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll());
-                });
+        reloadStats.run();
+
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
+            AppDebugManager.i(Category.STATISTICS_PAGE, FILE + ": kill history stats cleared by user");
+            long sinceTime = System.currentTimeMillis() - STATS_HISTORY_DURATION_MS;
+            executor.execute(() -> {
+                com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteStatsSince(sinceTime);
+                handler.post(reloadStats);
             });
         });
     }
@@ -761,17 +774,31 @@ public class StatisticsActivity extends BaseActivity {
         dialog.show();
         applyCustomAccentToDialogButtons(dialog);
 
+        final int[] currentFilterIndex = {0};
+
         loadTopOffenders(0, offendersAdapter, summaryText, loading, listView, emptyView);
 
         content.filterSpinner.setOnItemClickListener((parent, view, position, id) -> {
+            currentFilterIndex[0] = position;
             content.filterSpinner.setText(topOffenderFilterLabels[position], false);
             loadTopOffenders(position, offendersAdapter, summaryText, loading, listView, emptyView);
         });
 
         dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(v -> {
             AppDebugManager.i(Category.STATISTICS_PAGE, FILE + ": top offenders stats cleared by user");
-            executor.execute(() ->
-                    com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao().deleteAll());
+            long windowMs = TOP_OFFENDER_FILTER_WINDOWS_MS[currentFilterIndex[0]];
+            long sinceTime = windowMs > 0 ? System.currentTimeMillis() - windowMs : 0L;
+            executor.execute(() -> {
+                com.gree1d.reappzuku.db.AppStatsDao dao =
+                        com.gree1d.reappzuku.db.AppDatabase.getInstance(this).appStatsDao();
+                if (sinceTime > 0) {
+                    dao.deleteStatsSince(sinceTime);
+                } else {
+                    dao.deleteAll();
+                }
+                handler.post(() -> loadTopOffenders(currentFilterIndex[0], offendersAdapter,
+                        summaryText, loading, listView, emptyView));
+            });
         });
     }
 
@@ -1571,7 +1598,6 @@ public class StatisticsActivity extends BaseActivity {
             CharSequence label = getPackageManager().getApplicationLabel(appInfo);
             if (label != null) {
                 String name = label.toString();
-                // Обновляем appName во всех записях пакета в БД (где оно пустое)
                 executor.execute(() -> appStatsDao.updateAppName(stats.packageName, name));
                 stats.appName = name;
                 return name;
