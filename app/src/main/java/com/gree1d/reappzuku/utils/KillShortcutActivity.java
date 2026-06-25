@@ -21,15 +21,6 @@ import java.util.concurrent.Executors;
 import android.os.Handler;
 import android.os.Looper;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import android.os.Handler;
-import android.os.Looper;
-
 public class KillShortcutActivity extends Activity {
 
     private static final String TAG = "KillShortcutActivity";
@@ -43,7 +34,7 @@ public class KillShortcutActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": onCreate");
+        AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": onCreate, action=" + (getIntent() != null ? getIntent().getAction() : "null"));
 
         shellManager = new ShellManager(this, handler, executor);
 
