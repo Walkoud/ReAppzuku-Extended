@@ -1,4 +1,4 @@
-[English](./README.md) | [Русский](./README_RU.md) | **简体中文**
+[English](./README.md) | [Русский](./README_RU.md) | **简体中文** | [Espanol](./README_ES.md)
 
 ---
 
