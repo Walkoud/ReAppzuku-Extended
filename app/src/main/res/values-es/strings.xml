@@ -261,7 +261,7 @@
     <string name="settings_check_frequency_title">Intervalo de Auto-Cierre</string>
     <string name="settings_check_frequency_default">Cada 18 segundos</string>
     <string name="settings_interval_fallback">Cada %1$d segundos</string>
-    <string name="settings_screen_lock_title">Auto-Cierre al apagar pantalla</string>
+    <string name="settings_screen_lock_title">Auto-Cierre</string>
     <string name="settings_screen_lock_subtitle">Ejecutar el Auto-Cierre al apagar la pantalla</string>
     <string name="settings_ram_threshold_title">Umbral de RAM</string>
     <string name="settings_ram_threshold_subtitle">Ejecutar el Auto-Cierre cuando el uso de RAM exceda</string>
