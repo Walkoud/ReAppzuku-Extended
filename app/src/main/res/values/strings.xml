@@ -6,6 +6,7 @@
     <!-- ══════════════════════════════════════════════
          QUICK SETTINGS TILES & SHORTCUTS
          ══════════════════════════════════════════════ -->
+    <string name="toast_shortcut_killed">Killed: %s</string>
     <string name="tile_kill_app_label">Stop app</string>
     <string name="tile_kill_app_subtitle">Close background app</string>
     <string name="tile_background_kill_label">Stop background apps</string>

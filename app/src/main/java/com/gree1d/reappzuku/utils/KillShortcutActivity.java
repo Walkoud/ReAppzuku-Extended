@@ -3,14 +3,23 @@ package com.gree1d.reappzuku.utils;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
-import android.os.Build;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import com.gree1d.reappzuku.core.AppDebugManager;
 import com.gree1d.reappzuku.core.AppDebugManager.Category;
 import com.gree1d.reappzuku.core.ShellManager;
-import com.gree1d.reappzuku.service.ShappkyService;
+import com.gree1d.reappzuku.manager.AutoKillManager;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import android.os.Handler;
+import android.os.Looper;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -27,6 +36,7 @@ public class KillShortcutActivity extends Activity {
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
 
     private ShellManager shellManager;
+    private AutoKillManager autoKillManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -44,25 +54,20 @@ public class KillShortcutActivity extends Activity {
             return;
         }
 
+        autoKillManager = new AutoKillManager(this, handler, executor, shellManager, new ArrayList<>());
+
         executor.execute(() -> {
             String targetPackage = findKillablePackage();
             AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": findKillablePackage result=" + targetPackage);
             handler.post(() -> {
                 if (targetPackage != null) {
-                    Intent service = new Intent(this, ShappkyService.class);
-                    service.setAction("SHORTCUT_KILL_FOREGROUND");
-                    service.putExtra("target_package", targetPackage);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        startForegroundService(service);
-                    } else {
-                        startService(service);
-                    }
-                    AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": dispatched SHORTCUT_KILL_FOREGROUND for " + targetPackage);
+                    AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": killing " + targetPackage);
+                    autoKillManager.killApp(targetPackage, "Shortcut Kill", () -> finish());
                 } else {
                     AppDebugManager.w(Category.SHORTCUTS_WIDGETS, TAG + ": no killable foreground app found");
                     Toast.makeText(getApplicationContext(), "No killable foreground app found", Toast.LENGTH_SHORT).show();
+                    finish();
                 }
-                finish();
             });
         });
     }

@@ -6,6 +6,7 @@
     <!-- ══════════════════════════════════════════════
          QUICK SETTINGS TILES & SHORTCUTS
          ══════════════════════════════════════════════ -->
+    <string name="toast_shortcut_killed">已终止：%s</string>
     <string name="tile_kill_app_label">停止应用</string>
     <string name="tile_kill_app_subtitle">关闭后台应用</string>
     <string name="tile_background_kill_label">停止后台应用</string>

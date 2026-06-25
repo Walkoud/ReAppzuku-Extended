@@ -327,6 +327,10 @@ public class AutoKillManager {
     }
 
     public void killApp(String packageName, Runnable onComplete) {
+        killApp(packageName, "Manual Kill", onComplete);
+    }
+
+    public void killApp(String packageName, String source, Runnable onComplete) {
         if (!shellManager.hasAnyShellPermission()) {
             shellManager.checkShellPermissions();
             if (onComplete != null) {
@@ -355,17 +359,21 @@ public class AutoKillManager {
         final long finalAppRamBytes = appRamBytes;
         shellManager.runShellCommand(buildKillCommand(packageToKill), () -> {
             executor.execute(() -> {
-                recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage, "Manual Kill");
+                recordSuccessfulKills(Collections.singletonList(packageToKill), recoveredKbByPackage, source);
                 killOrphanShellProcesses(Collections.singleton(packageToKill));
             });
-            if (finalAppRamBytes > 0) {
+            if ("Shortcut Kill".equals(source)) {
+                String appLabel = resolveInstalledAppName(context.getPackageManager(), packageToKill);
+                String displayName = appLabel != null ? appLabel : packageToKill;
+                Toast.makeText(context, context.getString(R.string.toast_shortcut_killed, displayName), Toast.LENGTH_LONG).show();
+            } else if (finalAppRamBytes > 0) {
                 Toast.makeText(context, context.getString(R.string.toast_free_up, formatMemorySize(finalAppRamBytes)), Toast.LENGTH_LONG).show();
             }
             if (onComplete != null) {
                 onComplete.run();
             }
         }, () -> {
-            Toast.makeText(context, context.getString(R.string.toast_failed_stop_app, packageName), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.toast_failed_stop_app, packageToKill), Toast.LENGTH_SHORT).show();
             if (onComplete != null) {
                 onComplete.run();
             }
