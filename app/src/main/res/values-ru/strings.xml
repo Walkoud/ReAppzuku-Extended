@@ -6,6 +6,7 @@
     <!-- ══════════════════════════════════════════════
          ПЛИТКИ БЫСТРЫХ НАСТРОЕК И ЯРЛЫКИ
          ══════════════════════════════════════════════ -->
+    <string name="toast_shortcut_killed">Закрыто: %s</string>
     <string name="tile_kill_app_label">Остановить приложение</string>
     <string name="tile_kill_app_subtitle">Закрыть приложение, работающее в фоновом режиме</string>
     <string name="tile_background_kill_label">Остановить фоновые приложения</string>
