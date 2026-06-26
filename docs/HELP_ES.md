@@ -729,7 +729,7 @@ Bloquea el lanzamiento de servicios, el programador de tareas (job scheduler) y 
 `RUN_IN_BACKGROUND ignore`\
 `ALARM_WAKEUP ignore`\
 `START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
-`SCHEDULE_EXACT_ALARM`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Rare`
 
 - **Estricta / Hard**\
@@ -746,7 +746,7 @@ Una vez que la app se minimiza o cambias a otra — el sistema la cierra inmedia
 `RECEIVE_BOOT_COMPLETED ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `Eliminación de la lista blanca de optimización de batería`\
-`SCHEDULE_EXACT_ALARM`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Restricted`
 
 - **Manual**\
