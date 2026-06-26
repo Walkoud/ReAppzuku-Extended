@@ -115,6 +115,7 @@ public class PowerAnalyzer {
                     detail.append(" ").append(analyzer.getContext().getString(R.string.triggers_wakelock_held_by_system));
 
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        AppTriggersAnalyzer.KEY_CAT_WAKELOCK,
                         analyzer.getContext().getString(R.string.triggers_cat_wakelock),
                         detail.toString(),
                         analyzer.getContext().getString(R.string.triggers_wakelock_explanation, typeExplain),
@@ -137,7 +138,8 @@ public class PowerAnalyzer {
                     int  count  = Integer.parseInt(m.group(3));
                     if (heldMs == 0 && count == 0) continue;
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                            analyzer.getContext().getString(R.string.triggers_cat_wakelock),
+                            AppTriggersAnalyzer.KEY_CAT_WAKELOCK,
+                        analyzer.getContext().getString(R.string.triggers_cat_wakelock),
                             analyzer.getContext().getString(R.string.triggers_wakelock_fallback_detail,
                                     m.group(1), analyzer.formatDuration(heldMs), count),
                             analyzer.getContext().getString(R.string.triggers_wakelock_fallback_explanation),
@@ -192,6 +194,7 @@ public class PowerAnalyzer {
                 if (activeCount == 0 && totalTimeMs == 0) continue;
 
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        AppTriggersAnalyzer.KEY_CAT_WAKELOCK,
                         analyzer.getContext().getString(R.string.triggers_cat_wakelock),
                         "WakeSrc · " + name
                         + " · " + analyzer.getContext().getString(R.string.triggers_wakelock_detail_held,
@@ -215,6 +218,7 @@ public class PowerAnalyzer {
                     "cat /sys/power/wake_lock");
             if (kernelWl != null && kernelWl.contains(packageName)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        AppTriggersAnalyzer.KEY_CAT_WAKELOCK,
                         analyzer.getContext().getString(R.string.triggers_cat_wakelock),
                         "Kernel wakelock: " + packageName,
                         analyzer.getContext().getString(R.string.triggers_kernel_wakelock_explanation),                        
@@ -322,6 +326,7 @@ public class PowerAnalyzer {
 
             list.add(new TriggerInfo(
                     TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_WAKELOCK,
                     "WakeLock History",
                     "",
                     detail,
@@ -413,6 +418,7 @@ public class PowerAnalyzer {
         if (bcastW > 0) detail.append(analyzer.getContext().getString(R.string.triggers_wakeups_broadcast, bcastW));
 
         list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                AppTriggersAnalyzer.KEY_CAT_WAKEUPS,
                 analyzer.getContext().getString(R.string.triggers_cat_wakeups),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_wakeups_explanation),
@@ -493,6 +499,7 @@ public class PowerAnalyzer {
                 : alarms>10||wlMs>60_000||jobs>20||(powerMah>10) ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_BATTERY_STATS,
                 analyzer.getContext().getString(R.string.triggers_cat_batterystats),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_batterystats_explanation), sev));

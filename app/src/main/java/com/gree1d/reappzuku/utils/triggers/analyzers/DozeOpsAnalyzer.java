@@ -40,7 +40,8 @@ public class DozeOpsAnalyzer {
             if (!line.contains(packageName)) continue;
             boolean sys = line.contains("sys-");
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
-                    analyzer.getContext().getString(R.string.triggers_cat_doze),
+                    AppTriggersAnalyzer.KEY_CAT_DOZE,
+                        analyzer.getContext().getString(R.string.triggers_cat_doze),
                     analyzer.getContext().getString(sys ? R.string.triggers_doze_sys_detail
                                          : R.string.triggers_doze_user_detail),
                     analyzer.getContext().getString(sys ? R.string.triggers_doze_sys_explanation
@@ -69,6 +70,7 @@ public class DozeOpsAnalyzer {
                     "cmd appops get " + packageName + " RUN_ANY_IN_BACKGROUND");
             if (ops != null && ops.contains("allow")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_DOZE,
                         analyzer.getContext().getString(R.string.triggers_cat_doze),
                         analyzer.getContext().getString(R.string.triggers_doze_battery_opt_detail),                        
                         analyzer.getContext().getString(R.string.triggers_doze_battery_opt_explanation),                        
@@ -84,6 +86,7 @@ public class DozeOpsAnalyzer {
             if (battery != null && !battery.trim().isEmpty()
                     && battery.toLowerCase().contains("exempt")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_DOZE,
                         analyzer.getContext().getString(R.string.triggers_cat_doze),
                         analyzer.getContext().getString(R.string.triggers_doze_battery_exempt_detail),                        
                         analyzer.getContext().getString(R.string.triggers_doze_battery_exempt_explanation),                        
@@ -125,6 +128,7 @@ public class DozeOpsAnalyzer {
                 String stateLabel = inDeepDoze ? "Deep Doze" : "Light Doze";
                 String stateVal   = inDeepDoze ? dozeState : lightState;
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_DOZE,
                         analyzer.getContext().getString(R.string.triggers_cat_doze),
                         stateLabel + " · " + stateVal,
                         analyzer.getContext().getString(R.string.triggers_doze_state_prefix, stateLabel) + 
@@ -237,6 +241,7 @@ public class DozeOpsAnalyzer {
         }
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_BUCKET,
                 analyzer.getContext().getString(R.string.triggers_cat_bucket), detail, expl, sev));
 
         if (bv > 40
@@ -292,6 +297,7 @@ public class DozeOpsAnalyzer {
                     && (jobState.contains("QUOTA") || jobState.contains("RESTRICTED"));
 
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_BUCKET,
                     analyzer.getContext().getString(R.string.triggers_cat_bucket),
                     "RESTRICTED confirmed · RUN_ANY_IN_BACKGROUND=deny"
                             + (jobsBlocked ? " · jobs blocked" : ""),
@@ -361,6 +367,7 @@ public class DozeOpsAnalyzer {
                         detail.append(" [").append(mode).append("]");
 
                     list.add(new TriggerInfo(desc.group,
+                            AppTriggersAnalyzer.KEY_CAT_APPOPS,
                             analyzer.getContext().getString(R.string.triggers_cat_appops),
                             detail.toString(),
                             desc.explanation,
@@ -404,6 +411,7 @@ public class DozeOpsAnalyzer {
             if (hasSchedule || hasUse) {
                 String permLabel = hasUse ? "USE_EXACT_ALARM" : "SCHEDULE_EXACT_ALARM";
                 list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                        AppTriggersAnalyzer.KEY_CAT_ALARMS,
                         analyzer.getContext().getString(R.string.triggers_cat_alarms),
                         analyzer.getContext().getString(R.string.trigger_exact_alarm_label, permLabel),
                         analyzer.getContext().getString(hasUse
@@ -431,6 +439,7 @@ public class DozeOpsAnalyzer {
                 String timeStr = mT.find() ? mT.group(1).trim() : null;
                 String detail = "ACTIVITY_RECOGNITION" + (timeStr != null ? " · " + timeStr + " ago" : "");
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                        AppTriggersAnalyzer.KEY_CAT_APPOPS,
                         analyzer.getContext().getString(R.string.triggers_cat_appops),
                         detail,
                         analyzer.getContext().getString(R.string.triggers_appops_activity_recognition_explanation),
@@ -439,6 +448,7 @@ public class DozeOpsAnalyzer {
             if (hasManageMedia
                     && analyzer.apiLevel >= android.os.Build.VERSION_CODES.S) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_APPOPS,
                         analyzer.getContext().getString(R.string.triggers_cat_appops),
                         analyzer.getContext().getString(R.string.trigger_manage_media_label),
                         analyzer.getContext().getString(R.string.trigger_manage_media_desc),

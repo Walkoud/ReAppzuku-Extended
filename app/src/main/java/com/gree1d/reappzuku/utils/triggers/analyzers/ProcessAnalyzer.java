@@ -111,6 +111,7 @@ public class ProcessAnalyzer {
         if (persistent) detail += ", " + analyzer.getContext().getString(R.string.triggers_proc_persistent);
 
         list.add(new TriggerInfo(group,
+                AppTriggersAnalyzer.KEY_CAT_PROC_STATE,
                 analyzer.getContext().getString(R.string.triggers_cat_proc_state),
                 detail,
                 analyzer.getContext().getString(R.string.triggers_proc_state_explanation, label),
@@ -133,6 +134,7 @@ public class ProcessAnalyzer {
             if (isProcessFrozen(packageName, pid)) {
                 AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyzeProcessState: process is FROZEN pkg=" + packageName + " pid=" + pid);
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_PROC_STATE,
                         analyzer.getContext().getString(R.string.triggers_cat_proc_state),
                         analyzer.getContext().getString(R.string.triggers_proc_frozen_detail),
                         analyzer.getContext().getString(R.string.triggers_proc_frozen_explanation),
@@ -288,6 +290,7 @@ public class ProcessAnalyzer {
                 Matcher mExceeded = FGS_EXCEEDED_PAT.matcher(t);
                 if (mExceeded.find() && "true".equals(mExceeded.group(1))) {
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                            AppTriggersAnalyzer.KEY_CAT_FGS_TIMEOUT,
                             analyzer.getContext().getString(R.string.triggers_cat_fgs_timeout_exceeded),
                             currentSvc + " · timeLimitExceeded",
                             analyzer.getContext().getString(R.string.triggers_fgs_timeout_exceeded_explanation),
@@ -298,6 +301,7 @@ public class ProcessAnalyzer {
                     long remainMs = Long.parseLong(mRemain.group(1));
                     if (remainMs < 30 * 60 * 1000L) {
                         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                                AppTriggersAnalyzer.KEY_CAT_FGS_NEAR_TIMEOUT,
                                 analyzer.getContext().getString(R.string.triggers_cat_fgs_near_timeout),
                                 currentSvc + " · remaining=" + analyzer.formatDuration(remainMs),
                                 analyzer.getContext().getString(R.string.triggers_fgs_near_timeout_explanation),
@@ -341,6 +345,7 @@ public class ProcessAnalyzer {
                 expl.append(analyzer.getContext().getString(R.string.triggers_bindings_push_note));
 
             list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                    AppTriggersAnalyzer.KEY_CAT_BINDINGS,
                     analyzer.getContext().getString(R.string.triggers_cat_bindings, binders.size()),
                     detail.toString(), expl.toString(),
                     TriggerInfo.Severity.HIGH));
@@ -371,6 +376,7 @@ public class ProcessAnalyzer {
             if (isBfslPush) detail.append(" · via FCM");
             if (fgsAllowStartReason != null) detail.append(" · via ").append(fgsAllowStartReason);
             list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                    AppTriggersAnalyzer.KEY_CAT_FG_SERVICE,
                     analyzer.getContext().getString(R.string.triggers_cat_fg_service),
                     detail.toString(),
                     analyzer.getContext().getString(R.string.triggers_fg_service_explanation),
@@ -378,6 +384,7 @@ public class ProcessAnalyzer {
         }
         if (isSticky && !isForeground) {
             list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                    AppTriggersAnalyzer.KEY_CAT_STICKY,
                     analyzer.getContext().getString(R.string.triggers_cat_sticky),
                     currentSvc != null ? currentSvc : packageName,
                     analyzer.getContext().getString(R.string.triggers_sticky_explanation),
@@ -470,6 +477,7 @@ public class ProcessAnalyzer {
 
             boolean isHighPriority = "URGENT".equals(importance) || "HIGH".equals(importance);
             list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                    AppTriggersAnalyzer.KEY_CAT_FG_NOTIFICATION,
                     analyzer.getContext().getString(R.string.triggers_cat_fg_notification),
                     detail.toString(),
                     analyzer.getContext().getString(isHighPriority
@@ -492,6 +500,7 @@ public class ProcessAnalyzer {
                     && logcat.contains("ForegroundServiceStartNotAllowedException")
                     && logcat.contains(packageName)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_FGS_BLOCKED,
                         analyzer.getContext().getString(R.string.triggers_cat_fg_service),
                         analyzer.getContext().getString(R.string.triggers_fgs_blocked_detail),
                         analyzer.getContext().getString(R.string.triggers_fgs_blocked_explanation),

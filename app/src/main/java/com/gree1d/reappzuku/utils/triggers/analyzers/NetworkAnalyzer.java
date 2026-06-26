@@ -98,6 +98,7 @@ public class NetworkAnalyzer {
                 : total > 1024 * 1024 ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                AppTriggersAnalyzer.KEY_CAT_NETWORK,
                 analyzer.getContext().getString(R.string.triggers_cat_network),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_network_explanation),
@@ -169,14 +170,16 @@ public class NetworkAnalyzer {
             if (rejected) {
                 AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyzeNetworkPolicy: background REJECTED for uid=" + analyzer.getCachedUid());
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
-                        analyzer.getContext().getString(R.string.triggers_cat_network),
+                        AppTriggersAnalyzer.KEY_CAT_NETWORK,
+                analyzer.getContext().getString(R.string.triggers_cat_network),
                         analyzer.getContext().getString(R.string.triggers_network_bg_blocked_detail),
                         analyzer.getContext().getString(R.string.triggers_network_bg_blocked_explanation),
                         TriggerInfo.Severity.INFO));
             } else if (allowed) {
                 AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyzeNetworkPolicy: background ALLOWED for uid=" + analyzer.getCachedUid());
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
-                        analyzer.getContext().getString(R.string.triggers_cat_network),
+                        AppTriggersAnalyzer.KEY_CAT_NETWORK,
+                analyzer.getContext().getString(R.string.triggers_cat_network),
                         analyzer.getContext().getString(R.string.triggers_network_bg_allowed_detail),                       
                         analyzer.getContext().getString(R.string.triggers_network_bg_allowed_explanation),                       
                         TriggerInfo.Severity.MEDIUM));
