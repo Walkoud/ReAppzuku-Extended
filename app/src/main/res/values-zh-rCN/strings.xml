@@ -101,15 +101,6 @@
     <string name="bgrest_help_manual_title">手动</string>
     <string name="bgrest_help_manual_body">手动为每个应用选择所需的限制。</string>
 
-    <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
-    <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
-    <string name="manual_op_start_foreground">START_FOREGROUND</string>
-    <string name="manual_op_fgs_from_background">START_FOREGROUND_SERVICES_FROM_BACKGROUND</string>
-    <string name="manual_op_wake_lock">WAKE_LOCK</string>
-    <string name="manual_op_alarm_wakeup">ALARM_WAKEUP</string>
-    <string name="manual_op_boot_completed">RECEIVE_BOOT_COMPLETED</string>
-    <string name="manual_op_interact_across_profiles">INTERACT_ACROSS_PROFILES</string>
-
     <!-- Main menu (main.xml) -->
     <string name="menu_select_all">全选</string>
     <string name="menu_deselect_all">取消全选</string>
