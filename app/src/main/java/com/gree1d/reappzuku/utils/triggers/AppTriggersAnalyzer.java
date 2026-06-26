@@ -103,8 +103,6 @@ public class AppTriggersAnalyzer {
 
     private static final String FILE_NAME = "AppTriggersAnalyzer";
 
-    // ---- Locale-independent keys for internal scoring logic ----
-    // Category keys — passed as TriggerInfo.key by analyzers
     public static final String KEY_CAT_PROC_STATE      = "proc_state";
     public static final String KEY_CAT_FG_SERVICE      = "fg_service";
     public static final String KEY_CAT_STICKY          = "sticky_service";
@@ -515,9 +513,9 @@ public class AppTriggersAnalyzer {
             boolean persistent = false;
 
             Pattern procPat  = Pattern.compile(
-                    "ProcessRecord\{[^}]+\s" + Pattern.quote(packageName) + "/");
-            Pattern adjPat   = Pattern.compile("\badj=([-\d]+)");
-            Pattern statePat = Pattern.compile("\bcurProcState=(\w+)");
+                    "ProcessRecord\\{[^}]+\\s" + Pattern.quote(packageName) + "/");
+            Pattern adjPat   = Pattern.compile("\\badj=([-\\d]+)");
+            Pattern statePat = Pattern.compile("\\bcurProcState=(\\w+)");
 
             boolean inBlock = false;
             for (String line : dumpOutput.split("\n")) {
