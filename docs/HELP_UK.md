@@ -714,6 +714,7 @@ Auto-Kill спрацьовує в момент відкриття вибрани
 `RUN_IN_BACKGROUND ignore`\
 `ALARM_WAKEUP ignore`\
 `START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SCHEDULE_EXACT_ALARM`\
 `Standby Bucket: Rare`
 
 - **Жорстке**\
@@ -729,6 +730,7 @@ Auto-Kill спрацьовує в момент відкриття вибрани
 `RECEIVE_BOOT_COMPLETED ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `Battery optimization whitelist removal`\
+`SCHEDULE_EXACT_ALARM`\
 `Standby Bucket: Restricted`
 
 - **Ручне**\
@@ -779,6 +781,11 @@ Auto-Kill спрацьовує в момент відкриття вибрани
 **Що блокує:** міжпрофільні виклики та передачу даних між основним і робочим профілями.\
 **Що не блокує:** роботу застосунку всередині одного профілю.
 
+- **SCHEDULE_EXACT_ALARM**
+Забороняє застосунку планувати точні будильники через `AlarmManager.setExact()` та аналогічні методи. На відміну від `ALARM_WAKEUP`, це обмеження забороняє саму постановку точного таймера, а не лише пробудження пристрою.\
+**Що блокує:** виклики `setExact()`, `setExactAndAllowWhileIdle()` та інших точних методів AlarmManager — застосунок не зможе зареєструвати точно відкладену задачу.\
+**Що не блокує:** неточні таймери (`setInexactRepeating()`), задачі JobScheduler та WorkManager.
+
 - **Standby Bucket: Rare**
 Позначається для системи як рідко використовуваний. Блокує застосунку на рівні системи:
   - Фонове з'єднання. Мережа доступна лише у рідкісні системні вікна обслуговування (maintenance windows).
@@ -807,6 +814,7 @@ AlarmManager. Неточні будильники відкладаються. Л
 | ALARM_WAKEUP | — | ✓ | ✓ | на вибір |
 | RECEIVE_BOOT_COMPLETED | — | — | ✓ | на вибір |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | на вибір |
+| SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | на вибір |
 | Standby Bucket | — | Rare | Restricted | на вибір |
 
 **Статуси у списку**:
