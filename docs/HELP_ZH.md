@@ -729,6 +729,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `RUN_IN_BACKGROUND ignore`\
 `ALARM_WAKEUP ignore`\
 `START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -745,6 +746,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `RECEIVE_BOOT_COMPLETED ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `电池优化白名单移除`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Restricted`
 
 - **Manual**\
@@ -795,6 +797,11 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 **阻止：** 主配置文件与工作配置文件之间的跨配置文件调用和数据传输。\
 **不阻止：** 应用在单个配置文件内运行。
 
+- **SCHEDULE_EXACT_ALARM**
+禁止应用通过 `AlarmManager.setExact()` 及类似方法设置精确闹钟。与 `ALARM_WAKEUP` 不同，此限制阻止的是闹钟本身的注册，而非仅仅阻止唤醒设备。\
+**阻止：** 调用 `setExact()`、`setExactAndAllowWhileIdle()` 及其他精确 AlarmManager 方法 — 应用将无法注册精确延迟任务。\
+**不阻止：** 非精确定时器（`setInexactRepeating()`）、JobScheduler 和 WorkManager 任务。
+
 - **Standby Bucket: Rare**\
 被系统标记为很少使用。在系统层面阻止应用：
   - 后台网络。网络仅在稀有的系统维护窗口期间可用。
@@ -823,6 +830,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 | ALARM_WAKEUP | — | ✓ | ✓ | 可选 |
 | RECEIVE_BOOT_COMPLETED | — | — | ✓ | 可选 |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | 可选 |
+| SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | 可选 |
 | Standby Bucket | — | Rare | Restricted | 可选 |
 
 **列表状态**：
