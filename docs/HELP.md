@@ -729,6 +729,7 @@ Blocks service launches, job scheduler and alarms. App works normally while open
 `RUN_IN_BACKGROUND ignore`\
 `ALARM_WAKEUP ignore`\
 `START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SCHEDULE_EXACT_ALARM`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -745,6 +746,7 @@ Once app is minimized or switched away from — system kills it immediately. App
 `RECEIVE_BOOT_COMPLETED ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `Battery optimization whitelist removal`\
+`SCHEDULE_EXACT_ALARM`\
 `Standby Bucket: Restricted`
 
 - **Manual**\
@@ -795,6 +797,11 @@ Prevents app from interacting with other work profiles. Primarily relevant on en
 **Blocks:** cross-profile calls and data transfer between primary and work profiles.\
 **Does not block:** app operating within single profile.
 
+- **SCHEDULE_EXACT_ALARM**
+Prevents the app from scheduling exact alarms via `AlarmManager.setExact()` and similar methods. Unlike `ALARM_WAKEUP`, this restriction blocks the scheduling of the alarm itself, not just the ability to wake the device.\
+**What it blocks:** calls to `setExact()`, `setExactAndAllowWhileIdle()`, and other exact AlarmManager methods — the app will be unable to register a precisely timed deferred task.\
+**What it does not block:** inexact timers (`setInexactRepeating()`), JobScheduler and WorkManager tasks.
+
 - **Standby Bucket: Rare**\
 Marked by system as rarely used. Blocks app at system level:
   - Background network. Network available only during rare system maintenance windows.
@@ -823,6 +830,7 @@ Marked by system as long-unused or anomalous app that consumed excessive CPU and
 | ALARM_WAKEUP | — | ✓ | ✓ | optional |
 | RECEIVE_BOOT_COMPLETED | — | — | ✓ | optional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | optional |
+| SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | optional |
 | Standby Bucket | — | Rare | Restricted | optional |
 
 **List statuses**:
