@@ -147,7 +147,7 @@
     <!-- ══════════════════════════════════════════════
          BACKGROUND APP MANAGER — TOASTS & NOTIFICATIONS
          ══════════════════════════════════════════════ -->
-    <string name="toast_free_up">Liberar %1$s</string>
+    <string name="toast_free_up">Liberados %1$s</string>
     <string name="toast_failed_get_running_apps">No se pudo obtener la salida de las apps en ejecución</string>
     <string name="toast_error_getting_running_apps">Error al obtener las apps en ejecución: %1$s</string>
     <string name="toast_bg_restriction_requires_android11">La restricción en segundo plano requiere Android 11+</string>
