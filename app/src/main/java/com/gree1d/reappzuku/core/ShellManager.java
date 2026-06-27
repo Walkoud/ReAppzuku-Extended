@@ -27,9 +27,6 @@ public class ShellManager {
     private final ExecutorService executor;
 
     private volatile Boolean hasRoot = null;
-    private final AtomicBoolean rootCheckInProgress = new AtomicBoolean(false);
-
-    private volatile Runnable onRootCheckComplete;
 
     @SuppressWarnings("deprecation")
     private Shizuku.OnRequestPermissionResultListener shizukuPermissionListener;
