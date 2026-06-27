@@ -105,7 +105,17 @@ public class ShappkyService extends Service {
     public void onCreate() {
         super.onCreate();
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onCreate started");
+
         shellManager = new ShellManager(this, handler, executor);
+
+        boolean hasShell = shellManager.resolveAnyShellPermissionBlocking();
+        if (!hasShell) {
+            AppDebugManager.w(Category.CORE, FILE_NAME + ": No shell/root access available, stopping service");
+            stopSelf();
+            return;
+        }
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": Shell/root access confirmed, proceeding with service init");
+
         appManager = new BackgroundAppManager(this, handler, executor, shellManager);
         AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": BackgroundAppManager initialized");
         autoKillManager = new AutoKillManager(this, handler, executor, shellManager, appManager.getCurrentAppsList());
@@ -153,8 +163,7 @@ public class ShappkyService extends Service {
 
         cancelShizukuLostNotification();
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Shizuku-lost notification cancelled on service create");
-        AppDebugManager.d(Category.CORE, FILE_NAME + ": Registering onRootCheckCompleteListener -> scheduleShizukuCheck");
-        shellManager.setOnRootCheckCompleteListener(this::scheduleShizukuCheck);
+        scheduleShizukuCheck();
         scheduleSnapshotAlarm();
         scheduleWidgetUpdate();
 
@@ -253,7 +262,7 @@ public class ShappkyService extends Service {
             case "WIDGET_KILL":
                 ramKillShortcutManager.performKillAndUpdate(autoKillManager);
                 break;
-                
+
             case "SHORTCUT_KILL_FOREGROUND":
                 String targetPkg = intent.getStringExtra("target_package");
                 if (targetPkg != null && !targetPkg.isEmpty()) {
@@ -605,7 +614,9 @@ public class ShappkyService extends Service {
             AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": Stopping AdditionalScenariosManager (onDestroy)");
             additionalScenariosManager.stop();
         }
-        watchdog.stop();
+        if (watchdog != null) {
+            watchdog.stop();
+        }
         handler.removeCallbacksAndMessages(null);
         super.onDestroy();
         executor.shutdownNow();
@@ -635,7 +646,7 @@ public class ShappkyService extends Service {
             nm.createNotificationChannel(actionsChannel);
         }
     }
-    
+
     public static class RestartReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
