@@ -170,7 +170,6 @@ public class MainActivity extends BaseActivity {
         setupBottomNavigation();
         setupListeners();
 
-        binding.swiperefreshlayout1.post(this::recalculateListHeight);
         loadSettingsAndApplyToManager();
 
         shellManager.setShizukuPermissionListener(shizukuPermissionListener);
@@ -180,34 +179,9 @@ public class MainActivity extends BaseActivity {
         AppDebugManager.d(Category.MAIN_PAGE, "MainActivity: onCreate finished");
     }
 
-    private void recalculateListHeight() {
-        int screenHeight = getResources().getDisplayMetrics().heightPixels;
-        int appNavBarPx = (int) (64 * getResources().getDisplayMetrics().density);
-
-        int systemNavHeight = 0;
-        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(binding.swiperefreshlayout1);
-        if (insets != null) {
-            systemNavHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-        }
-
-        int[] srlPos = new int[2];
-        binding.swiperefreshlayout1.getLocationOnScreen(srlPos);
-        int srlTop = srlPos[1];
-
-        int desiredHeight = screenHeight - appNavBarPx - systemNavHeight - srlTop;
-        if (desiredHeight > 0) {
-            android.view.ViewGroup.LayoutParams params = binding.swiperefreshlayout1.getLayoutParams();
-            params.height = desiredHeight;
-            binding.swiperefreshlayout1.setLayoutParams(params);
-        }
-    }
-
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) {
-            binding.swiperefreshlayout1.post(this::recalculateListHeight);
-        }
     }
 
     private void setupBottomNavigation() {
@@ -526,10 +500,15 @@ public class MainActivity extends BaseActivity {
             spannable.setSpan(new ForegroundColorSpan(primaryColor), 0, labelPart.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
             statusView.setText(spannable);
             statusView.setTextSize(13f);
+            float density = getResources().getDisplayMetrics().density;
             LinearLayout.LayoutParams statusLp = new LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT);
-            statusLp.setMargins(8, 4, 8, 4);
+            statusLp.setMargins(
+                    (int) (8 * density),
+                    (int) (4 * density),
+                    (int) (8 * density),
+                    (int) (4 * density));
             statusView.setLayoutParams(statusLp);
             container.addView(statusView);
         }
@@ -545,10 +524,15 @@ public class MainActivity extends BaseActivity {
         scoreSpannable.setSpan(new ForegroundColorSpan(scoreColor), 0, scoreLabelPart.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         scoreView.setText(scoreSpannable);
         scoreView.setTextSize(13f);
+        float densityScore = getResources().getDisplayMetrics().density;
         LinearLayout.LayoutParams scoreLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        scoreLp.setMargins(8, 4, 8, 16);
+        scoreLp.setMargins(
+                (int) (8  * densityScore),
+                (int) (4  * densityScore),
+                (int) (8  * densityScore),
+                (int) (16 * densityScore));
         scoreView.setLayoutParams(scoreLp);
         container.addView(scoreView);
 
@@ -596,10 +580,15 @@ public class MainActivity extends BaseActivity {
         header.setTextColor(color);
         header.setAllCaps(true);
         header.setTypeface(null, android.graphics.Typeface.BOLD);
+        float density = getResources().getDisplayMetrics().density;
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(8, 24, 8, 4);
+        lp.setMargins(
+                (int) (8  * density),
+                (int) (24 * density),
+                (int) (8  * density),
+                (int) (4  * density));
         header.setLayoutParams(lp);
         container.addView(header);
     }
@@ -859,15 +848,12 @@ public class MainActivity extends BaseActivity {
             if (insets != null) {
                 navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
             }
-            int basePx = (int) (64 * getResources().getDisplayMetrics().density);
-            android.view.ViewGroup.LayoutParams params = binding.killButton.getLayoutParams();
-            params.height = basePx + navBarHeight;
-            binding.killButton.setLayoutParams(params);
             binding.killButton.setPadding(0, 0, 0, navBarHeight);
             binding.killButton.setVisibility(View.VISIBLE);
             updateKillButtonText();
         } else {
             binding.killButton.setVisibility(View.GONE);
+            binding.killButton.setPadding(0, 0, 0, 0);
             binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
         }
         updateSelectAllMenuItem();
