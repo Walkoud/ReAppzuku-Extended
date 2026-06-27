@@ -29,6 +29,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
+        android:fitsSystemWindows="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <RelativeLayout
@@ -107,7 +108,8 @@
         <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
             android:id="@+id/swiperefreshlayout1"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:clipToPadding="false"
             android:background="?android:attr/colorBackground">
 
@@ -117,7 +119,8 @@
                 android:layout_height="match_parent"
                 android:scrollbars="vertical"
                 android:clipToPadding="false"
-                android:paddingTop="4dp" />
+                android:paddingTop="4dp"
+                android:paddingBottom="64dp" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
@@ -133,8 +136,9 @@
     <com.google.android.material.button.MaterialButton
         android:id="@+id/kill_button"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:minHeight="56dp"
         android:text="@string/fab_kill_app"
         android:textSize="15sp"
         android:textStyle="bold"
