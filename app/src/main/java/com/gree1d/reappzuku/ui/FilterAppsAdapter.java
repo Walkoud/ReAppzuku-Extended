@@ -55,6 +55,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
     private final Map<String, Integer> manualOpsMaskMap;
     private final Map<String, Integer> manualBucketMap;
+    private final Set<String> manualWhitelistRemovalSet;
 
     private OnSelectionChangedListener selectionChangedListener;
     private int accentColor = 0;
@@ -69,7 +70,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps, Set<String> selectedApps) {
-        this(context, apps, selectedApps, null, null, null, null, null, false, false);
+        this(context, apps, selectedApps, null, null, null, null, null, null, false, false);
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
@@ -91,6 +92,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         this.freezeMethodMap = new HashMap<>();
         this.manualOpsMaskMap = new HashMap<>();
         this.manualBucketMap = new HashMap<>();
+        this.manualWhitelistRemovalSet = new HashSet<>();
 
         for (AppModel app : apps) {
             String pkg = app.getPackageName();
@@ -124,7 +126,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
                              Set<String> selectedApps, Set<String> hardRestrictedApps) {
-        this(context, apps, selectedApps, hardRestrictedApps, null, null, null, null, true, false);
+        this(context, apps, selectedApps, hardRestrictedApps, null, null, null, null, null, true, false);
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
@@ -132,7 +134,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                              Set<String> hardRestrictedApps,
                              Set<String> manualRestrictedApps,
                              Map<String, Integer> initialMasks) {
-        this(context, apps, selectedApps, hardRestrictedApps, null, manualRestrictedApps, initialMasks, null, true, false);
+        this(context, apps, selectedApps, hardRestrictedApps, null, manualRestrictedApps, initialMasks, null, null, true, false);
     }
 
     public FilterAppsAdapter(Context context, List<AppModel> apps,
@@ -142,7 +144,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                              Set<String> manualRestrictedApps,
                              Map<String, Integer> initialMasks,
                              Map<String, Integer> initialBuckets) {
-        this(context, apps, selectedApps, hardRestrictedApps, mediumRestrictedApps, manualRestrictedApps, initialMasks, initialBuckets, true, false);
+        this(context, apps, selectedApps, hardRestrictedApps, mediumRestrictedApps, manualRestrictedApps, initialMasks, initialBuckets, null, true, false);
     }
 
     private FilterAppsAdapter(Context context, List<AppModel> apps,
@@ -152,6 +154,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                                Set<String> manualRestrictedApps,
                                Map<String, Integer> initialMasks,
                                Map<String, Integer> initialBuckets,
+                               Set<String> initialWhitelistRemoval,
                                boolean restrictionMode,
                                boolean sleepMode) {
         this.context = context;
@@ -163,6 +166,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         this.freezeMethodMap = new HashMap<>();
         this.manualOpsMaskMap = new HashMap<>();
         this.manualBucketMap = new HashMap<>();
+        this.manualWhitelistRemovalSet = new HashSet<>();
 
         for (AppModel app : apps) {
             if (selectedApps.contains(app.getPackageName())) {
@@ -191,6 +195,9 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             }
             if (initialBuckets != null) {
                 manualBucketMap.putAll(initialBuckets);
+            }
+            if (initialWhitelistRemoval != null) {
+                manualWhitelistRemovalSet.addAll(initialWhitelistRemoval);
             }
         }
 
@@ -263,6 +270,10 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
 
     public Map<String, Integer> getManualBuckets() {
         return new HashMap<>(manualBucketMap);
+    }
+
+    public Set<String> getManualWhitelistRemoval() {
+        return new HashSet<>(manualWhitelistRemovalSet);
     }
 
     public Set<String> getHardRestrictedPackages() {
@@ -395,6 +406,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     restrictionTypeMap.remove(app.getPackageName());
                     manualOpsMaskMap.remove(app.getPackageName());
                     manualBucketMap.remove(app.getPackageName());
+                    manualWhitelistRemovalSet.remove(app.getPackageName());
                 }
                 if (sleepMode) {
                     freezeTypeMap.remove(app.getPackageName());
@@ -414,6 +426,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     restrictionTypeMap.remove(app.getPackageName());
                     manualOpsMaskMap.remove(app.getPackageName());
                     manualBucketMap.remove(app.getPackageName());
+                    manualWhitelistRemovalSet.remove(app.getPackageName());
                 }
                 if (sleepMode) {
                     freezeTypeMap.remove(app.getPackageName());
@@ -751,6 +764,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         listLayout.addView(divider);
 
         final int[] selectedBucket = {currentBucket};
+        final boolean[] whitelistRemoval = {manualWhitelistRemovalSet.contains(app.getPackageName())};
 
         CheckBox cbRare = new CheckBox(context);
         cbRare.setText(context.getString(R.string.manual_bucket_rare));
@@ -781,6 +795,22 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             }
         });
 
+        View divider2 = new View(context);
+        android.widget.LinearLayout.LayoutParams divParams2 =
+                new android.widget.LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        divParams2.setMargins(paddingH, paddingV * 3, paddingH, paddingV * 3);
+        divider2.setLayoutParams(divParams2);
+        divider2.setBackgroundColor(0x44888888);
+        listLayout.addView(divider2);
+
+        CheckBox cbWhitelistRemoval = new CheckBox(context);
+        cbWhitelistRemoval.setText(context.getString(R.string.manual_whitelist_removal));
+        cbWhitelistRemoval.setChecked(whitelistRemoval[0]);
+        cbWhitelistRemoval.setPadding(paddingH, paddingV * 3, paddingH, paddingV * 3);
+        cbWhitelistRemoval.setOnCheckedChangeListener((btn, isChecked) -> whitelistRemoval[0] = isChecked);
+        listLayout.addView(cbWhitelistRemoval);
+
         scrollView.addView(listLayout);
 
         new MaterialAlertDialogBuilder(context)
@@ -805,6 +835,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                         restrictionTypeMap.remove(app.getPackageName());
                         manualOpsMaskMap.remove(app.getPackageName());
                         manualBucketMap.remove(app.getPackageName());
+                        manualWhitelistRemovalSet.remove(app.getPackageName());
                         chipView.setText(badgeLabel(BackgroundAppManager.RestrictionType.SOFT));
                     } else {
                         manualOpsMaskMap.put(app.getPackageName(), mask);
@@ -812,6 +843,11 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                             manualBucketMap.put(app.getPackageName(), selectedBucket[0]);
                         } else {
                             manualBucketMap.remove(app.getPackageName());
+                        }
+                        if (whitelistRemoval[0]) {
+                            manualWhitelistRemovalSet.add(app.getPackageName());
+                        } else {
+                            manualWhitelistRemovalSet.remove(app.getPackageName());
                         }
                         AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: manualOps saved pkg=" + app.getPackageName() + ", mask=0x" + Integer.toHexString(mask) + ", bucket=" + selectedBucket[0]);
                         chipView.setText(badgeLabel(BackgroundAppManager.RestrictionType.MANUAL));
@@ -826,6 +862,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             for (CheckBox cb : boxes) cb.setButtonTintList(tint);
             cbRare.setButtonTintList(tint);
             cbRestricted.setButtonTintList(tint);
+            cbWhitelistRemoval.setButtonTintList(tint);
         }
     }
 
