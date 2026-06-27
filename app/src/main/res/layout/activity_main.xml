@@ -119,8 +119,7 @@
                 android:layout_height="match_parent"
                 android:scrollbars="vertical"
                 android:clipToPadding="false"
-                android:paddingTop="4dp"
-                android:paddingBottom="64dp" />
+                android:paddingTop="4dp" />
 
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
