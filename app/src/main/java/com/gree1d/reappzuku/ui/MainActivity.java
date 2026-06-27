@@ -184,6 +184,13 @@ public class MainActivity extends BaseActivity {
         super.onWindowFocusChanged(hasFocus);
     }
 
+    private void updateRecyclerBottomPadding() {
+        int bottomNavHeight = binding.bottomNavigation.getRoot().getHeight();
+        if (bottomNavHeight == 0) return;
+        int topPadding = binding.recyclerView.getPaddingTop();
+        binding.recyclerView.setPadding(0, topPadding, 0, bottomNavHeight);
+    }
+
     private void setupBottomNavigation() {
         binding.bottomNavigation.navIconMain.setSelected(true);
         binding.bottomNavigation.navIconSettings.setSelected(false);
@@ -234,18 +241,11 @@ public class MainActivity extends BaseActivity {
         binding.scanButtonLayout.setOnClickListener(v -> showSystemScanDialog());
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.recyclerView, (v, insets) -> {
-            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-            int bottomNavHeight = binding.bottomNavigation.getRoot().getHeight();
-            if (bottomNavHeight == 0) {
-                binding.bottomNavigation.getRoot().post(() -> {
-                    int h = binding.bottomNavigation.getRoot().getHeight();
-                    v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), h + navBarHeight);
-                });
-            } else {
-                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), bottomNavHeight + navBarHeight);
-            }
+            updateRecyclerBottomPadding();
             return insets;
         });
+        binding.bottomNavigation.getRoot().addOnLayoutChangeListener(
+                (v, l, t, r, b, ol, ot, or, ob) -> updateRecyclerBottomPadding());
 
         listAdapter.setOnAppActionListener(new BackgroundAppsRecyclerViewAdapter.OnAppActionListener() {
             @Override
