@@ -233,6 +233,20 @@ public class MainActivity extends BaseActivity {
         binding.killButton.setOnClickListener(view -> killSelectedApps());
         binding.scanButtonLayout.setOnClickListener(v -> showSystemScanDialog());
 
+        ViewCompat.setOnApplyWindowInsetsListener(binding.recyclerView, (v, insets) -> {
+            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            int bottomNavHeight = binding.bottomNavigation.getRoot().getHeight();
+            if (bottomNavHeight == 0) {
+                binding.bottomNavigation.getRoot().post(() -> {
+                    int h = binding.bottomNavigation.getRoot().getHeight();
+                    v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), h + navBarHeight);
+                });
+            } else {
+                v.setPadding(v.getPaddingLeft(), v.getPaddingTop(), v.getPaddingRight(), bottomNavHeight + navBarHeight);
+            }
+            return insets;
+        });
+
         listAdapter.setOnAppActionListener(new BackgroundAppsRecyclerViewAdapter.OnAppActionListener() {
             @Override
             public void onKillApp(AppModel app, int position) {
