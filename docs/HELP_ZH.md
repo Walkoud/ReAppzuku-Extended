@@ -728,8 +728,8 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
-`START_ACTIVITIES_FROM_BACKGROUND ignore`\
-`SCHEDULE_EXACT_ALARM ignore`\
+`GET_USAGE_STATS ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -741,10 +741,11 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `RUN_IN_BACKGROUND ignore`\
 `START_FOREGROUND ignore`\
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
-`START_ACTIVITIES_FROM_BACKGROUND ignore`\
+`GET_USAGE_STATS ignore`\
 `WAKE_LOCK ignore`\
 `SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `电池优化白名单移除`\
 `Standby Bucket: Restricted`
 
@@ -776,10 +777,10 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 **阻止：** 在开启省电算法时，应用无限制地在后台运行、自由使用网络以及唤醒设备（wakelocks）。\
 **不阻止：** 应用在屏幕上打开（处于前台）时的正常运行，以及标准电池管理允许的基本后台功能。
 
-- **START_ACTIVITIES_FROM_BACKGROUND**
-禁止应用在后台运行时启动屏幕界面（Activity）并将其切换到前台。此限制 可保护用户免受突然弹出的窗口打扰。\
-**阻止：** 当您正在使用其他应用或设备锁定时，突然弹出的应用界面（例如广告或全屏来电呼叫界面）。\
-**不阻止：** 发送通知、后台服务的运行，以及用户主动点击该应用的通知后启动的屏幕界面。
+- **GET_USAGE_STATS**
+禁止应用访问其他应用的使用情况统计信息（例如启动过哪些应用、使用了多长时间以及活动历史记录）。\
+**阻止：** 对 UsageStatsManager 方法的调用（例如 queryUsageStats()、queryEvents()）——应用将无法追踪用户打开 view 了哪些程序以及在其中停留了多长时间。\
+**不阻止：** 应用访问自身的运行统计信息，或与第三方应用活动无关的基础系统信息。
 
 - **WAKE_LOCK**\
 阻止应用在屏幕关闭时保持 CPU 活跃。没有 WakeLock，系统可以让 CPU 休眠并停止后台操作。\
@@ -795,6 +796,11 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 阻止应用与其他工作配置文件交互。主要与企业设备相关。\
 **阻止：** 主配置文件与工作配置文件之间的跨配置文件调用和数据传输。\
 **不阻止：** 应用在单个配置文件内运行。
+
+- **ACCESS_NOTIFICATIONS**
+禁止应用访问通知侦听器服务。此限制可防止应用读取、拦截或与其他应用的通知进行交互。\
+**阻止：** NotificationListenerService 的运行——应用将无法读取其他应用通知的文本和标题、清除通知或通过代码点击其中的操作按钮。\
+**不阻止：** 应用自身通过 NotificationManager 向用户发送和管理自己通知的能力。
 
 - **Standby Bucket: Rare**\
 被系统标记为很少使用。在系统层面阻止应用：
@@ -820,10 +826,11 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 | RUN_IN_BACKGROUND | — | ✓ | ✓ | 可选 |
 | START_FOREGROUND | — | — | ✓ | 可选 |
 | SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS | — | ✓ | ✓ | 可选 |
-| START_ACTIVITIES_FROM_BACKGROUND | — | ✓ | ✓ | 可选 |
+| GET_USAGE_STATS | — | ✓ | ✓ | 可选 |
 | WAKE_LOCK | — | — | ✓ | 可选 |
-| SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | 可选 |
+| SCHEDULE_EXACT_ALARM | — | — | ✓ | 可选 |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | 可选 |
+| ACCESS_NOTIFICATIONS | — | ✓ | ✓ | 可选 |
 | Standby Bucket | — | Rare | Restricted | 可选 |
 
 **列表状态**：

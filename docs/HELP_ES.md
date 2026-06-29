@@ -728,8 +728,8 @@ Bloquea el lanzamiento de servicios, el programador de tareas (job scheduler) y 
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
-`START_ACTIVITIES_FROM_BACKGROUND ignore`\
-`SCHEDULE_EXACT_ALARM ignore`\
+`GET_USAGE_STATS ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Standby Bucket: Rare`
 
 - **Estricta / Hard**\
@@ -741,10 +741,11 @@ Una vez que la app se minimiza o cambias a otra — el sistema la cierra inmedia
 `RUN_IN_BACKGROUND ignore`\
 `START_FOREGROUND ignore`\
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
-`START_ACTIVITIES_FROM_BACKGROUND ignore`\
+`GET_USAGE_STATS ignore`\
 `WAKE_LOCK ignore`\
 `SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Eliminación de la lista blanca de optimización de batería`\
 `Standby Bucket: Restricted`
 
@@ -776,10 +777,10 @@ Impide que la aplicación eluda las restricciones de ahorro de energía del sist
 **Bloquea:** la ejecución de la aplicación en segundo plano sin restricciones, el uso libre de la red y el despertar del dispositivo (wakelocks) cuando los algoritmos de ahorro de batería están activos.\
 **No bloquea:** el funcionamiento normal de la aplicación cuando está abierta en la pantalla (en primer plano), así como las funciones básicas en segundo plano permitidas por la gestión de batería estándar.
 
-- **START_ACTIVITIES_FROM_BACKGROUND**
-Impide que la aplicación inicie pantallas (Activity) y las traiga al primer plano mientras la aplicación está en segundo plano. Esta restricción protege al usuario de la aparición repentina de ventanas.\
-**Bloquea:** la apertura inesperada de la interfaz de la aplicación (por ejemplo, anuncios o pantallas de llamadas a pantalla completa) mientras se usa otra aplicación o el dispositivo está bloqueado.\
-**No bloquea:** el envío de notificaciones, los servicios en segundo plano o el inicio de pantallas si el usuario toca directamente una notificación generada por esa aplicación.
+- **GET_USAGE_STATS**
+Prohíbe a la aplicación acceder a las estadísticas de uso del dispositivo por parte de otras aplicaciones (qué apps se abrieron, cuánto tiempo se usaron y el historial de actividad).\
+**Bloquea:** Las llamadas a los métodos de UsageStatsManager (por ejemplo, queryUsageStats(), queryEvents()); la aplicación no podrá rastrear qué programas usa el usuario ni cuánto tiempo pasa en ellos.\
+**No bloquea:** El acceso de la aplicación a sus propias estadísticas de funcionamiento o a información básica del sistema no relacionada con la actividad de terceros.
 
 - **WAKE_LOCK**\
 Evita que la app mantenga activa la CPU con la pantalla apagada. Sin un wake lock, el sistema puede suspender la CPU y detener las operaciones en segundo plano.\
@@ -795,6 +796,11 @@ Impide que la aplicación programe alarmas exactas mediante `AlarmManager.setExa
 Evita que la app interactúe con otros perfiles de trabajo. Relevante principalmente en dispositivos empresariales.\
 **Bloquea:** llamadas entre perfiles y la transferencia de datos entre el perfil principal y el de trabajo.\
 **No bloquea:** el funcionamiento de la app dentro de un solo perfil.
+
+- **ACCESS_NOTIFICATIONS**
+Prohíbe a la aplicación acceder al servicio de escucha de notificaciones. Esta restricción evita que la aplicación lea, intercepte o interactúe con las notificaciones de otros programas.\
+**Bloquea:** El funcionamiento de NotificationListenerService; la aplicación no podrá leer el texto ni los títulos de las notificaciones de otras apps, descartarlas o pulsar programáticamente sus botones de acción.
+**No bloquea:** La capacidad de la propia aplicación para enviar sus propias notificaciones al usuario a través de NotificationManager.
 
 - **Estado Standby: Raro (Rare)**\
 Marcado por el sistema como usado raramente. Bloquea la app a nivel del sistema:
@@ -820,10 +826,11 @@ Marcado por el sistema como una app que no se usa desde hace mucho tiempo o que 
 | RUN_IN_BACKGROUND | — | ✓ | ✓ | opcional |
 | START_FOREGROUND | — | — | ✓ | opcional |
 | SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS | — | ✓ | ✓ | opcional |
-| START_ACTIVITIES_FROM_BACKGROUND | — | — | ✓ | opcional |
+| GET_USAGE_STATS | — | — | ✓ | opcional |
 | WAKE_LOCK | — | — | ✓ | opcional |
-| SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | opcional |
+| SCHEDULE_EXACT_ALARM | — | — | ✓ | opcional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | opcional |
+| ACCESS_NOTIFICATIONS | — | ✓ | ✓ | opcional |
 | Estado Standby Bucket | — | Rare | Restricted | opcional |
 
 **Estados de la lista**:
