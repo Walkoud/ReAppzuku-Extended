@@ -42,10 +42,11 @@ public class BackgroundAppManager {
     private static final String BG_RUN_RESTRICTION_OP = "RUN_IN_BACKGROUND";
     private static final String FOREGROUND_RESTRICTION_OP = "START_FOREGROUND";
     private static final String SYSTEM_EXEMPT_OP = "SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS";
-    private static final String START_ACTIVITIES_FROM_BG_OP = "START_ACTIVITIES_FROM_BACKGROUND";
+    private static final String GET_USAGE_STATS_OP = "GET_USAGE_STATS";
     private static final String WAKE_LOCK_RESTRICTION_OP = "WAKE_LOCK";    
     private static final String OP_SCHEDULE_EXACT_ALARM = "SCHEDULE_EXACT_ALARM";
     private static final String INTERACT_ACROSS_PROFILES_OP = "INTERACT_ACROSS_PROFILES"; 
+    private static final String ACCESS_NOTIFICATIONS_OP = "ACCESS_NOTIFICATIONS"; 
     private static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+");
     private static final String FORCE_STOP_COMMAND_PREFIX = "am force-stop ";
     private static final int STANDBY_BUCKET_RARE = 40;
@@ -56,18 +57,19 @@ public class BackgroundAppManager {
         BG_RUN_RESTRICTION_OP,
         FOREGROUND_RESTRICTION_OP,
         SYSTEM_EXEMPT_OP,
-        START_ACTIVITIES_FROM_BG_OP,
+        GET_USAGE_STATS_OP,
         WAKE_LOCK_RESTRICTION_OP,
         OP_SCHEDULE_EXACT_ALARM,
-        INTERACT_ACROSS_PROFILES_OP
+        INTERACT_ACROSS_PROFILES_OP,
+        ACCESS_NOTIFICATIONS_OP
     };
 
     public static final String[] MEDIUM_OPS = {
         BACKGROUND_RESTRICTION_OP,
         BG_RUN_RESTRICTION_OP,
         SYSTEM_EXEMPT_OP,
-        START_ACTIVITIES_FROM_BG_OP,
-        OP_SCHEDULE_EXACT_ALARM
+        GET_USAGE_STATS_OP,
+        ACCESS_NOTIFICATIONS_OP
     };
 
     public enum RestrictionType { SOFT, MEDIUM, HARD, MANUAL }
