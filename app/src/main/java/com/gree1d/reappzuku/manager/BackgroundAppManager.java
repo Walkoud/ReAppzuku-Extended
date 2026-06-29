@@ -44,8 +44,8 @@ public class BackgroundAppManager {
     private static final String WAKE_LOCK_RESTRICTION_OP = "WAKE_LOCK";
     private static final String SYSTEM_EXEMPT_OP = "SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS";
     private static final String START_ACTIVITIES_FROM_BG_OP = "START_ACTIVITIES_FROM_BACKGROUND";
-    private static final String INTERACT_ACROSS_PROFILES_OP = "INTERACT_ACROSS_PROFILES";
     public static final String OP_SCHEDULE_EXACT_ALARM = "SCHEDULE_EXACT_ALARM";
+    private static final String INTERACT_ACROSS_PROFILES_OP = "INTERACT_ACROSS_PROFILES"; 
     private static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+");
     private static final String FORCE_STOP_COMMAND_PREFIX = "am force-stop ";
     private static final int STANDBY_BUCKET_RARE = 40;
