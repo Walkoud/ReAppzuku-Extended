@@ -96,15 +96,6 @@
     <string name="main_restriction_menu_saved">Фоновое ограничение (сохранено)</string>
     <string name="main_restriction_menu_default">Фоновое ограничение</string>
 
-    <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
-    <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
-    <string name="manual_op_start_foreground">START_FOREGROUND</string>
-    <string name="manual_op_fgs_from_background">START_FOREGROUND_SERVICES_FROM_BACKGROUND</string>
-    <string name="manual_op_wake_lock">WAKE_LOCK</string>
-    <string name="manual_op_alarm_wakeup">ALARM_WAKEUP</string>
-    <string name="manual_op_boot_completed">RECEIVE_BOOT_COMPLETED</string>
-    <string name="manual_op_interact_across_profiles">INTERACT_ACROSS_PROFILES</string>
-
     <!-- Главное меню (main.xml) -->
     <string name="menu_select_all">Выбрать все</string>
     <string name="menu_deselect_all">Отменить выбор</string>

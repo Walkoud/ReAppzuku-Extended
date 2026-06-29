@@ -100,15 +100,6 @@
     <string name="bgrest_help_manual_title">MANUAL</string>
     <string name="bgrest_help_manual_body">Elige manualmente las restricciones requeridas para cada app.</string>
 
-    <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
-    <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
-    <string name="manual_op_start_foreground">START_FOREGROUND</string>
-    <string name="manual_op_fgs_from_background">START_FOREGROUND_SERVICES_FROM_BACKGROUND</string>
-    <string name="manual_op_wake_lock">WAKE_LOCK</string>
-    <string name="manual_op_alarm_wakeup">ALARM_WAKEUP</string>
-    <string name="manual_op_boot_completed">RECEIVE_BOOT_COMPLETED</string>
-    <string name="manual_op_interact_across_profiles">INTERACT_ACROSS_PROFILES</string>
-
     <!-- Main menu (main.xml) -->
     <string name="menu_select_all">Seleccionar todo</string>
     <string name="menu_deselect_all">Deseleccionar todo</string>
@@ -156,7 +147,7 @@
     <!-- ══════════════════════════════════════════════
          BACKGROUND APP MANAGER — TOASTS & NOTIFICATIONS
          ══════════════════════════════════════════════ -->
-    <string name="toast_free_up">Liberar %1$s</string>
+    <string name="toast_free_up">Liberados %1$s</string>
     <string name="toast_failed_get_running_apps">No se pudo obtener la salida de las apps en ejecución</string>
     <string name="toast_error_getting_running_apps">Error al obtener las apps en ejecución: %1$s</string>
     <string name="toast_bg_restriction_requires_android11">La restricción en segundo plano requiere Android 11+</string>
@@ -261,7 +252,7 @@
     <string name="settings_check_frequency_title">Intervalo de Auto-Cierre</string>
     <string name="settings_check_frequency_default">Cada 18 segundos</string>
     <string name="settings_interval_fallback">Cada %1$d segundos</string>
-    <string name="settings_screen_lock_title">Auto-Cierre al apagar pantalla</string>
+    <string name="settings_screen_lock_title">Auto-Cierre</string>
     <string name="settings_screen_lock_subtitle">Ejecutar el Auto-Cierre al apagar la pantalla</string>
     <string name="settings_ram_threshold_title">Umbral de RAM</string>
     <string name="settings_ram_threshold_subtitle">Ejecutar el Auto-Cierre cuando el uso de RAM exceda</string>

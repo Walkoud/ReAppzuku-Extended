@@ -727,8 +727,9 @@ Blocks service launches, job scheduler and alarms. App works normally while open
 **Commands used:**\
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
-`ALARM_WAKEUP ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`GET_USAGE_STATS ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -739,11 +740,12 @@ Once app is minimized or switched away from — system kills it immediately. App
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
 `START_FOREGROUND ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`GET_USAGE_STATS ignore`\
 `WAKE_LOCK ignore`\
-`ALARM_WAKEUP ignore`\
-`RECEIVE_BOOT_COMPLETED ignore`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Battery optimization whitelist removal`\
 `Standby Bucket: Restricted`
 
@@ -770,30 +772,35 @@ Prevents app from promoting service to foreground (persistent notification). Wit
 **Blocks:** calls to `startForeground()` — app can't create sticky notification or keep service alive.\
 **Does not block:** regular app notifications, background tasks via JobScheduler.
 
-- **START_FOREGROUND_SERVICES_FROM_BACKGROUND**\
-Prevents starting foreground service when app is in background. Added in Android 12 on top of `START_FOREGROUND`.\
-**Blocks:** attempts to start foreground service while app isn't visible on screen.\
-**Does not block:** foreground services started while app is in foreground.
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+Prevents the app from bypassing system power restrictions (such as Doze mode or App Standby). Usually, this permission allows system and critical apps to run in the background without limitations.\
+**Blocks:** unrestricted background execution, free network usage, and waking up the device (wakelocks) when battery-saving algorithms are active.\
+**Does not block:** normal operation of the app when it is open on the screen (in the foreground), as well as basic background functions permitted by standard power-saving modes.
+
+ - **GET_USAGE_STATS**
+Restricts the app from accessing device usage history and statistics for other applications (which apps were launched, how long they were used, and general activity history).\
+**Blocks:** Calls to UsageStatsManager methods (e.g., queryUsageStats(), queryEvents()) — the app won't be able to track what programs the user opens or how much time is spent in them.\
+**Does not block:** The app's access to its own internal usage statistics or basic system information unrelated to other apps' activity.
 
 - **WAKE_LOCK**\
 Prevents app from keeping CPU active with screen off. Without wake lock, system can sleep CPU and stop background operations.\
 **Blocks:** CPU hold via `PowerManager.WakeLock` — app can't prevent phone from sleeping.\
 **Does not block:** app running while screen is on.
 
-- **ALARM_WAKEUP**\
-Prevents app from waking device via exact timers (`AlarmManager.setExactAndAllowWhileIdle` and equivalents). Without this, alarms can't wake phone from deep sleep.\
-**Blocks:** exact alarm tasks that wake device — app can't schedule forced wakeup by timer.\
-**Does not block:** inexact timers, JobScheduler tasks.
-
-- **RECEIVE_BOOT_COMPLETED**\
-Prevents app from receiving `BOOT_COMPLETED` after reboot — mechanism most apps use to add themselves to autostart.\
-**Blocks:** autostart on system boot.\
-**Does not block:** manually launching app after reboot.
+- **SCHEDULE_EXACT_ALARM**
+Prevents the app from scheduling exact alarms via `AlarmManager.setExact()` and similar methods. This restriction blocks the scheduling of the alarm itself, not just the ability to wake the device.\
+**Blocks:** calls to `setExact()`, `setExactAndAllowWhileIdle()`, and other exact AlarmManager methods — the app will be unable to register a precisely timed deferred task.\
+**Does not block:** inexact timers (`setInexactRepeating()`), JobScheduler and WorkManager tasks.
 
 - **INTERACT_ACROSS_PROFILES**\
 Prevents app from interacting with other work profiles. Primarily relevant on enterprise devices.\
 **Blocks:** cross-profile calls and data transfer between primary and work profiles.\
 **Does not block:** app operating within single profile.
+
+- **ACCESS_NOTIFICATIONS**
+Restricts the app from accessing the notification listener service. This prevention stops the app from reading, intercepting, or interacting with notifications from other applications.\
+**Blocks:** The operation of NotificationListenerService — the app will not be able to read the text or titles of other apps' notifications, dismiss them, or programmatically click their action buttons.
+**Does not block:** The app's own ability to post and manage its own notifications via NotificationManager.
 
 - **Standby Bucket: Rare**\
 Marked by system as rarely used. Blocks app at system level:
@@ -818,11 +825,12 @@ Marked by system as long-unused or anomalous app that consumed excessive CPU and
 | RUN_ANY_IN_BACKGROUND | ✓ | ✓ | ✓ | optional |
 | RUN_IN_BACKGROUND | — | ✓ | ✓ | optional |
 | START_FOREGROUND | — | — | ✓ | optional |
-| START_FOREGROUND_SERVICES_FROM_BACKGROUND | — | ✓ | ✓ | optional |
+| SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS | — | ✓ | ✓ | optional |
+| GET_USAGE_STATS | — | ✓ | ✓ | optional |
 | WAKE_LOCK | — | — | ✓ | optional |
-| ALARM_WAKEUP | — | ✓ | ✓ | optional |
-| RECEIVE_BOOT_COMPLETED | — | — | ✓ | optional |
+| SCHEDULE_EXACT_ALARM | — | — | ✓ | optional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | optional |
+| ACCESS_NOTIFICATIONS | — | ✓ | ✓ | optional |
 | Standby Bucket | — | Rare | Restricted | optional |
 
 **List statuses**:

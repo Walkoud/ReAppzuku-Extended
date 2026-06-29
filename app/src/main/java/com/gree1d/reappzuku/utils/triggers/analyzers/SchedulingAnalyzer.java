@@ -114,6 +114,7 @@ public class SchedulingAnalyzer {
                 : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                AppTriggersAnalyzer.KEY_CAT_ALARMS,
                 analyzer.getContext().getString(R.string.triggers_cat_alarms),
                 detail.toString(), expl.toString(), sev));
 
@@ -121,6 +122,7 @@ public class SchedulingAnalyzer {
             String cancelDetail = parseAlarmCancellations(output, packageName);
             if (cancelDetail != null) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_ALARMS_THROTTLED,
                         analyzer.getContext().getString(R.string.triggers_cat_alarms) + " [throttled]",
                         cancelDetail,
                         analyzer.getContext().getString(R.string.triggers_alarm_throttled_explanation),                        
@@ -353,7 +355,8 @@ public class SchedulingAnalyzer {
                                         : analyzer.getContext().getString(R.string.triggers_jobs_pending_explanation, pending);
 
                     list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
-                            analyzer.getContext().getString(R.string.triggers_cat_jobs),
+                            AppTriggersAnalyzer.KEY_CAT_JOBS,
+                    analyzer.getContext().getString(R.string.triggers_cat_jobs),
                             detail.toString(), expl,
                             running > 0 ? TriggerInfo.Severity.HIGH : TriggerInfo.Severity.MEDIUM));
                 }
@@ -365,7 +368,8 @@ public class SchedulingAnalyzer {
             List<String> cmdDetails = getJobsFallbackCmdJobscheduler(packageName);
             if (!cmdDetails.isEmpty()) {
                 list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
-                        analyzer.getContext().getString(R.string.triggers_cat_jobs),
+                        AppTriggersAnalyzer.KEY_CAT_JOBS,
+                    analyzer.getContext().getString(R.string.triggers_cat_jobs),
                         String.join(", ", cmdDetails),
                         analyzer.getContext().getString(R.string.triggers_jobs_running_explanation, 0),
                         TriggerInfo.Severity.MEDIUM));
@@ -569,6 +573,7 @@ public class SchedulingAnalyzer {
                     String.join(", ", creators.subList(0, Math.min(creators.size(), 2)))));
 
         list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                AppTriggersAnalyzer.KEY_CAT_PENDING_INTENTS,
                 analyzer.getContext().getString(R.string.triggers_cat_pending_intents, total),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_pending_explanation),

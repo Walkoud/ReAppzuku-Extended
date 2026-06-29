@@ -21,15 +21,6 @@ import java.util.concurrent.Executors;
 import android.os.Handler;
 import android.os.Looper;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import android.os.Handler;
-import android.os.Looper;
-
 public class KillShortcutActivity extends Activity {
 
     private static final String TAG = "KillShortcutActivity";
@@ -43,7 +34,21 @@ public class KillShortcutActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": onCreate");
+        AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": onCreate, action=" + (getIntent() != null ? getIntent().getAction() : "null"));
+
+        String action = getIntent() != null ? getIntent().getAction() : null;
+        if ("WIDGET_KILL".equals(action)) {
+            AppDebugManager.d(Category.SHORTCUTS_WIDGETS, TAG + ": WIDGET_KILL received, proxying to ShappkyService");
+            Intent service = new Intent(this, com.gree1d.reappzuku.service.ShappkyService.class);
+            service.setAction("WIDGET_KILL");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(service);
+            } else {
+                startService(service);
+            }
+            finish();
+            return;
+        }
 
         shellManager = new ShellManager(this, handler, executor);
 

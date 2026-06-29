@@ -117,6 +117,7 @@ public class ComponentsAnalyzer {
                 expl.append(analyzer.getContext().getString(R.string.triggers_receivers_explanation_network));
 
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_RECEIVERS,
                     analyzer.getContext().getString(R.string.triggers_cat_receivers, staticActions.size()),
                     detail.toString(), expl.toString(), TriggerInfo.Severity.MEDIUM));
         }
@@ -133,6 +134,7 @@ public class ComponentsAnalyzer {
                 detail.append(" · exported=").append(exportedDynamicReceivers);
 
             list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                    AppTriggersAnalyzer.KEY_CAT_RECEIVERS,
                     analyzer.getContext().getString(R.string.triggers_cat_receivers_dynamic, dynamicActions.size()),
                     detail.toString(),
                     analyzer.getContext().getString(R.string.triggers_receivers_explanation_base),
@@ -142,6 +144,7 @@ public class ComponentsAnalyzer {
         if (exportedDynamicReceivers > 0
                 && analyzer.apiLevel == android.os.Build.VERSION_CODES.TIRAMISU) {
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_RECEIVERS,
                     analyzer.getContext().getString(R.string.triggers_cat_receivers_dynamic, exportedDynamicReceivers),
                     analyzer.getContext().getString(R.string.triggers_receiver_exported_detail),
                     analyzer.getContext().getString(R.string.triggers_receiver_exported_explanation),                    
@@ -206,6 +209,7 @@ public class ComponentsAnalyzer {
                             : analyzer.getContext().getString(R.string.triggers_boot_explanation_normal);
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_BOOT,
                 analyzer.getContext().getString(R.string.triggers_cat_boot), detail, expl,
                 TriggerInfo.Severity.HIGH));
 
@@ -224,6 +228,7 @@ public class ComponentsAnalyzer {
             if (bh != null && bh.contains(packageName)
                     && bh.contains("FGS_BOOT_COMPLETED_RESTRICTIONS")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_BOOT_BLOCKED,
                         analyzer.getContext().getString(R.string.triggers_cat_boot),
                         analyzer.getContext().getString(R.string.triggers_fgs_boot_blocked_detail),                        
                         analyzer.getContext().getString(R.string.triggers_fgs_boot_blocked_explanation),                        
@@ -236,6 +241,7 @@ public class ComponentsAnalyzer {
                     && logcat.contains("ForegroundServiceStartNotAllowedException")
                     && logcat.contains(packageName)) {
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_BOOT_BLOCKED,
                         analyzer.getContext().getString(R.string.triggers_cat_boot),
                         analyzer.getContext().getString(R.string.triggers_fgs_boot_exception_detail),
                         analyzer.getContext().getString(R.string.triggers_fgs_boot_exception_explanation),                        
@@ -273,6 +279,7 @@ public class ComponentsAnalyzer {
                 + (auths.size() > shown ? " (+" + (auths.size() - shown) + ")" : "");
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_PROVIDER,
                 analyzer.getContext().getString(R.string.triggers_cat_provider), detail,
                 analyzer.getContext().getString(R.string.triggers_provider_explanation),
                 TriggerInfo.Severity.LOW));
@@ -330,6 +337,7 @@ public class ComponentsAnalyzer {
                         R.string.triggers_content_obs_overflow, total - uris.size()));
 
             list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                    AppTriggersAnalyzer.KEY_CAT_CONTENT_OBS,
                     analyzer.getContext().getString(R.string.triggers_cat_content_obs),
                     detail.toString(),
                     analyzer.getContext().getString(R.string.triggers_content_obs_explanation),
@@ -352,6 +360,7 @@ public class ComponentsAnalyzer {
                         "dumpsys package " + packageName);
                 if (pkgOut != null && pkgOut.toLowerCase().contains("syncadapter")) {
                     list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                            AppTriggersAnalyzer.KEY_CAT_SYNC,
                             analyzer.getContext().getString(R.string.triggers_cat_sync),
                             analyzer.getContext().getString(R.string.triggers_sync_detail, 1),
                             analyzer.getContext().getString(R.string.triggers_sync_explanation),
@@ -463,6 +472,7 @@ public class ComponentsAnalyzer {
             detail.append(": ").append(String.join(" | ", entries));
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_SYNC,
                 analyzer.getContext().getString(R.string.triggers_cat_sync),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_sync_explanation),
@@ -521,6 +531,7 @@ public class ComponentsAnalyzer {
             else detail = analyzer.getContext().getString(R.string.triggers_fcm_generic_detail);
 
             list.add(new TriggerInfo(TriggerInfo.Group.CAN_WAKE,
+                    AppTriggersAnalyzer.KEY_CAT_FCM,
                     analyzer.getContext().getString(R.string.triggers_cat_fcm),
                     detail,
                     analyzer.getContext().getString(R.string.triggers_fcm_explanation),

@@ -101,14 +101,16 @@
     <string name="bgrest_help_manual_title">MANUAL</string>
     <string name="bgrest_help_manual_body">Choose required restrictions for each app manually.</string>
 
-    <string name="manual_op_run_any_in_background">RUN_ANY_IN_BACKGROUND</string>
-    <string name="manual_op_run_in_background">RUN_IN_BACKGROUND</string>
-    <string name="manual_op_start_foreground">START_FOREGROUND</string>
-    <string name="manual_op_fgs_from_background">START_FOREGROUND_SERVICES_FROM_BACKGROUND</string>
-    <string name="manual_op_wake_lock">WAKE_LOCK</string>
-    <string name="manual_op_alarm_wakeup">ALARM_WAKEUP</string>
-    <string name="manual_op_boot_completed">RECEIVE_BOOT_COMPLETED</string>
-    <string name="manual_op_interact_across_profiles">INTERACT_ACROSS_PROFILES</string>
+    <string name="manual_op_run_any_in_background" translatable="false">RUN_ANY_IN_BACKGROUND</string>
+    <string name="manual_op_run_in_background" translatable="false">RUN_IN_BACKGROUND</string>
+    <string name="manual_op_start_foreground" translatable="false">START_FOREGROUND</string>
+    <string name="system_exempt_from_power_restrictions" translatable="false">SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS</string>
+    <string name="get_usage_stats" translatable="false">GET_USAGE_STATS</string>
+    <string name="manual_op_wake_lock" translatable="false">WAKE_LOCK</string>
+    <string name="manual_op_schedule_exact_alarm" translatable="false">SCHEDULE_EXACT_ALARM</string>
+    <string name="manual_op_interact_across_profiles" translatable="false">INTERACT_ACROSS_PROFILES</string>
+    <string name="access_notifications" translatable="false">ACCESS_NOTIFICATIONS</string>
+    <string name="manual_whitelist_removal" translatable="false">Battery Whitelist (deviceidle) remove</string>
 
     <!-- Main menu (main.xml) -->
     <string name="menu_select_all">Select all</string>

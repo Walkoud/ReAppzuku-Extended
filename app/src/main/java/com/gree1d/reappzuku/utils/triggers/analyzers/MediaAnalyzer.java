@@ -73,6 +73,7 @@ public class MediaAnalyzer {
                     boolean isGain = focusType.contains("GAIN");
                     AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyzeAudioFocus: found focusType=" + focusType + " stream=" + focusStream);
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                            AppTriggersAnalyzer.KEY_CAT_AUDIO_FOCUS,
                             analyzer.getContext().getString(R.string.triggers_cat_audio_focus),
                             detail,
                             analyzer.getContext().getString(isGain
@@ -119,10 +120,10 @@ public class MediaAnalyzer {
                     AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": analyzeAudioFocus: media_session state=" + state + " tag=" + sessionTag);
 
                     boolean alreadyReported = list.stream()
-                            .anyMatch(i -> i.category.equals(
-                                    analyzer.getContext().getString(R.string.triggers_cat_audio_focus)));
+                            .anyMatch(i -> AppTriggersAnalyzer.KEY_CAT_AUDIO_FOCUS.equals(i.key));
                     if (!alreadyReported || !isPlaying) {
                         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                                AppTriggersAnalyzer.KEY_CAT_MEDIA_SESSION,
                                 analyzer.getContext().getString(R.string.triggers_cat_media_session),
                                 detail,
                                 analyzer.getContext().getString(isPlaying
@@ -236,6 +237,7 @@ public class MediaAnalyzer {
                             && scanMode.toUpperCase().contains("LOW_LATENCY");
                     AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": Bluetooth/manager - BLE scan found: count=" + scanCnt + " mode=" + scanMode);
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                            AppTriggersAnalyzer.KEY_CAT_BLE_SCAN,
                             analyzer.getContext().getString(R.string.triggers_cat_ble_scan),
                             detail,
                             analyzer.getContext().getString(isLowLatency
@@ -277,7 +279,8 @@ public class MediaAnalyzer {
                     if (!addrs.isEmpty())
                         detail.append(": ").append(String.join(", ", addrs));
                     list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                            analyzer.getContext().getString(R.string.triggers_cat_gatt),
+                            AppTriggersAnalyzer.KEY_CAT_GATT,
+                                analyzer.getContext().getString(R.string.triggers_cat_gatt),
                             detail.toString(),
                             analyzer.getContext().getString(R.string.triggers_gatt_explanation),
                             TriggerInfo.Severity.HIGH));
@@ -308,6 +311,7 @@ public class MediaAnalyzer {
                 String detail = (hasScan ? "BLUETOOTH_SCAN " : "")
                         + (hasConnect ? "BLUETOOTH_CONNECT" : "");
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_BLE_SCAN,
                         analyzer.getContext().getString(R.string.triggers_cat_ble_scan),
                         detail.trim() + " (Android 12+ permissions)",
                         analyzer.getContext().getString(R.string.triggers_bt_permissions_explanation),                        

@@ -103,6 +103,48 @@ public class AppTriggersAnalyzer {
 
     private static final String FILE_NAME = "AppTriggersAnalyzer";
 
+    public static final String KEY_CAT_PROC_STATE      = "proc_state";
+    public static final String KEY_CAT_FG_SERVICE      = "fg_service";
+    public static final String KEY_CAT_STICKY          = "sticky_service";
+    public static final String KEY_CAT_FG_NOTIFICATION = "fg_notification";
+    public static final String KEY_CAT_BINDINGS        = "bindings";
+    public static final String KEY_CAT_FGS_TIMEOUT     = "fgs_timeout_exceeded";
+    public static final String KEY_CAT_FGS_NEAR_TIMEOUT= "fgs_near_timeout";
+    public static final String KEY_CAT_WAKELOCK        = "wakelock";
+    public static final String KEY_CAT_WAKEUPS         = "wakeups";
+    public static final String KEY_CAT_BATTERY_STATS   = "battery_stats";
+    public static final String KEY_CAT_NETWORK         = "network";
+    public static final String KEY_CAT_SENSORS         = "sensors";
+    public static final String KEY_CAT_LOCATION        = "location";
+    public static final String KEY_CAT_AUDIO_FOCUS     = "audio_focus";
+    public static final String KEY_CAT_BLE_SCAN        = "ble_scan";
+    public static final String KEY_CAT_GATT            = "gatt";
+    public static final String KEY_CAT_MEDIA_SESSION   = "media_session";
+    public static final String KEY_CAT_ALARMS          = "alarms";
+    public static final String KEY_CAT_ALARMS_THROTTLED= "alarms_throttled";
+    public static final String KEY_CAT_JOBS            = "jobs";
+    public static final String KEY_CAT_PENDING_INTENTS = "pending_intents";
+    public static final String KEY_CAT_APPOPS          = "appops";
+    public static final String KEY_CAT_DOZE            = "doze";
+    public static final String KEY_CAT_BUCKET          = "bucket";
+    public static final String KEY_CAT_CHAIN_LAUNCH    = "chain_launch";
+    public static final String KEY_CAT_CHAIN_LAUNCH_BLOCKED = "chain_launch_blocked";
+    public static final String KEY_CAT_BCAST_EFF       = "bcast_efficiency";
+    public static final String KEY_CAT_MULTIPROC       = "multiproc";
+    public static final String KEY_CAT_ACCESSIBILITY   = "accessibility";
+    public static final String KEY_CAT_IME             = "ime";
+    public static final String KEY_CAT_DEVICE_ADMIN    = "device_admin";
+    public static final String KEY_CAT_USAGE_STATS     = "usage_stats";
+    public static final String KEY_CAT_RECEIVERS       = "receivers";
+    public static final String KEY_CAT_BOOT            = "boot";
+    public static final String KEY_CAT_BOOT_BLOCKED    = "boot_blocked";
+    public static final String KEY_CAT_PROVIDER        = "provider";
+    public static final String KEY_CAT_CONTENT_OBS     = "content_observers";
+    public static final String KEY_CAT_SYNC            = "sync";
+    public static final String KEY_CAT_FCM             = "fcm";
+    public static final String KEY_CAT_FGS_BLOCKED     = "fgs_start_blocked";
+    public static final String KEY_CAT_APPOPS_FGS_BLOCKED = "appops_fgs_blocked";
+
     public static final class TriggerInfo {
 
         public enum Group { ACTIVE_NOW, CAN_WAKE, OTHER }
@@ -110,23 +152,30 @@ public class AppTriggersAnalyzer {
         public enum Severity { HIGH, MEDIUM, LOW, INFO }
 
         public final Group    group;
+        public final String   key;
         public final String   category;
         public final String   detail;
         public final String   explanation;
         public final Severity severity;
 
-        public TriggerInfo(Group group, String category, String detail,
+        public TriggerInfo(Group group, String key, String category, String detail,
                            String explanation, Severity severity) {
             this.group       = group;
+            this.key         = key;
             this.category    = category;
             this.detail      = detail;
             this.explanation = explanation;
             this.severity    = severity;
         }
 
+        public TriggerInfo(Group group, String category, String detail,
+                           String explanation, Severity severity) {
+            this(group, null, category, detail, explanation, severity);
+        }
+
         public TriggerInfo(String category, String detail,
                            String explanation, Severity severity) {
-            this(Group.OTHER, category, detail, explanation, severity);
+            this(Group.OTHER, null, category, detail, explanation, severity);
         }
     }
 
@@ -210,6 +259,12 @@ public class AppTriggersAnalyzer {
             long    nowMs     = System.currentTimeMillis();
             long    bootMs    = nowMs - SystemClock.elapsedRealtime();
 
+            boolean blockBelongsToPackage = false;
+            for (String line : lines) {
+                if (line.contains(packageName)) { blockBelongsToPackage = true; break; }
+            }
+            if (!blockBelongsToPackage) return null;
+
             for (String line : lines) {
                 String t = line.trim();
                 if (tag == null) {
@@ -230,7 +285,6 @@ public class AppTriggersAnalyzer {
                         whileIdle = true;
                 }
             }
-            if (tag == null || !tag.contains(packageName)) return null;
             AlarmEntry entry = new AlarmEntry(type, tag, fireDiff, interval, exact, whileIdle, isWakeup);
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 for (String line : lines) {
@@ -444,38 +498,59 @@ public class AppTriggersAnalyzer {
     public AppStatus resolveAppStatus(String packageName) {
         AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: start pkg=" + packageName);
         try {
-            String psOutput = shellManager.runShellCommandAndGetFullOutput(
-                    "ps -eo pid,name | grep " + packageName);
-            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: ps output=" + (psOutput != null ? psOutput.trim() : "null"));
+            String dumpOutput = shellManager.runShellCommandAndGetFullOutput(
+                    "dumpsys activity processes " + packageName);
+            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: dumpsys output length="
+                    + (dumpOutput != null ? dumpOutput.length() : 0));
 
-            if (psOutput == null || psOutput.trim().isEmpty()) {
-                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (not running)");
+            if (dumpOutput == null || dumpOutput.trim().isEmpty()) {
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (not in activity processes)");
                 return null;
             }
 
-            String pid = null;
-            for (String line : psOutput.trim().split("\n")) {
-                String[] parts = line.trim().split("\\s+");
-                if (parts.length < 2) continue;
-                if (parts[1].equals(packageName)) { pid = parts[0]; break; }
-                if (pid == null && parts[1].startsWith(packageName)) pid = parts[0];
+            int    adj       = Integer.MAX_VALUE;
+            String procState = null;
+            boolean persistent = false;
+
+            Pattern procPat  = Pattern.compile(
+                    "ProcessRecord\\{[^}]+\\s" + Pattern.quote(packageName) + "/");
+            Pattern adjPat   = Pattern.compile("\\badj=([-\\d]+)");
+            Pattern statePat = Pattern.compile("\\bcurProcState=(\\w+)");
+
+            boolean inBlock = false;
+            for (String line : dumpOutput.split("\n")) {
+                if (procPat.matcher(line).find()) {
+                    inBlock    = true;
+                    persistent = line.contains("persistent=true");
+                    continue;
+                }
+                if (inBlock && line.trim().startsWith("ProcessRecord{")
+                        && !line.contains(packageName)) break;
+                if (!inBlock) continue;
+
+                Matcher mAdj = adjPat.matcher(line);
+                if (mAdj.find() && adj == Integer.MAX_VALUE)
+                    adj = Integer.parseInt(mAdj.group(1));
+
+                Matcher mState = statePat.matcher(line);
+                if (mState.find() && procState == null)
+                    procState = mState.group(1);
+
+                if (line.contains("persistent=true")) persistent = true;
             }
 
-            if (pid == null) {
-                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (pid not parsed)");
+            if (adj == Integer.MAX_VALUE && procState == null) {
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (ProcessRecord not found)");
                 return null;
             }
 
-            String adjStr = shellManager.runShellCommandAndGetFullOutput(
-                    "cat /proc/" + pid + "/oom_score_adj");
-            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: pid=" + pid + " oom_score_adj=" + (adjStr != null ? adjStr.trim() : "null"));
+            AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: adj=" + adj
+                    + " procState=" + procState + " persistent=" + persistent);
 
-            if (adjStr == null || adjStr.trim().isEmpty()) {
-                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=null (oom_score_adj unreadable)");
-                return null;
+            if (persistent || "PERSISTENT".equals(procState) || "0".equals(procState)) {
+                AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=ACTIVE (persistent)");
+                return AppStatus.ACTIVE;
             }
-
-            int adj = Integer.parseInt(adjStr.trim());
 
             if (adj <= 224) {
                 AppDebugManager.d(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: result=ACTIVE (adj=" + adj + ")");
@@ -503,7 +578,7 @@ public class AppTriggersAnalyzer {
             return AppStatus.CACHED_IDLE;
 
         } catch (NumberFormatException e) {
-            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: oom_score_adj parse error", e);
+            AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus: adj parse error", e);
             return null;
         } catch (Exception e) {
             AppDebugManager.e(Category.TRIGGERS, FILE_NAME + ": resolveAppStatus failed", e);
@@ -649,32 +724,30 @@ public class AppTriggersAnalyzer {
     private int getOtherScore(TriggerInfo t) {
         if (t.severity == TriggerInfo.Severity.INFO) return 0;
 
-        String cat    = t.category != null ? t.category : "";
-        String detail = t.detail   != null ? t.detail   : "";
+        String k = t.key != null ? t.key : "";
 
-        if (cat.equals(context.getString(R.string.triggers_cat_proc_state))) {
+        if (k.equals(KEY_CAT_PROC_STATE)) {
             return 0;
         }
 
-        if (cat.contains("throttled") || cat.contains("cancelled")) {
+        if (k.equals(KEY_CAT_ALARMS_THROTTLED)) {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_provider))) {
+        if (k.equals(KEY_CAT_PROVIDER)) {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_chain_launch))
-                && (detail.contains("blocked") || detail.contains("BAL_BLOCKED"))) {
+        if (k.equals(KEY_CAT_CHAIN_LAUNCH_BLOCKED)) {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_fg_service))
-                && detail.contains("blocked")) {
+        if (k.equals(KEY_CAT_FGS_BLOCKED) || k.equals(KEY_CAT_BOOT_BLOCKED)
+                || k.equals(KEY_CAT_APPOPS_FGS_BLOCKED)) {
             return 0;
         }
 
-        if (cat.equals(context.getString(R.string.triggers_cat_bucket))) {
+        if (k.equals(KEY_CAT_BUCKET)) {
             if (t.severity == TriggerInfo.Severity.HIGH)   return 4;
             if (t.severity == TriggerInfo.Severity.MEDIUM) return 3;
             return 1;

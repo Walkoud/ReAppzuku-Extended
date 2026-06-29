@@ -415,6 +415,13 @@ public class AutoKillManager {
         return cmd;
     }
 
+    public void killPackageSync(String packageName) {
+        if (packageName == null || packageName.isEmpty()) return;
+        String cmd = buildKillCommand(packageName);
+        AppDebugManager.d(Category.AUTO_KILL_BASE, "AutoKillManager: killPackageSync: " + cmd);
+        shellManager.runShellCommandAndGetFullOutput(cmd);
+    }
+
     private void sendKillNotification(int count) {
         ShappkyService.updateNotification(context,
                 context.getString(R.string.bg_manager_auto_kill_active),

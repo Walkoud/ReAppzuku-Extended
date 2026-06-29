@@ -26,12 +26,7 @@ public class ShellManager {
     private final Handler handler;
     private final ExecutorService executor;
 
-
     private volatile Boolean hasRoot = null;
-    private final AtomicBoolean rootCheckInProgress = new AtomicBoolean(false);
-
-
-    private volatile Runnable onRootCheckComplete;
 
     @SuppressWarnings("deprecation")
     private Shizuku.OnRequestPermissionResultListener shizukuPermissionListener;
@@ -40,39 +35,169 @@ public class ShellManager {
         this.context = context.getApplicationContext();
         this.handler = handler;
         this.executor = executor;
-
-
-        initializeRootCheck();
     }
 
+    public void setShizukuPermissionListener(Shizuku.OnRequestPermissionResultListener listener) {
+        this.shizukuPermissionListener = listener;
+        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener);
+    }
 
-    private void initializeRootCheck() {
-        if (rootCheckInProgress.compareAndSet(false, true)) {
-            executor.execute(() -> {
-                try {
-                    hasRoot = checkRootAccessBlocking();
-                    AppDebugManager.d(Category.CORE, "ShellManager: Root access check complete: " + hasRoot);
-                } finally {
-                    rootCheckInProgress.set(false);
-                    Runnable cb = onRootCheckComplete;
-                    if (cb != null) {
-                        onRootCheckComplete = null;
-                        handler.post(cb);
-                    }
+    public void removeShizukuPermissionListener() {
+        if (shizukuPermissionListener != null) {
+            Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener);
+        }
+    }
+
+    public boolean hasRootOnlyMode() {
+        return hasRootAccess() && !hasShizukuPermission();
+    }
+
+    public boolean hasRootAccess() {
+        if (hasRoot == null) {
+            if (Looper.myLooper() != Looper.getMainLooper()) {
+                hasRoot = checkRootAccessBlocking();
+            } else {
+                AppDebugManager.w(Category.CORE, "ShellManager: hasRootAccess: called on main thread before root check completed, returning false");
+                return false;
+            }
+        }
+        return hasRoot;
+    }
+
+    public boolean hasShizukuPermission() {
+        try {
+            return Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
+        } catch (Exception e) {
+            AppDebugManager.w(Category.CORE, "ShellManager: Error checking Shizuku permission", e);
+            return false;
+        }
+    }
+
+    public void checkShellPermissions() {
+        if (hasRoot != null && hasRoot) {
+            AppDebugManager.d(Category.CORE, "ShellManager: Root access available, skipping Shizuku permission request");
+            return;
+        }
+        try {
+            if (Shizuku.pingBinder()) {
+                if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
+                    Shizuku.requestPermission(0);
                 }
-            });
+            }
+        } catch (Exception e) {
+            AppDebugManager.w(Category.CORE, "ShellManager: Error checking shell permissions", e);
         }
     }
 
-
-    public void setOnRootCheckCompleteListener(Runnable listener) {
-        if (hasRoot != null) {
-            listener.run();
-        } else {
-            onRootCheckComplete = listener;
+    public boolean hasAnyShellPermission() {
+        if (hasShizukuPermission()) {
+            AppDebugManager.d(Category.CORE, "ShellManager: hasAnyShellPermission: true (Shizuku)");
+            return true;
         }
+        boolean result = hasRoot != null && hasRoot;
+        AppDebugManager.d(Category.CORE, "ShellManager: hasAnyShellPermission: " + result + " (root)");
+        return result;
     }
 
+    public boolean resolveAnyShellPermission() {
+        if (hasShizukuPermission()) {
+            AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermission: true (Shizuku)");
+            return true;
+        }
+        boolean result = hasRootAccess();
+        AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermission: " + result + " (root)");
+        return result;
+    }
+
+    public boolean resolveAnyShellPermissionBlocking() {
+        if (hasRoot == null) {
+            hasRoot = checkRootAccessBlocking();
+        }
+        if (hasRoot) {
+            AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermissionBlocking: true (root)");
+            return true;
+        }
+        boolean shizuku = hasShizukuPermission();
+        AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermissionBlocking: " + shizuku + " (Shizuku)");
+        return shizuku;
+    }
+
+    public void runShellCommand(String command, Runnable onSuccess) {
+        runShellCommand(command, onSuccess, null);
+    }
+
+    public void runShellCommand(String command, Runnable onSuccess, Runnable onFailure) {
+        executor.execute(() -> {
+            boolean succeeded = runShellCommandBlocking(command);
+
+            if (succeeded) {
+                if (onSuccess != null) {
+                    handler.post(onSuccess);
+                }
+            } else if (onFailure != null) {
+                handler.post(onFailure);
+            }
+        });
+    }
+
+    public boolean runShellCommandBlocking(String command) {
+        return runShellCommandForResult(command).succeeded();
+    }
+
+    public ShellResult runShellCommandForResult(String command) {
+        ShellResult rootResult = null;
+        if (hasRootAccess()) {
+            rootResult = executeRootCommandForResult(command);
+            if (rootResult.succeeded()) {
+                return rootResult;
+            }
+        }
+        if (hasShizukuPermission()) {
+            ShellResult shizukuResult = executeShizukuCommandForResult(command);
+            if (shizukuResult.succeeded() || rootResult == null) {
+                return shizukuResult;
+            }
+        }
+        if (rootResult != null) {
+            return rootResult;
+        }
+        AppDebugManager.w(Category.CORE, "ShellManager: runShellCommandForResult: no Root or Shizuku permission available, command=" + command);
+        return new ShellResult(false, -1, "No Root or Shizuku permission available");
+    }
+
+    public void runShellCommandWithOutput(String command, Consumer<String> outputProcessor) {
+        executor.execute(() -> {
+            boolean executed = false;
+            if (hasRootAccess()) {
+                executed = executeRootCommand(command, outputProcessor);
+            }
+            if (!executed && hasShizukuPermission()) {
+                executed = executeShizukuCommandWithOutput(command, outputProcessor);
+            }
+        });
+    }
+
+    public String runShellCommandAndGetFullOutput(String command) {
+        if (hasRootAccess()) {
+            return executeRootCommandAndGetFullOutput(command);
+        } else if (hasShizukuPermission()) {
+            return executeShizukuCommandAndGetFullOutput(command);
+        }
+        AppDebugManager.w(Category.CORE, "ShellManager: runShellCommandAndGetFullOutput: no Root or Shizuku permission available, command=" + command);
+        return null;
+    }
+
+    @androidx.annotation.WorkerThread
+    @androidx.annotation.Nullable
+    public String runCommandAndGetOutput(String command) {
+        if (hasRootAccess()) {
+            return executeRootCommandAndGetFullOutput(command);
+        } else if (hasShizukuPermission()) {
+            return executeShizukuCommandAndGetFullOutput(command);
+        }
+        AppDebugManager.w(Category.CORE, "ShellManager: runCommandAndGetOutput: no Root or Shizuku permission available, command=" + command);
+        return null;
+    }
 
     private boolean checkRootAccessBlocking() {
         Process process = null;
@@ -104,169 +229,6 @@ public class ShellManager {
         }
     }
 
-
-    public void setShizukuPermissionListener(Shizuku.OnRequestPermissionResultListener listener) {
-        this.shizukuPermissionListener = listener;
-        Shizuku.addRequestPermissionResultListener(shizukuPermissionListener);
-    }
-
-
-    public void removeShizukuPermissionListener() {
-        if (shizukuPermissionListener != null) {
-            Shizuku.removeRequestPermissionResultListener(shizukuPermissionListener);
-        }
-    }
-
-
-    public boolean hasRootOnlyMode() {
-        return hasRootAccess() && !hasShizukuPermission();
-    }
-
-
-    public boolean hasRootAccess() {
-        if (hasRoot == null) {
-            if (Looper.myLooper() != Looper.getMainLooper()) {
-                hasRoot = checkRootAccessBlocking();
-            } else {
-                AppDebugManager.w(Category.CORE, "ShellManager: hasRootAccess: called on main thread before root check completed, returning false");
-                return false;
-            }
-        }
-        return hasRoot;
-    }
-
-
-    public boolean hasShizukuPermission() {
-        try {
-            return Shizuku.pingBinder() && Shizuku.checkSelfPermission() == PackageManager.PERMISSION_GRANTED;
-        } catch (Exception e) {
-            AppDebugManager.w(Category.CORE, "ShellManager: Error checking Shizuku permission", e);
-            return false;
-        }
-    }
-
-
-    public void checkShellPermissions() {
-        if (hasRoot != null && hasRoot) {
-            AppDebugManager.d(Category.CORE, "ShellManager: Root access available, skipping Shizuku permission request");
-            return;
-        }
-        try {
-            if (Shizuku.pingBinder()) {
-                if (Shizuku.checkSelfPermission() != PackageManager.PERMISSION_GRANTED) {
-                    Shizuku.requestPermission(0);
-                }
-            }
-        } catch (Exception e) {
-            AppDebugManager.w(Category.CORE, "ShellManager: Error checking shell permissions", e);
-        }
-    }
-
-
-    public boolean hasAnyShellPermission() {
-        if (hasShizukuPermission()) {
-            AppDebugManager.d(Category.CORE, "ShellManager: hasAnyShellPermission: true (Shizuku)");
-            return true;
-        }
-        boolean result = hasRoot != null && hasRoot;
-        AppDebugManager.d(Category.CORE, "ShellManager: hasAnyShellPermission: " + result + " (root)");
-        return result;
-    }
-
-
-    public boolean resolveAnyShellPermission() {
-        if (hasShizukuPermission()) {
-            AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermission: true (Shizuku)");
-            return true;
-        }
-        boolean result = hasRootAccess();
-        AppDebugManager.d(Category.CORE, "ShellManager: resolveAnyShellPermission: " + result + " (root)");
-        return result;
-    }
-
-
-    public void runShellCommand(String command, Runnable onSuccess) {
-        runShellCommand(command, onSuccess, null);
-    }
-
-
-    public void runShellCommand(String command, Runnable onSuccess, Runnable onFailure) {
-        executor.execute(() -> {
-            boolean succeeded = runShellCommandBlocking(command);
-
-            if (succeeded) {
-                if (onSuccess != null) {
-                    handler.post(onSuccess);
-                }
-            } else if (onFailure != null) {
-                handler.post(onFailure);
-            }
-        });
-    }
-
-
-    public boolean runShellCommandBlocking(String command) {
-        return runShellCommandForResult(command).succeeded();
-    }
-
-    public ShellResult runShellCommandForResult(String command) {
-        ShellResult rootResult = null;
-        if (hasRootAccess()) {
-            rootResult = executeRootCommandForResult(command);
-            if (rootResult.succeeded()) {
-                return rootResult;
-            }
-        }
-        if (hasShizukuPermission()) {
-            ShellResult shizukuResult = executeShizukuCommandForResult(command);
-            if (shizukuResult.succeeded() || rootResult == null) {
-                return shizukuResult;
-            }
-        }
-        if (rootResult != null) {
-            return rootResult;
-        }
-        AppDebugManager.w(Category.CORE, "ShellManager: runShellCommandForResult: no Root or Shizuku permission available, command=" + command);
-        return new ShellResult(false, -1, "No Root or Shizuku permission available");
-    }
-
-
-    public void runShellCommandWithOutput(String command, Consumer<String> outputProcessor) {
-        executor.execute(() -> {
-            boolean executed = false;
-            if (hasRootAccess()) {
-                executed = executeRootCommand(command, outputProcessor);
-            }
-            if (!executed && hasShizukuPermission()) {
-                executed = executeShizukuCommandWithOutput(command, outputProcessor);
-            }
-        });
-    }
-
-
-    public String runShellCommandAndGetFullOutput(String command) {
-        if (hasRootAccess()) {
-            return executeRootCommandAndGetFullOutput(command);
-        } else if (hasShizukuPermission()) {
-            return executeShizukuCommandAndGetFullOutput(command);
-        }
-        AppDebugManager.w(Category.CORE, "ShellManager: runShellCommandAndGetFullOutput: no Root or Shizuku permission available, command=" + command);
-        return null;
-    }
-
-
-    @androidx.annotation.WorkerThread
-    @androidx.annotation.Nullable
-    public String runCommandAndGetOutput(String command) {
-        if (hasRootAccess()) {
-            return executeRootCommandAndGetFullOutput(command);
-        } else if (hasShizukuPermission()) {
-            return executeShizukuCommandAndGetFullOutput(command);
-        }
-        AppDebugManager.w(Category.CORE, "ShellManager: runCommandAndGetOutput: no Root or Shizuku permission available, command=" + command);
-        return null;
-    }
-    
     private boolean executeRootCommand(String command, Consumer<String> outputProcessor) {
         Process process = null;
         DataOutputStream os = null;
@@ -320,7 +282,6 @@ public class ShellManager {
             remote = Shizuku.newProcess(new String[] { "sh", "-c", command }, null, "/");
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(remote.getInputStream()))) {
                 while (reader.readLine() != null) {
-
                 }
             }
 

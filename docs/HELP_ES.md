@@ -727,8 +727,9 @@ Bloquea el lanzamiento de servicios, el programador de tareas (job scheduler) y 
 **Comandos utilizados:**\
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
-`ALARM_WAKEUP ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`GET_USAGE_STATS ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Standby Bucket: Rare`
 
 - **Estricta / Hard**\
@@ -739,11 +740,12 @@ Una vez que la app se minimiza o cambias a otra — el sistema la cierra inmedia
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
 `START_FOREGROUND ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`GET_USAGE_STATS ignore`\
 `WAKE_LOCK ignore`\
-`ALARM_WAKEUP ignore`\
-`RECEIVE_BOOT_COMPLETED ignore`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
+`ACCESS_NOTIFICATIONS ignore`\
 `Eliminación de la lista blanca de optimización de batería`\
 `Standby Bucket: Restricted`
 
@@ -770,30 +772,35 @@ Evita que la app eleve un servicio a primer plano (notificación persistente). S
 **Bloquea:** llamadas a `startForeground()` — la app no puede crear una notificación fija ni mantener el servicio vivo.\
 **No bloquea:** notificaciones regulares de la app ni tareas en segundo plano a través de JobScheduler.
 
-- **START_FOREGROUND_SERVICES_FROM_BACKGROUND**\
-Evita que se inicie un servicio de primer plano cuando la app está en segundo plano. Añadido en Android 12 además de `START_FOREGROUND`.\
-**Bloquea:** intentos de iniciar un servicio de primer plano mientras la app no esté visible en pantalla.\
-**No bloquea:** servicios de primer plano iniciados mientras la app está en primer plano.
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+Impide que la aplicación eluda las restricciones de ahorro de energía del sistema (como los modos Doze o App Standby). Por lo general, este permiso permite que las aplicaciones del sistema y las aplicaciones críticas se ejecuten en segundo plano sin limitaciones.\
+**Bloquea:** la ejecución de la aplicación en segundo plano sin restricciones, el uso libre de la red y el despertar del dispositivo (wakelocks) cuando los algoritmos de ahorro de batería están activos.\
+**No bloquea:** el funcionamiento normal de la aplicación cuando está abierta en la pantalla (en primer plano), así como las funciones básicas en segundo plano permitidas por la gestión de batería estándar.
+
+- **GET_USAGE_STATS**
+Prohíbe a la aplicación acceder a las estadísticas de uso del dispositivo por parte de otras aplicaciones (qué apps se abrieron, cuánto tiempo se usaron y el historial de actividad).\
+**Bloquea:** Las llamadas a los métodos de UsageStatsManager (por ejemplo, queryUsageStats(), queryEvents()); la aplicación no podrá rastrear qué programas usa el usuario ni cuánto tiempo pasa en ellos.\
+**No bloquea:** El acceso de la aplicación a sus propias estadísticas de funcionamiento o a información básica del sistema no relacionada con la actividad de terceros.
 
 - **WAKE_LOCK**\
 Evita que la app mantenga activa la CPU con la pantalla apagada. Sin un wake lock, el sistema puede suspender la CPU y detener las operaciones en segundo plano.\
 **Bloquea:** la retención de la CPU a través de `PowerManager.WakeLock` — la app no puede evitar que el teléfono entre en modo de suspensión.\
 **No bloquea:** la ejecución de la app mientras la pantalla está encendida.
 
-- **ALARM_WAKEUP**\
-Evita que la app despierte al dispositivo mediante temporizadores exactos (`AlarmManager.setExactAndAllowWhileIdle` y equivalentes). Sin esto, las alarmas no pueden despertar al teléfono del sueño profundo.\
-**Bloquea:** tareas de alarma exacta que despiertan al dispositivo — la app no puede programar una activación forzada por temporizador.\
-**No bloquea:** temporizadores inexactos ni tareas de JobScheduler.
-
-- **RECEIVE_BOOT_COMPLETED**\
-Evita que la app reciba la difusión `BOOT_COMPLETED` después de reiniciar — el mecanismo que utiliza la mayoría de las apps para añadirse al inicio automático.\
-**Bloquea:** el inicio automático al encender el sistema.\
-**No bloquea:** el lanzamiento manual de la app después de reiniciar.
+- **SCHEDULE_EXACT_ALARM**
+Impide que la aplicación programe alarmas exactas mediante `AlarmManager.setExact()` y métodos similares. Esta restricción bloquea el registro de la alarma en sí, no solo la capacidad de despertar el dispositivo.\
+**Bloquea:** llamadas a `setExact()`, `setExactAndAllowWhileIdle()` y otros métodos exactos de AlarmManager — la aplicación no podrá registrar una tarea diferida con tiempo preciso.\
+**No bloquea:** temporizadores inexactos (`setInexactRepeating()`), tareas de JobScheduler y WorkManager.
 
 - **INTERACT_ACROSS_PROFILES**\
 Evita que la app interactúe con otros perfiles de trabajo. Relevante principalmente en dispositivos empresariales.\
 **Bloquea:** llamadas entre perfiles y la transferencia de datos entre el perfil principal y el de trabajo.\
 **No bloquea:** el funcionamiento de la app dentro de un solo perfil.
+
+- **ACCESS_NOTIFICATIONS**
+Prohíbe a la aplicación acceder al servicio de escucha de notificaciones. Esta restricción evita que la aplicación lea, intercepte o interactúe con las notificaciones de otros programas.\
+**Bloquea:** El funcionamiento de NotificationListenerService; la aplicación no podrá leer el texto ni los títulos de las notificaciones de otras apps, descartarlas o pulsar programáticamente sus botones de acción.
+**No bloquea:** La capacidad de la propia aplicación para enviar sus propias notificaciones al usuario a través de NotificationManager.
 
 - **Estado Standby: Raro (Rare)**\
 Marcado por el sistema como usado raramente. Bloquea la app a nivel del sistema:
@@ -818,11 +825,12 @@ Marcado por el sistema como una app que no se usa desde hace mucho tiempo o que 
 | RUN_ANY_IN_BACKGROUND | ✓ | ✓ | ✓ | opcional |
 | RUN_IN_BACKGROUND | — | ✓ | ✓ | opcional |
 | START_FOREGROUND | — | — | ✓ | opcional |
-| START_FOREGROUND_SERVICES_FROM_BACKGROUND | — | ✓ | ✓ | opcional |
+| SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS | — | ✓ | ✓ | opcional |
+| GET_USAGE_STATS | — | — | ✓ | opcional |
 | WAKE_LOCK | — | — | ✓ | opcional |
-| ALARM_WAKEUP | — | ✓ | ✓ | opcional |
-| RECEIVE_BOOT_COMPLETED | — | — | ✓ | opcional |
+| SCHEDULE_EXACT_ALARM | — | — | ✓ | opcional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | opcional |
+| ACCESS_NOTIFICATIONS | — | ✓ | ✓ | opcional |
 | Estado Standby Bucket | — | Rare | Restricted | opcional |
 
 **Estados de la lista**:

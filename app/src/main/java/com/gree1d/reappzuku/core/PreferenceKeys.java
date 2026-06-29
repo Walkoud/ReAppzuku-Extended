@@ -23,6 +23,7 @@ public final class PreferenceKeys {
     public static final String KEY_MANUAL_RESTRICTION_APPS = "manual_restriction_apps";
     public static final String KEY_MANUAL_OPS_PREFIX = "manual_ops_mask_";
     public static final String KEY_APPLIED_OPS_MASK_PREFIX = "applied_ops_mask_";
+    public static final String KEY_MANUAL_WHITELIST_REMOVAL_PREFIX = "manual_whitelist_removal_";
 
     public static final String KEY_BATTERY_WHITELIST_REMOVED = "battery_whitelist_removed";
 

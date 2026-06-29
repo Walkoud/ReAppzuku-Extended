@@ -50,6 +50,7 @@ public class SensorsLocationAnalyzer {
                         || s.startsWith("Baro"));
 
         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                AppTriggersAnalyzer.KEY_CAT_SENSORS,
                 analyzer.getContext().getString(R.string.triggers_cat_sensors, sensors.size()),
                 String.join(", ", sensors.subList(0, Math.min(sensors.size(), 6))),
                 analyzer.getContext().getString(R.string.triggers_sensors_explanation),
@@ -253,6 +254,7 @@ public class SensorsLocationAnalyzer {
                         ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
+                AppTriggersAnalyzer.KEY_CAT_LOCATION,
                 analyzer.getContext().getString(R.string.triggers_cat_location),
                 detail.toString(),
                 analyzer.getContext().getString(hasBg ? R.string.triggers_location_bg_explanation
@@ -274,7 +276,8 @@ public class SensorsLocationAnalyzer {
                     "dumpsys package " + packageName + " | grep -A1 ACCESS_BACKGROUND_LOCATION");
             if (pkgOut != null && pkgOut.contains("granted=true")) {
                 list.add(new TriggerInfo(TriggerInfo.Group.ACTIVE_NOW,
-                        analyzer.getContext().getString(R.string.triggers_cat_location),
+                        AppTriggersAnalyzer.KEY_CAT_LOCATION,
+                analyzer.getContext().getString(R.string.triggers_cat_location),
                         analyzer.getContext().getString(R.string.triggers_bg_location_detail),                        
                         analyzer.getContext().getString(R.string.triggers_bg_location_explanation),                        
                         TriggerInfo.Severity.HIGH));

@@ -59,6 +59,7 @@ public class MiscAnalyzer {
                         if (!caller.equals(packageName) && !caller.equals("android")) {
                             String name = analyzer.resolveAppName(caller);
                             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                                    AppTriggersAnalyzer.KEY_CAT_CHAIN_LAUNCH,
                                     analyzer.getContext().getString(R.string.triggers_cat_chain_launch),
                                     analyzer.getContext().getString(R.string.triggers_chain_direct_detail, name+"("+caller+")"),
                                     analyzer.getContext().getString(R.string.triggers_chain_direct_explanation, name),
@@ -77,6 +78,7 @@ public class MiscAnalyzer {
                             String detail = fgsAllowed && actAllowed ? "FGS + Activity"
                                     : fgsAllowed ? "FGS only" : "Activity only";
                             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                                    AppTriggersAnalyzer.KEY_CAT_CHAIN_LAUNCH,
                                     analyzer.getContext().getString(R.string.triggers_cat_chain_launch),
                                     "BackgroundStartPrivilege: " + detail,
                                     analyzer.getContext().getString(R.string.triggers_bal_privilege_explanation),                                    
@@ -118,6 +120,7 @@ public class MiscAnalyzer {
                     if (i == shown - 1 && callers.size() > shown)
                         detail += analyzer.getContext().getString(R.string.triggers_chain_overflow, callers.size() - shown);
                     list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                            AppTriggersAnalyzer.KEY_CAT_CHAIN_LAUNCH,
                             analyzer.getContext().getString(R.string.triggers_cat_chain_launch),
                             detail,
                             analyzer.getContext().getString(R.string.triggers_chain_broadcast_explanation, name, actions.get(i)),
@@ -149,6 +152,7 @@ public class MiscAnalyzer {
                 Matcher mC = callerPat.matcher(line);
                 String caller = mC.find() ? mC.group(1) : "unknown";
                 list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                        AppTriggersAnalyzer.KEY_CAT_CHAIN_LAUNCH_BLOCKED,
                         analyzer.getContext().getString(R.string.triggers_cat_chain_launch),
                         analyzer.getContext().getString(R.string.triggers_bal_blocked_detail_prefix) + caller,
                         analyzer.getContext().getString(R.string.triggers_bal_blocked_explanation),                        
@@ -228,6 +232,7 @@ public class MiscAnalyzer {
                 : launched>3||lastHour>20 ? TriggerInfo.Severity.MEDIUM : TriggerInfo.Severity.LOW;
 
         list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                AppTriggersAnalyzer.KEY_CAT_BCAST_EFF,
                 analyzer.getContext().getString(R.string.triggers_cat_bcast_eff),
                 detail.toString(),
                 analyzer.getContext().getString(R.string.triggers_bcast_eff_explanation), sev));
@@ -290,6 +295,7 @@ public class MiscAnalyzer {
             detail.append(": ").append(String.join(", ", subNames));
 
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_MULTIPROC,
                     analyzer.getContext().getString(R.string.triggers_cat_multiproc),
                     detail.toString(),
                     analyzer.getContext().getString(R.string.triggers_multiproc_explanation),
@@ -338,6 +344,7 @@ public class MiscAnalyzer {
 
                 if (enabled) {
                     list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                            AppTriggersAnalyzer.KEY_CAT_ACCESSIBILITY,
                             analyzer.getContext().getString(R.string.triggers_cat_accessibility),
                             svcName != null ? svcName
                                     : analyzer.getContext().getString(R.string.triggers_a11y_detail_generic),
@@ -368,6 +375,7 @@ public class MiscAnalyzer {
 
                 if (isCurrentIme) {
                     list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                            AppTriggersAnalyzer.KEY_CAT_IME,
                             analyzer.getContext().getString(R.string.triggers_cat_ime),
                             imeName != null ? imeName
                                     : analyzer.getContext().getString(R.string.triggers_ime_detail_generic),
@@ -428,6 +436,7 @@ public class MiscAnalyzer {
             }
 
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_DEVICE_ADMIN,
                     analyzer.getContext().getString(R.string.triggers_cat_device_admin),
                     detail, expl, sev));
 
@@ -508,6 +517,7 @@ public class MiscAnalyzer {
                               analyzer.formatDuration(totalFgMs)));
 
             list.add(new TriggerInfo(TriggerInfo.Group.OTHER,
+                    AppTriggersAnalyzer.KEY_CAT_USAGE_STATS,
                     analyzer.getContext().getString(R.string.triggers_cat_usagestats),
                     detail.toString(),
                     analyzer.getContext().getString(R.string.triggers_usagestats_explanation),

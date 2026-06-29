@@ -267,6 +267,11 @@ public class RestrictionsWatchdogManager {
             BackgroundRestrictionLog.log(context, pkg, "watchdog-bucket",
                     ok ? "ok" : "failed",
                     "was=" + current + " set=" + required);
+            if (hardSet.contains(pkg)) {
+                appManager.ensureBatteryWhitelistRestriction(pkg);
+            } else if (manualSet.contains(pkg) && appManager.getManualWhitelistRemoval(pkg)) {
+                appManager.ensureBatteryWhitelistRestriction(pkg);
+            }
         }
     }
 }
