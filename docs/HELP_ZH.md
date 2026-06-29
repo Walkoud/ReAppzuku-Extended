@@ -727,8 +727,8 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 **使用的命令：**\
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
-`ALARM_WAKEUP ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`START_ACTIVITIES_FROM_BACKGROUND ignore`\
 `SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Rare`
 
@@ -740,13 +740,12 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `RUN_ANY_IN_BACKGROUND ignore`\
 `RUN_IN_BACKGROUND ignore`\
 `START_FOREGROUND ignore`\
-`START_FOREGROUND_SERVICES_FROM_BACKGROUND ignore`\
+`SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
+`START_ACTIVITIES_FROM_BACKGROUND ignore`\
 `WAKE_LOCK ignore`\
-`ALARM_WAKEUP ignore`\
-`RECEIVE_BOOT_COMPLETED ignore`\
+`SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `电池优化白名单移除`\
-`SCHEDULE_EXACT_ALARM ignore`\
 `Standby Bucket: Restricted`
 
 - **Manual**\
@@ -772,35 +771,30 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 **阻止：** 对 `startForeground()` 的调用——应用无法创建粘性通知或保持服务存活。\
 **不阻止：** 常规应用通知、通过 JobScheduler 的后台任务。
 
-- **START_FOREGROUND_SERVICES_FROM_BACKGROUND**\
-阻止应用在后台时启动 Foreground Service。在 Android 12 中添加到 `START_FOREGROUND` 之上。\
-**阻止：** 应用在屏幕上不可见时启动 Foreground Service 的尝试。\
-**不阻止：** 应用在前台时启动的 Foreground Service。
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+禁止应用绕过系统的电源限制（如 Doze 或 App Standby 待机模式）。通常，此权限允许系统应用和关键应用在后台无限制地运行。\
+**阻止：** 在开启省电算法时，应用无限制地在后台运行、自由使用网络以及唤醒设备（wakelocks）。\
+**不阻止：** 应用在屏幕上打开（处于前台）时的正常运行，以及标准电池管理允许的基本后台功能。
+
+- **START_ACTIVITIES_FROM_BACKGROUND**
+禁止应用在后台运行时启动屏幕界面（Activity）并将其切换到前台。此限制 可保护用户免受突然弹出的窗口打扰。\
+**阻止：** 当您正在使用其他应用或设备锁定时，突然弹出的应用界面（例如广告或全屏来电呼叫界面）。\
+**不阻止：** 发送通知、后台服务的运行，以及用户主动点击该应用的通知后启动的屏幕界面。
 
 - **WAKE_LOCK**\
 阻止应用在屏幕关闭时保持 CPU 活跃。没有 WakeLock，系统可以让 CPU 休眠并停止后台操作。\
 **阻止：** 通过 `PowerManager.WakeLock` 持有 CPU——应用无法阻止手机休眠。\
 **不阻止：** 屏幕亮起时应用运行。
 
-- **ALARM_WAKEUP**\
-阻止应用通过精确定时器（`AlarmManager.setExactAndAllowWhileIdle` 及等效方法）唤醒设备。没有此权限，闹钟无法将手机从深度休眠中唤醒。\
-**阻止：** 唤醒设备的精确闹钟任务——应用无法通过定时器安排强制唤醒。\
-**不阻止：** 非精确定时器、JobScheduler 任务。
-
-- **RECEIVE_BOOT_COMPLETED**\
-阻止应用在重启后接收 `BOOT_COMPLETED`——这是大多数应用用于将自己添加到自启动的机制。\
-**阻止：** 系统启动时的自启动。\
-**不阻止：** 重启后手动启动应用。
+- **SCHEDULE_EXACT_ALARM**
+禁止应用通过 `AlarmManager.setExact()` 及类似方法设置精确闹钟。此限制阻止的是闹钟本身的注册，而非仅仅阻止唤醒设备。\
+**阻止：** 调用 `setExact()`、`setExactAndAllowWhileIdle()` 及其他精确 AlarmManager 方法 — 应用将无法注册精确延迟任务。\
+**不阻止：** 非精确定时器（`setInexactRepeating()`）、JobScheduler 和 WorkManager 任务。
 
 - **INTERACT_ACROSS_PROFILES**\
 阻止应用与其他工作配置文件交互。主要与企业设备相关。\
 **阻止：** 主配置文件与工作配置文件之间的跨配置文件调用和数据传输。\
 **不阻止：** 应用在单个配置文件内运行。
-
-- **SCHEDULE_EXACT_ALARM**
-禁止应用通过 `AlarmManager.setExact()` 及类似方法设置精确闹钟。与 `ALARM_WAKEUP` 不同，此限制阻止的是闹钟本身的注册，而非仅仅阻止唤醒设备。\
-**阻止：** 调用 `setExact()`、`setExactAndAllowWhileIdle()` 及其他精确 AlarmManager 方法 — 应用将无法注册精确延迟任务。\
-**不阻止：** 非精确定时器（`setInexactRepeating()`）、JobScheduler 和 WorkManager 任务。
 
 - **Standby Bucket: Rare**\
 被系统标记为很少使用。在系统层面阻止应用：
@@ -825,12 +819,11 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 | RUN_ANY_IN_BACKGROUND | ✓ | ✓ | ✓ | 可选 |
 | RUN_IN_BACKGROUND | — | ✓ | ✓ | 可选 |
 | START_FOREGROUND | — | — | ✓ | 可选 |
-| START_FOREGROUND_SERVICES_FROM_BACKGROUND | — | ✓ | ✓ | 可选 |
+| SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS | — | ✓ | ✓ | 可选 |
+| START_ACTIVITIES_FROM_BACKGROUND | — | ✓ | ✓ | 可选 |
 | WAKE_LOCK | — | — | ✓ | 可选 |
-| ALARM_WAKEUP | — | ✓ | ✓ | 可选 |
-| RECEIVE_BOOT_COMPLETED | — | — | ✓ | 可选 |
-| INTERACT_ACROSS_PROFILES | — | — | ✓ | 可选 |
 | SCHEDULE_EXACT_ALARM | — | ✓ | ✓ | 可选 |
+| INTERACT_ACROSS_PROFILES | — | — | ✓ | 可选 |
 | Standby Bucket | — | Rare | Restricted | 可选 |
 
 **列表状态**：
