@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Build;
 import android.widget.Toast;
 
 import com.gree1d.reappzuku.core.AppDebugManager;
