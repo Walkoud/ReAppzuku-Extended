@@ -9,7 +9,7 @@
 - [What is ReAppzuku?](#what-is-reappzuku)
 - [Requirements](#requirements)
 - [Background Survival Setup](#background-survival-setup)
-- [Quick Start](#quick-start)
+- [Getting Started](#getting-started)
 - [Manual Control](#manual-control)
 - [Main](#main)
   - [Toolbar](#toolbar)
@@ -216,13 +216,34 @@ After setup:
 
 ---
 
-## Quick Start
+## Getting Started
 ↩️[Table of Contents](#table-of-contents)
 
-1. Install and open ReAppzuku
-2. Grant root access or set up Shizuku
-3. Main screen shows active background apps
-4. Select apps and tap **Kill** — or set up automation
+> [!CAUTION]
+> This section is purely informational and is not an instruction manual for using ReAppzuku. Configure all features yourself, deliberately and with care, keeping in mind that misconfiguring a feature can break the normal operation of target apps.
+
+At first glance, ReAppzuku may look like a complex tool with a huge number of settings. In reality, it's not that hard to get a handle on.
+
+**Initial setup**\
+Grant Root or Shizuku permissions. Be sure to remove all system restrictions on the app (battery optimization, autostart lock, recents lock, etc.).\
+After launching ReAppzuku, go to settings and enable **Foreground Service** — this setting starts the app's background processes: app monitoring, statistics collection, etc.
+
+**Collecting statistics**\
+Don't rush to enable Auto-Kill or configure other restrictions right away. Give the app 1–2 days to collect statistics — this will help more accurately determine which apps actually load the device in the background.
+
+**Analyzing the data**\
+Once data has been collected, go to the **"Statistics & Logs"** section and study the consumption charts (Battery, CPU, RAM). You can also cross-check with the battery statistics in your phone's settings. The chart legend shows which apps consume the most resources.
+
+**Configuring Auto-Kill**\
+It's recommended to start with **Blacklist** mode — it's safer, since it only affects explicitly selected apps rather than all of them. For the periodic Auto-Kill interval, you can start with 1 minute and adjust it later to suit your needs.\
+After Auto-Kill has been running for 1–2 hours, go to the "Statistics & Logs" section and open the **Top Offenders** log. There you'll see which apps were killed most often and which of them restarted immediately.\
+Apps that restart more than 3 times are good candidates for Background Restrictions. You can start by setting them to the Soft restriction type.
+
+**Fine-tuning**\
+For deeper analysis, use the **App Triggers** button on the Main screen — it shows exactly what the app uses to keep running in the background. Depending on the result, you can apply other Background Restriction types. More details on these can be found in the corresponding section of the guide.
+
+> [!TIP]
+> Auto-Kill eliminates the fact that the app is running in the background, but not the reason it keeps coming back. For full control, it's recommended to also configure Background Restrictions and Sleep Mode.
 
 ---
 

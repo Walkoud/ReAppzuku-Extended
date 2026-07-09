@@ -76,6 +76,7 @@ public class MainActivity extends BaseActivity {
     private static final int NOTIFICATION_PERMISSION_CODE = 1;
 
     private ActivityMainBinding binding;
+    private int currentNavBarHeight = 0;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private ShellManager shellManager;
@@ -197,6 +198,23 @@ public class MainActivity extends BaseActivity {
         binding.recyclerView.setPadding(0, topPadding, 0, bottomNavHeight);
     }
 
+    private void setKillButtonBottomMargin(int marginPx) {
+        android.view.ViewGroup.LayoutParams lp = binding.killButton.getLayoutParams();
+        if (lp instanceof androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) {
+            ((androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) lp).bottomMargin = marginPx;
+            binding.killButton.setLayoutParams(lp);
+        }
+
+        android.view.ViewGroup.LayoutParams scrimLp = binding.killButtonNavScrim.getLayoutParams();
+        if (marginPx > 0) {
+            scrimLp.height = marginPx;
+            binding.killButtonNavScrim.setLayoutParams(scrimLp);
+            binding.killButtonNavScrim.setVisibility(View.VISIBLE);
+        } else {
+            binding.killButtonNavScrim.setVisibility(View.GONE);
+        }
+    }
+
     private void setupBottomNavigation() {
         binding.bottomNavigation.navIconMain.setSelected(true);
         binding.bottomNavigation.navIconSettings.setSelected(false);
@@ -222,6 +240,7 @@ public class MainActivity extends BaseActivity {
 
     private void setupKillButton() {
         int accent = sharedPreferences.getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        int killButtonColor;
         if (accent == ACCENT_CUSTOM) {
             int customColor = sharedPreferences.getInt(KEY_ACCENT_CUSTOM_COLOR, ACCENT_CUSTOM_DEFAULT_COLOR);
             int onColor = sharedPreferences.getInt(KEY_ACCENT_ON_COLOR, ACCENT_ON_WHITE) == ACCENT_ON_BLACK
@@ -229,16 +248,20 @@ public class MainActivity extends BaseActivity {
             binding.killButton.setBackgroundTintList(
                     ColorStateList.valueOf(customColor));
             binding.killButton.setTextColor(onColor);
+            killButtonColor = customColor;
         } else if (accent != ACCENT_SYSTEM) {
             int accentColor = resolveColorAttr(androidx.appcompat.R.attr.colorPrimary);
             binding.killButton.setBackgroundTintList(
                     ColorStateList.valueOf(accentColor));
             binding.killButton.setTextColor(isLightAccent() ? Color.BLACK : Color.WHITE);
+            killButtonColor = accentColor;
         } else {
+            killButtonColor = Color.parseColor("#0136FF");
             binding.killButton.setBackgroundTintList(
-                    ColorStateList.valueOf(Color.parseColor("#0136FF")));
+                    ColorStateList.valueOf(killButtonColor));
             binding.killButton.setTextColor(Color.WHITE);
         }
+        binding.killButtonNavScrim.setBackgroundColor(killButtonColor);
     }
 
     private void setupListeners() {
@@ -252,6 +275,14 @@ public class MainActivity extends BaseActivity {
         });
         binding.bottomNavigation.getRoot().addOnLayoutChangeListener(
                 (v, l, t, r, b, ol, ot, or, ob) -> updateRecyclerBottomPadding());
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.coordinator, (v, insets) -> {
+            currentNavBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            if (binding.killButton.getVisibility() == View.VISIBLE) {
+                setKillButtonBottomMargin(currentNavBarHeight);
+            }
+            return insets;
+        });
 
         listAdapter.setOnAppActionListener(new BackgroundAppsRecyclerViewAdapter.OnAppActionListener() {
             @Override
@@ -863,17 +894,12 @@ public class MainActivity extends BaseActivity {
         boolean hasSelection = fullAppsList.stream().anyMatch(AppModel::isSelected);
         if (hasSelection) {
             binding.bottomNavigation.getRoot().setVisibility(View.GONE);
-            int navBarHeight = 0;
-            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(binding.coordinator);
-            if (insets != null) {
-                navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-            }
-            binding.killButton.setPadding(0, 0, 0, navBarHeight);
+            setKillButtonBottomMargin(currentNavBarHeight);
             binding.killButton.setVisibility(View.VISIBLE);
             updateKillButtonText();
         } else {
             binding.killButton.setVisibility(View.GONE);
-            binding.killButton.setPadding(0, 0, 0, 0);
+            setKillButtonBottomMargin(0);
             binding.bottomNavigation.getRoot().setVisibility(View.VISIBLE);
         }
         updateSelectAllMenuItem();

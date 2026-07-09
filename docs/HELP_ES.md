@@ -9,7 +9,7 @@
 - [¿Qué es ReAppzuku?](#qué-es-reappzuku)
 - [Requisitos](#requisitos)
 - [Configuración de supervivencia en segundo plano](#configuración-de-supervivencia-en-segundo-plano)
-- [Inicio rápido](#inicio-rápido)
+- [¿Por dónde empezar?](#por-dónde-empezar)
 - [Control manual](#control-manual)
 - [Principal](#principal)
   - [Barra de herramientas](#barra-de-herramientas)
@@ -216,13 +216,34 @@ Después de la configuración:
 
 ---
 
-## Inicio rápido
+## ¿Por dónde empezar?
 ↩️[Tabla de contenidos](#table-of-contents)
 
-1. Instala y abre ReAppzuku
-2. Concede acceso root o configura Shizuku
-3. La pantalla principal muestra las apps activas en segundo plano
-4. Selecciona las apps y toca **Kill** — o configura la automatización
+> [!CAUTION]
+> Esta sección tiene un carácter puramente informativo y no constituye una instrucción de uso de ReAppzuku. Configura todas las funciones por tu cuenta y de forma consciente, teniendo en cuenta que una configuración incorrecta de alguna función puede alterar el funcionamiento normal de las aplicaciones objetivo.
+
+A primera vista, ReAppzuku puede parecer una herramienta compleja con una gran cantidad de ajustes. En realidad, no es tan difícil de entender.
+
+**Configuración inicial**\
+Concede los permisos de Root o Shizuku. Asegúrate de quitar a la aplicación todas las restricciones del sistema (optimización de batería, bloqueo de inicio automático, candado en recientes, etc.).\
+Después de iniciar ReAppzuku, ve a los ajustes y activa el **Servicio en segundo plano**: esta opción pone en marcha los procesos en segundo plano de la aplicación, como el monitoreo de apps, la recopilación de estadísticas, etc.
+
+**Recopilación de estadísticas**\
+No actives Auto-Kill de inmediato ni configures otras restricciones apresuradamente. Dale a la aplicación entre 1 y 2 días para recopilar estadísticas: esto permitirá determinar con mayor precisión qué aplicaciones realmente sobrecargan el dispositivo en segundo plano.
+
+**Análisis de datos**\
+Después de recopilar los datos, ve a la sección **"Estadísticas y registros"** y revisa los gráficos de consumo (Batería, CPU, RAM). Adicionalmente, puedes comparar con las estadísticas de batería de los ajustes del teléfono. En la leyenda de los gráficos se puede ver qué aplicaciones consumen más recursos.
+
+**Configuración de Auto-Kill**\
+Se recomienda comenzar con el modo **Lista negra**, ya que es más seguro al afectar solo a las aplicaciones seleccionadas explícitamente, sin afectar al resto. El intervalo del Auto-Kill periódico puede establecerse inicialmente en 1 minuto, ajustándolo posteriormente según tus necesidades.\
+Tras 1–2 horas de funcionamiento de Auto-Kill, ve a la sección "Estadísticas y registros" y abre el registro **Principales infractores**. Ahí verás qué aplicaciones fueron cerradas con más frecuencia y cuáles se reiniciaron de inmediato.\
+Las aplicaciones que se reinician más de 3 veces son buenas candidatas para las Restricciones de segundo plano. Para empezar, se les puede asignar el tipo Suave / Soft de Restricción de segundo plano.
+
+**Ajuste específico**\
+Para un análisis más profundo, utiliza el botón **Disparadores de apps (App Triggers)** en la página Principal: muestra exactamente qué utiliza la aplicación para funcionar en segundo plano. Según el resultado, puedes aplicar otros tipos de Restricciones de segundo plano. Encontrarás más detalles al respecto en la sección correspondiente de la guía.
+
+> [!TIP]
+> Auto-Kill elimina el hecho de que la aplicación se ejecute en segundo plano, pero no la causa por la que vuelve a hacerlo. Para un control completo, se recomienda configurar adicionalmente las Restricciones de segundo plano y el Modo sueño (Sleep Mode).
 
 ---
 
