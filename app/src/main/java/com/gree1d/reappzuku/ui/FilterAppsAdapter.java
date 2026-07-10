@@ -312,6 +312,17 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         notifyDataSetChanged();
     }
 
+    public void selectAllFiltered() {
+        AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: selectAllFiltered() called, count=" + filteredApps.size());
+        for (AppModel app : filteredApps) {
+            if (!app.isSelected()) {
+                app.setSelected(true);
+            }
+        }
+        notifyDataSetChanged();
+        notifySelectionChanged();
+    }
+
     private void filterInitialList() {
         this.filteredApps.clear();
         for (AppModel app : allApps) {
