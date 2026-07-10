@@ -751,6 +751,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
 `GET_USAGE_STATS ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -767,6 +768,8 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
+`RUN_USER_INITIATED_JOBS ignore`\
 `电池优化白名单移除`\
 `Standby Bucket: Restricted`
 
@@ -778,50 +781,58 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 > App Standby Bucket 会在用户与目标应用交互时重置。系统并不总是将其恢复。ReAppzuku 将在下一个限制完整性检查周期自动恢复应用桶。
 
 **可用限制：**
+
+<details>
+<summary>Android 11+</summary>
+
 - **RUN_ANY_IN_BACKGROUND**\
-阻止应用在无明确用户交互的情况下启动后台进程或服务。主要且最广泛的限制——用于 **Soft** 模式。\
-**阻止：** 后台服务启动、同步、延迟任务（JobScheduler、WorkManager）。\
-**不阻止：** Foreground Service（带通知）、已在运行的进程。
+阻止应用在无明确用户交互的情况下启动后台进程或服务。主要且最广泛的限制——用于 **Soft** 模式。
 
 - **RUN_IN_BACKGROUND**\
-更有针对性的后台执行限制。当应用在后台时，阻止通过 `startService()` 启动服务。\
-**阻止：** 应用自身在无用户参与的情况下启动的后台服务。\
-**不阻止：** Foreground Service、Alarm 触发的任务、Broadcast Receiver。
+更有针对性的后台执行限制。当应用在后台时，阻止通过 `startService()` 启动服务。
 
 - **START_FOREGROUND**\
-阻止应用将服务提升到前台（持久通知）。没有此权限，应用无法显示"在后台运行"通知或保持进程存活。\
-**阻止：** 对 `startForeground()` 的调用——应用无法创建粘性通知或保持服务存活。\
-**不阻止：** 常规应用通知、通过 JobScheduler 的后台任务。
-
-- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
-禁止应用绕过系统的电源限制（如 Doze 或 App Standby 待机模式）。通常，此权限允许系统应用和关键应用在后台无限制地运行。\
-**阻止：** 在开启省电算法时，应用无限制地在后台运行、自由使用网络以及唤醒设备（wakelocks）。\
-**不阻止：** 应用在屏幕上打开（处于前台）时的正常运行，以及标准电池管理允许的基本后台功能。
+阻止应用将服务提升到前台（持久通知）。没有此权限，应用无法显示"在后台运行"通知或保持进程存活。
 
 - **GET_USAGE_STATS**
-禁止应用访问其他应用的使用情况统计信息（例如启动过哪些应用、使用了多长时间以及活动历史记录）。\
-**阻止：** 对 UsageStatsManager 方法的调用（例如 queryUsageStats()、queryEvents()）——应用将无法追踪用户打开 view 了哪些程序以及在其中停留了多长时间。\
-**不阻止：** 应用访问自身的运行统计信息，或与第三方应用活动无关的基础系统信息。
+禁止应用访问其他应用的使用情况统计信息（例如启动过哪些应用、使用了多长时间以及活动历史记录）。
 
 - **WAKE_LOCK**\
-阻止应用在屏幕关闭时保持 CPU 活跃。没有 WakeLock，系统可以让 CPU 休眠并停止后台操作。\
-**阻止：** 通过 `PowerManager.WakeLock` 持有 CPU——应用无法阻止手机休眠。\
-**不阻止：** 屏幕亮起时应用运行。
-
-- **SCHEDULE_EXACT_ALARM**
-禁止应用通过 `AlarmManager.setExact()` 及类似方法设置精确闹钟。此限制阻止的是闹钟本身的注册，而非仅仅阻止唤醒设备。\
-**阻止：** 调用 `setExact()`、`setExactAndAllowWhileIdle()` 及其他精确 AlarmManager 方法 — 应用将无法注册精确延迟任务。\
-**不阻止：** 非精确定时器（`setInexactRepeating()`）、JobScheduler 和 WorkManager 任务。
+阻止应用在屏幕关闭时保持 CPU 活跃。没有 WakeLock，系统可以让 CPU 休眠并停止后台操作。
 
 - **INTERACT_ACROSS_PROFILES**\
-阻止应用与其他工作配置文件交互。主要与企业设备相关。\
-**阻止：** 主配置文件与工作配置文件之间的跨配置文件调用和数据传输。\
-**不阻止：** 应用在单个配置文件内运行。
+阻止应用与其他工作配置文件交互。主要与企业设备相关。
+
+</details>
+
+</details>
+
+<details>
+<summary>Android 12+</summary>
+
+- **SCHEDULE_EXACT_ALARM**
+禁止应用通过 `AlarmManager.setExact()` 及类似方法设置精确闹钟。此限制阻止的是闹钟本身的注册，而非仅仅阻止唤醒设备。
 
 - **ACCESS_NOTIFICATIONS**
-禁止应用访问通知侦听器服务。此限制可防止应用读取、拦截或与其他应用的通知进行交互。\
-**阻止：** NotificationListenerService 的运行——应用将无法读取其他应用通知的文本和标题、清除通知或通过代码点击其中的操作按钮。\
-**不阻止：** 应用自身通过 NotificationManager 向用户发送和管理自己通知的能力。
+禁止应用访问通知侦听器服务。此限制可防止应用读取、拦截或与其他应用的通知进行交互。
+
+</details>
+
+</details>
+
+<details>
+<summary>Android 14+</summary>
+
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+禁止应用绕过系统的电源限制（如 Doze 或 App Standby 待机模式）。通常，此权限允许系统应用和关键应用在后台无限制地运行。
+
+- **SYSTEM_EXEMPT_FROM_SUSPENSION**
+应用失去进程挂起豁免——系统可能比平时更激进地冻结（freeze）该应用的后台进程。
+
+- **RUN_USER_INITIATED_JOBS**
+禁止应用以提升的优先级运行用户发起的任务（user-initiated jobs）——由用户发起的任务（下载、导出等）将作为普通后台任务，在系统标准限制下执行。
+
+</details>
 
 - **Standby Bucket: Rare**\
 被系统标记为很少使用。在系统层面阻止应用：
@@ -852,6 +863,8 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 | SCHEDULE_EXACT_ALARM | — | — | ✓ | 可选 |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | 可选 |
 | ACCESS_NOTIFICATIONS | — | ✓ | ✓ | 可选 |
+| RUN_USER_INITIATED_JOBS | — | — | ✓ | 可选 |
+| SYSTEM_EXEMPT_FROM_SUSPENSION | — | ✓ | ✓ | 可选 |
 | Standby Bucket | — | Rare | Restricted | 可选 |
 
 **列表状态**：

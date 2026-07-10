@@ -47,6 +47,8 @@ public class BackgroundAppManager {
     private static final String OP_SCHEDULE_EXACT_ALARM = "SCHEDULE_EXACT_ALARM";
     private static final String INTERACT_ACROSS_PROFILES_OP = "INTERACT_ACROSS_PROFILES"; 
     private static final String ACCESS_NOTIFICATIONS_OP = "ACCESS_NOTIFICATIONS"; 
+    private static final String SYSTEM_EXEMPT_FROM_SUSPENSION_OP = "SYSTEM_EXEMPT_FROM_SUSPENSION";
+    private static final String RUN_USER_INITIATED_JOBS_OP = "RUN_USER_INITIATED_JOBS";
     private static final Pattern PACKAGE_NAME_PATTERN = Pattern.compile("[A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+");
     private static final String FORCE_STOP_COMMAND_PREFIX = "am force-stop ";
     private static final int STANDBY_BUCKET_RARE = 40;
@@ -61,7 +63,9 @@ public class BackgroundAppManager {
         WAKE_LOCK_RESTRICTION_OP,
         OP_SCHEDULE_EXACT_ALARM,
         INTERACT_ACROSS_PROFILES_OP,
-        ACCESS_NOTIFICATIONS_OP
+        ACCESS_NOTIFICATIONS_OP,
+        SYSTEM_EXEMPT_FROM_SUSPENSION_OP,
+        RUN_USER_INITIATED_JOBS_OP
     };
 
     public static final String[] MEDIUM_OPS = {
@@ -69,8 +73,61 @@ public class BackgroundAppManager {
         BG_RUN_RESTRICTION_OP,
         SYSTEM_EXEMPT_OP,
         GET_USAGE_STATS_OP,
-        ACCESS_NOTIFICATIONS_OP
+        ACCESS_NOTIFICATIONS_OP,
+        SYSTEM_EXEMPT_FROM_SUSPENSION_OP
     };
+
+    /**
+     * Minimum SDK level (Build.VERSION_CODES) required for each entry in ALL_OPS, by index.
+     * Ops whose required SDK is not met by the current device are unsupported and must not
+     * be applied in MEDIUM/HARD/MANUAL modes.
+     */
+    public static final int[] OP_MIN_SDK = {
+        Build.VERSION_CODES.R,                 // BACKGROUND_RESTRICTION_OP        (Android 11+)
+        Build.VERSION_CODES.R,                 // BG_RUN_RESTRICTION_OP            (Android 11+)
+        Build.VERSION_CODES.R,                 // FOREGROUND_RESTRICTION_OP        (Android 11+)
+        Build.VERSION_CODES.UPSIDE_DOWN_CAKE,  // SYSTEM_EXEMPT_OP                 (Android 14+)
+        Build.VERSION_CODES.R,                 // GET_USAGE_STATS_OP               (Android 11+)
+        Build.VERSION_CODES.R,                 // WAKE_LOCK_RESTRICTION_OP         (Android 11+)
+        Build.VERSION_CODES.S,                 // OP_SCHEDULE_EXACT_ALARM          (Android 12+)
+        Build.VERSION_CODES.R,                 // INTERACT_ACROSS_PROFILES_OP      (Android 11+)
+        Build.VERSION_CODES.S,                 // ACCESS_NOTIFICATIONS_OP          (Android 12+)
+        Build.VERSION_CODES.UPSIDE_DOWN_CAKE,  // SYSTEM_EXEMPT_FROM_SUSPENSION_OP (Android 14+)
+        Build.VERSION_CODES.UPSIDE_DOWN_CAKE   // RUN_USER_INITIATED_JOBS_OP       (Android 14+)
+    };
+
+    /** True if the given ALL_OPS index is supported on the current device's SDK level. */
+    public static boolean isOpSupported(int opIndex) {
+        if (opIndex < 0 || opIndex >= OP_MIN_SDK.length) return false;
+        return Build.VERSION.SDK_INT >= OP_MIN_SDK[opIndex];
+    }
+
+    /** True if the given op name is supported on the current device's SDK level. */
+    public static boolean isOpSupported(String opName) {
+        for (int i = 0; i < ALL_OPS.length; i++) {
+            if (ALL_OPS[i].equals(opName)) return isOpSupported(i);
+        }
+        return false;
+    }
+
+    /** Bitmask of ALL_OPS indices supported on the current device's SDK level. */
+    public static int supportedOpsMask() {
+        int mask = 0;
+        for (int i = 0; i < ALL_OPS.length; i++) {
+            if (isOpSupported(i)) mask |= (1 << i);
+        }
+        return mask;
+    }
+
+    /** Intersects the given mask with the ops supported on the current SDK. */
+    public static int filterSupportedMask(int mask) {
+        return mask & supportedOpsMask();
+    }
+
+    /** Bits present in mask but NOT supported on the current SDK — these must be skipped. */
+    public static int unsupportedMaskOf(int mask) {
+        return mask & ~supportedOpsMask();
+    }
 
     public enum RestrictionType { SOFT, MEDIUM, HARD, MANUAL }
 
@@ -725,12 +782,18 @@ public class BackgroundAppManager {
         int succeededMask = 0;
         int failedMask = 0;
         int appliedMask = 0;
+        int skippedMask = 0;
         for (int i = 0; i < ALL_OPS.length; i++) {
             boolean isMediumOp = false;
             for (String medOp : MEDIUM_OPS) {
                 if (ALL_OPS[i].equals(medOp)) { isMediumOp = true; break; }
             }
             if (!isMediumOp) continue;
+            if (!isOpSupported(i)) {
+                skippedMask |= (1 << i);
+                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [SKIP] " + ALL_OPS[i] + " (sdk " + Build.VERSION.SDK_INT + " < " + OP_MIN_SDK[i] + ")");
+                continue;
+            }
             appliedMask |= (1 << i);
             boolean succeeded = shellManager.runShellCommandForResult(
                     "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
@@ -745,13 +808,14 @@ public class BackgroundAppManager {
                 AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [FAIL] " + ALL_OPS[i]);
             }
         }
-        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyMediumOps result: ok=" + ok + " fail=" + fail + " pkg=" + packageName);
+        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyMediumOps result: ok=" + ok + " fail=" + fail
+                + " skipped=" + Integer.bitCount(skippedMask) + " pkg=" + packageName);
         if ("ignore".equals(mode)) {
             saveAppliedOpsMask(packageName, succeededMask);
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail, failedMask, appliedMask};
+        return new int[]{ok, fail, failedMask, appliedMask, skippedMask};
     }
 
     int[] applyAllHardOps(String packageName, String mode) {
@@ -760,42 +824,11 @@ public class BackgroundAppManager {
         int ok = 0, fail = 0;
         int succeededMask = 0;
         int failedMask = 0;
+        int skippedMask = 0;
         for (int i = 0; i < ALL_OPS.length; i++) {
-            boolean succeeded = shellManager.runShellCommandForResult(
-                    "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
-                    .succeeded();
-            if (succeeded) {
-                ok++;
-                succeededMask |= (1 << i);
-                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [OK  ] " + ALL_OPS[i]);
-            } else {
-                fail++;
-                failedMask |= (1 << i);
-                AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [FAIL] " + ALL_OPS[i]);
-            }
-        }
-        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyAllHardOps result: ok=" + ok + " fail=" + fail + " pkg=" + packageName);
-        if ("ignore".equals(mode)) {
-            saveAppliedOpsMask(packageName, succeededMask);
-        } else {
-            clearAppliedOpsMask(packageName);
-        }
-        return new int[]{ok, fail, failedMask};
-    }
-
-
-    int[] applyManualOps(String packageName, int opsMask, String mode) {
-        int selectedCount = Integer.bitCount(opsMask);
-        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyManualOps → " + packageName + " mode=" + mode
-                + " mask=0x" + Integer.toHexString(opsMask)
-                + " selectedOps=" + selectedCount + "/" + ALL_OPS.length);
-
-        int ok = 0, fail = 0;
-        int succeededMask = 0;
-        int failedMask = 0;
-        for (int i = 0; i < ALL_OPS.length; i++) {
-            if ((opsMask & (1 << i)) == 0) {
-                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [SKIP] " + ALL_OPS[i] + " (not selected)");
+            if (!isOpSupported(i)) {
+                skippedMask |= (1 << i);
+                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [SKIP] " + ALL_OPS[i] + " (sdk " + Build.VERSION.SDK_INT + " < " + OP_MIN_SDK[i] + ")");
                 continue;
             }
             boolean succeeded = shellManager.runShellCommandForResult(
@@ -811,13 +844,58 @@ public class BackgroundAppManager {
                 AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [FAIL] " + ALL_OPS[i]);
             }
         }
-        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyManualOps result: ok=" + ok + " fail=" + fail + " pkg=" + packageName);
+        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyAllHardOps result: ok=" + ok + " fail=" + fail
+                + " skipped=" + Integer.bitCount(skippedMask) + " pkg=" + packageName);
         if ("ignore".equals(mode)) {
             saveAppliedOpsMask(packageName, succeededMask);
         } else {
             clearAppliedOpsMask(packageName);
         }
-        return new int[]{ok, fail, failedMask, opsMask};
+        return new int[]{ok, fail, failedMask, succeededMask, skippedMask};
+    }
+
+
+    int[] applyManualOps(String packageName, int opsMask, String mode) {
+        int selectedCount = Integer.bitCount(opsMask);
+        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyManualOps → " + packageName + " mode=" + mode
+                + " mask=0x" + Integer.toHexString(opsMask)
+                + " selectedOps=" + selectedCount + "/" + ALL_OPS.length);
+
+        int ok = 0, fail = 0;
+        int succeededMask = 0;
+        int failedMask = 0;
+        int skippedMask = 0;
+        for (int i = 0; i < ALL_OPS.length; i++) {
+            if ((opsMask & (1 << i)) == 0) {
+                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [SKIP] " + ALL_OPS[i] + " (not selected)");
+                continue;
+            }
+            if (!isOpSupported(i)) {
+                skippedMask |= (1 << i);
+                AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [SKIP] " + ALL_OPS[i] + " (sdk " + Build.VERSION.SDK_INT + " < " + OP_MIN_SDK[i] + ")");
+                continue;
+            }
+            boolean succeeded = shellManager.runShellCommandForResult(
+                    "cmd appops set --user current " + packageName + " " + ALL_OPS[i] + " " + mode)
+                    .succeeded();
+            if (succeeded) {
+                ok++;
+                succeededMask |= (1 << i);
+                AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [OK  ] " + ALL_OPS[i]);
+            } else {
+                fail++;
+                failedMask |= (1 << i);
+                AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ":   [FAIL] " + ALL_OPS[i]);
+            }
+        }
+        AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": applyManualOps result: ok=" + ok + " fail=" + fail
+                + " skipped=" + Integer.bitCount(skippedMask) + " pkg=" + packageName);
+        if ("ignore".equals(mode)) {
+            saveAppliedOpsMask(packageName, succeededMask);
+        } else {
+            clearAppliedOpsMask(packageName);
+        }
+        return new int[]{ok, fail, failedMask, opsMask, skippedMask};
     }
 
 
@@ -948,7 +1026,9 @@ public class BackgroundAppManager {
         Set<String> restrictedPackages = new HashSet<>();
         boolean querySucceeded = false;
     
-        for (String op : ALL_OPS) {
+        for (int i = 0; i < ALL_OPS.length; i++) {
+            if (!isOpSupported(i)) continue;
+            String op = ALL_OPS[i];
             String[] modes = {"ignore", "deny"};
             
             for (String mode : modes) {
@@ -1076,7 +1156,9 @@ public class BackgroundAppManager {
 
 
         Map<String, Set<String>> actualRestrictedByOp = new HashMap<>();
-        for (String op : ALL_OPS) {
+        for (int i = 0; i < ALL_OPS.length; i++) {
+            if (!isOpSupported(i)) continue;
+            String op = ALL_OPS[i];
             Set<String> restricted = new HashSet<>();
             String ignoreOut = shellManager.runShellCommandAndGetFullOutput(
                     "cmd appops query-op --user current " + op + " ignore");
@@ -1119,8 +1201,14 @@ public class BackgroundAppManager {
                 return ops;
             }
 
-            if (hardSet.contains(pkg)) return Arrays.asList(ALL_OPS);
-            int mask = getManualOpsMask(pkg);
+            if (hardSet.contains(pkg)) {
+                List<String> ops = new ArrayList<>();
+                for (int i = 0; i < ALL_OPS.length; i++) {
+                    if (isOpSupported(i)) ops.add(ALL_OPS[i]);
+                }
+                return ops;
+            }
+            int mask = filterSupportedMask(getManualOpsMask(pkg));
             List<String> ops = new ArrayList<>();
             for (int i = 0; i < ALL_OPS.length; i++) {
                 if ((mask & (1 << i)) != 0) ops.add(ALL_OPS[i]);
@@ -1137,7 +1225,9 @@ public class BackgroundAppManager {
                 }
                 return ops;
             }
-            return Arrays.asList(MEDIUM_OPS);
+            return Arrays.asList(MEDIUM_OPS).stream()
+                    .filter(BackgroundAppManager::isOpSupported)
+                    .collect(java.util.stream.Collectors.toList());
         }
 
         return Collections.singletonList(BACKGROUND_RESTRICTION_OP);
@@ -1172,6 +1262,9 @@ public class BackgroundAppManager {
             }
             if (fail > 0 && opsCount.length > 2) {
                 detail.append(" failedOps=").append(opsMaskToNames(opsCount[2]));
+            }
+            if (opsCount.length > 4 && opsCount[4] != 0) {
+                detail.append(" skippedOps=").append(opsMaskToNames(opsCount[4]));
             }
         } else {
             detail.append("appops=").append(formatShellOutcome(appOpsResult));

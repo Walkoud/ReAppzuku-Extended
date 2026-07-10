@@ -751,6 +751,7 @@ Bloquea el lanzamiento de servicios, el programador de tareas (job scheduler) y 
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
 `GET_USAGE_STATS ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
 `Standby Bucket: Rare`
 
 - **Estricta / Hard**\
@@ -767,6 +768,8 @@ Una vez que la app se minimiza o cambias a otra — el sistema la cierra inmedia
 `SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
+`RUN_USER_INITIATED_JOBS ignore`\
 `Eliminación de la lista blanca de optimización de batería`\
 `Standby Bucket: Restricted`
 
@@ -778,59 +781,67 @@ Tú eliges qué restricciones aplicar.\
 > El estado de espera (App Standby Bucket) se restablece cuando el usuario interactúa con la app objetivo. El sistema no siempre lo vuelve a restaurar por sí solo. ReAppzuku restablecerá automáticamente el estado Bucket de la app en el siguiente ciclo de verificación de integridad de restricciones.
 
 **Restricciones disponibles:**
+
+<details>
+<summary>Android 11+</summary>
+
 - **RUN_ANY_IN_BACKGROUND**\
-Evita que la app inicie procesos o servicios en segundo plano sin la interacción explícitamente del usuario. Es la restricción principal y más amplia — utilizada en el modo **Suave (Soft)**.\
-**Bloquea:** inicios de servicios en segundo plano, sincronización y tareas diferidas (JobScheduler, WorkManager).\
-**No bloquea:** servicios de primer plano (con notificación) ni procesos que ya estén en ejecución.
+Evita que la app inicie procesos o servicios en segundo plano sin la interacción explícitamente del usuario. Es la restricción principal y más amplia — utilizada en el modo **Suave (Soft)**.
 
 - **RUN_IN_BACKGROUND**\
-Restricción de ejecución en segundo plano más específica. Bloquea el inicio de servicios a través de `startService()` cuando la app está en segundo plano.\
-**Bloquea:** servicios en segundo plano iniciados por la propia app sin la intervención del usuario.\
-**No bloquea:** servicios de primer plano, tareas activadas por alarmas ni receptores de difusión (broadcast receivers).
+Restricción de ejecución en segundo plano más específica. Bloquea el inicio de servicios a través de `startService()` cuando la app está en segundo plano.
 
 - **START_FOREGROUND**\
-Evita que la app eleve un servicio a primer plano (notificación persistente). Sin esto, la app no puede mostrar la notificación de "ejecutándose en segundo plano" ni mantener el proceso vivo.\
-**Bloquea:** llamadas a `startForeground()` — la app no puede crear una notificación fija ni mantener el servicio vivo.\
-**No bloquea:** notificaciones regulares de la app ni tareas en segundo plano a través de JobScheduler.
-
-- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
-Impide que la aplicación eluda las restricciones de ahorro de energía del sistema (como los modos Doze o App Standby). Por lo general, este permiso permite que las aplicaciones del sistema y las aplicaciones críticas se ejecuten en segundo plano sin limitaciones.\
-**Bloquea:** la ejecución de la aplicación en segundo plano sin restricciones, el uso libre de la red y el despertar del dispositivo (wakelocks) cuando los algoritmos de ahorro de batería están activos.\
-**No bloquea:** el funcionamiento normal de la aplicación cuando está abierta en la pantalla (en primer plano), así como las funciones básicas en segundo plano permitidas por la gestión de batería estándar.
+Evita que la app eleve un servicio a primer plano (notificación persistente). Sin esto, la app no puede mostrar la notificación de "ejecutándose en segundo plano" ni mantener el proceso vivo.
 
 - **GET_USAGE_STATS**
-Prohíbe a la aplicación acceder a las estadísticas de uso del dispositivo por parte de otras aplicaciones (qué apps se abrieron, cuánto tiempo se usaron y el historial de actividad).\
-**Bloquea:** Las llamadas a los métodos de UsageStatsManager (por ejemplo, queryUsageStats(), queryEvents()); la aplicación no podrá rastrear qué programas usa el usuario ni cuánto tiempo pasa en ellos.\
-**No bloquea:** El acceso de la aplicación a sus propias estadísticas de funcionamiento o a información básica del sistema no relacionada con la actividad de terceros.
+Prohíbe a la aplicación acceder a las estadísticas de uso del dispositivo por parte de otras aplicaciones (qué apps se abrieron, cuánto tiempo se usaron y el historial de actividad).
 
 - **WAKE_LOCK**\
-Evita que la app mantenga activa la CPU con la pantalla apagada. Sin un wake lock, el sistema puede suspender la CPU y detener las operaciones en segundo plano.\
-**Bloquea:** la retención de la CPU a través de `PowerManager.WakeLock` — la app no puede evitar que el teléfono entre en modo de suspensión.\
-**No bloquea:** la ejecución de la app mientras la pantalla está encendida.
-
-- **SCHEDULE_EXACT_ALARM**
-Impide que la aplicación programe alarmas exactas mediante `AlarmManager.setExact()` y métodos similares. Esta restricción bloquea el registro de la alarma en sí, no solo la capacidad de despertar el dispositivo.\
-**Bloquea:** llamadas a `setExact()`, `setExactAndAllowWhileIdle()` y otros métodos exactos de AlarmManager — la aplicación no podrá registrar una tarea diferida con tiempo preciso.\
-**No bloquea:** temporizadores inexactos (`setInexactRepeating()`), tareas de JobScheduler y WorkManager.
+Evita que la app mantenga activa la CPU con la pantalla apagada. Sin un wake lock, el sistema puede suspender la CPU y detener las operaciones en segundo plano.
 
 - **INTERACT_ACROSS_PROFILES**\
 Evita que la app interactúe con otros perfiles de trabajo. Relevante principalmente en dispositivos empresariales.\
-**Bloquea:** llamadas entre perfiles y la transferencia de datos entre el perfil principal y el de trabajo.\
-**No bloquea:** el funcionamiento de la app dentro de un solo perfil.
+
+</details>
+
+</details>
+
+<details>
+<summary>Android 12+</summary>
+
+- **SCHEDULE_EXACT_ALARM**
+Impide que la aplicación programe alarmas exactas mediante `AlarmManager.setExact()` y métodos similares. Esta restricción bloquea el registro de la alarma en sí, no solo la capacidad de despertar el dispositivo.
 
 - **ACCESS_NOTIFICATIONS**
-Prohíbe a la aplicación acceder al servicio de escucha de notificaciones. Esta restricción evita que la aplicación lea, intercepte o interactúe con las notificaciones de otros programas.\
-**Bloquea:** El funcionamiento de NotificationListenerService; la aplicación no podrá leer el texto ni los títulos de las notificaciones de otras apps, descartarlas o pulsar programáticamente sus botones de acción.
-**No bloquea:** La capacidad de la propia aplicación para enviar sus propias notificaciones al usuario a través de NotificationManager.
+Prohíbe a la aplicación acceder al servicio de escucha de notificaciones. Esta restricción evita que la aplicación lea, intercepte o interactúe con las notificaciones de otros programas.
 
-- **Estado Standby: Raro (Rare)**\
+</details>
+
+</details>
+
+<details>
+<summary>Android 14+</summary>
+
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+Impide que la aplicación eluda las restricciones de ahorro de energía del sistema (como los modos Doze o App Standby). Por lo general, este permiso permite que las aplicaciones del sistema y las aplicaciones críticas se ejecuten en segundo plano sin limitaciones.
+
+- **SYSTEM_EXEMPT_FROM_SUSPENSION**
+La aplicación pierde la inmunidad frente a la suspensión de procesos — el sistema puede congelar (freeze) el proceso en segundo plano de la aplicación de forma más agresiva de lo habitual.
+
+- **RUN_USER_INITIATED_JOBS**
+Impide que la aplicación ejecute trabajos iniciados por el usuario con prioridad elevada — las tareas iniciadas por el usuario (descargas, exportaciones, etc.) se ejecutan como tareas en segundo plano normales bajo las restricciones estándar del sistema.
+
+</details>
+
+- **Standby Bucket: Rare**\
 Marcado por el sistema como usado raramente. Bloquea la app a nivel del sistema:
   - Red en segundo plano. La red solo está disponible durante las raras ventanas de mantenimiento del sistema.
   - JobScheduler. Las tareas regulares y las tareas aceleradas (Expedited Jobs) se limitan a 10 minutos por día.
   - AlarmManager. Las alarmas inexactas se posponen. Límite — 1 disparo por hora.
   - Push (FCM). Se reduce la cuota de mensajes push de alta prioridad. Los mensajes push que excedan el límite se retrasan.
 
-- **Estado Standby: Restringido (Restricted)**\
+- **Standby Bucket: Restricted**\
 Marcado por el sistema como una app que no se usa desde hace mucho tiempo o que es anómala y consumió un exceso de CPU y batería. Incluye todas las restricciones del estado Raro, pero las aplica de forma más estricta. Adicionalmente restringe a nivel del sistema:
   - Eliminación de la exención de carga. Cuando el dispositivo está enchufado, las restricciones para todos los estados (incluido Raro) se levantan por completo. Sin embargo, para el estado Restringido, los límites de lanzamiento de JobScheduler permanecen activos incluso durante la carga.
   - Límite estricto de frecuencia de tareas. Limita rigurosamente la granularidad de la programación — la app tiene permitido lanzar una tarea en segundo plano exactamente 1 vez al día.
@@ -852,6 +863,8 @@ Marcado por el sistema como una app que no se usa desde hace mucho tiempo o que 
 | SCHEDULE_EXACT_ALARM | — | — | ✓ | opcional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | opcional |
 | ACCESS_NOTIFICATIONS | — | ✓ | ✓ | opcional |
+| RUN_USER_INITIATED_JOBS | — | — | ✓ | opcional |
+| SYSTEM_EXEMPT_FROM_SUSPENSION | — | ✓ | ✓ | opcional |
 | Estado Standby Bucket | — | Rare | Restricted | opcional |
 
 **Estados de la lista**:

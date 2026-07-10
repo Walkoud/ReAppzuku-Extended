@@ -751,6 +751,7 @@ Blocks service launches, job scheduler and alarms. App works normally while open
 `SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS ignore`\
 `GET_USAGE_STATS ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
 `Standby Bucket: Rare`
 
 - **Hard**\
@@ -767,6 +768,8 @@ Once app is minimized or switched away from — system kills it immediately. App
 `SCHEDULE_EXACT_ALARM ignore`\
 `INTERACT_ACROSS_PROFILES ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
+`SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
+`RUN_USER_INITIATED_JOBS ignore`\
 `Battery optimization whitelist removal`\
 `Standby Bucket: Restricted`
 
@@ -778,50 +781,56 @@ You choose which restrictions to apply.\
 > App Standby Bucket resets upon user interaction with target app. System does not always restore it back. ReAppzuku will automatically restore app Bucket on next restriction integrity check cycle.
 
 **Available restrictions:**
+<details>
+<summary>Android 11+</summary>
+
 - **RUN_ANY_IN_BACKGROUND**\
-Prevents app from starting background processes or services without explicit user interaction. Primary and broadest restriction — used in **Soft** mode.\
-**Blocks:** background service starts, sync, deferred tasks (JobScheduler, WorkManager).\
-**Does not block:** foreground services (with notification), already-running processes.
+Prevents app from starting background processes or services without explicit user interaction. Primary and broadest restriction — used in **Soft** mode.
 
 - **RUN_IN_BACKGROUND**\
-More targeted background execution restriction. Blocks service starts via `startService()` when app is in background.\
-**Blocks:** background services started by app itself without user involvement.\
-**Does not block:** foreground services, alarm-triggered tasks, broadcast receivers.
+More targeted background execution restriction. Blocks service starts via `startService()` when app is in background.
 
 - **START_FOREGROUND**\
-Prevents app from promoting service to foreground (persistent notification). Without this, app can't show "running in background" notification or hold process alive.\
-**Blocks:** calls to `startForeground()` — app can't create sticky notification or keep service alive.\
-**Does not block:** regular app notifications, background tasks via JobScheduler.
-
-- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
-Prevents the app from bypassing system power restrictions (such as Doze mode or App Standby). Usually, this permission allows system and critical apps to run in the background without limitations.\
-**Blocks:** unrestricted background execution, free network usage, and waking up the device (wakelocks) when battery-saving algorithms are active.\
-**Does not block:** normal operation of the app when it is open on the screen (in the foreground), as well as basic background functions permitted by standard power-saving modes.
+Prevents app from promoting service to foreground (persistent notification). Without this, app can't show "running in background" notification or hold process alive.
 
  - **GET_USAGE_STATS**
-Restricts the app from accessing device usage history and statistics for other applications (which apps were launched, how long they were used, and general activity history).\
-**Blocks:** Calls to UsageStatsManager methods (e.g., queryUsageStats(), queryEvents()) — the app won't be able to track what programs the user opens or how much time is spent in them.\
-**Does not block:** The app's access to its own internal usage statistics or basic system information unrelated to other apps' activity.
+Restricts the app from accessing device usage history and statistics for other applications (which apps were launched, how long they were used, and general activity history).
 
 - **WAKE_LOCK**\
-Prevents app from keeping CPU active with screen off. Without wake lock, system can sleep CPU and stop background operations.\
-**Blocks:** CPU hold via `PowerManager.WakeLock` — app can't prevent phone from sleeping.\
-**Does not block:** app running while screen is on.
-
-- **SCHEDULE_EXACT_ALARM**
-Prevents the app from scheduling exact alarms via `AlarmManager.setExact()` and similar methods. This restriction blocks the scheduling of the alarm itself, not just the ability to wake the device.\
-**Blocks:** calls to `setExact()`, `setExactAndAllowWhileIdle()`, and other exact AlarmManager methods — the app will be unable to register a precisely timed deferred task.\
-**Does not block:** inexact timers (`setInexactRepeating()`), JobScheduler and WorkManager tasks.
+Prevents app from keeping CPU active with screen off. Without wake lock, system can sleep CPU and stop background operations.
 
 - **INTERACT_ACROSS_PROFILES**\
-Prevents app from interacting with other work profiles. Primarily relevant on enterprise devices.\
-**Blocks:** cross-profile calls and data transfer between primary and work profiles.\
-**Does not block:** app operating within single profile.
+Prevents app from interacting with other work profiles. Primarily relevant on enterprise devices.
+
+</details>
+
+</details>
+
+<details>
+<summary>Android 12+</summary>
+
+- **SCHEDULE_EXACT_ALARM**
+Prevents the app from scheduling exact alarms via `AlarmManager.setExact()` and similar methods. This restriction blocks the scheduling of the alarm itself, not just the ability to wake the device.
 
 - **ACCESS_NOTIFICATIONS**
-Restricts the app from accessing the notification listener service. This prevention stops the app from reading, intercepting, or interacting with notifications from other applications.\
-**Blocks:** The operation of NotificationListenerService — the app will not be able to read the text or titles of other apps' notifications, dismiss them, or programmatically click their action buttons.
-**Does not block:** The app's own ability to post and manage its own notifications via NotificationManager.
+Restricts the app from accessing the notification listener service. This prevention stops the app from reading, intercepting, or interacting with notifications from other applications.
+
+</details>
+
+</details>
+
+<details>
+<summary>Android 14+</summary>
+
+- **SYSTEM_EXEMPT_FROM_POWER_RESTRICTIONS**
+Prevents the app from bypassing system power restrictions (such as Doze mode or App Standby). Usually, this permission allows system and critical apps to run in the background without limitations
+
+- **SYSTEM_EXEMPT_FROM_SUSPENSION**
+The app loses immunity from process suspension — the system can freeze the app's background process more aggressively than usual.
+- **RUN_USER_INITIATED_JOBS**
+Prevents the app from running user-initiated jobs with elevated priority — tasks started by the user (downloads, exports, etc.) are executed as regular background tasks under standard system restrictions.
+
+</details>
 
 - **Standby Bucket: Rare**\
 Marked by system as rarely used. Blocks app at system level:
@@ -852,6 +861,8 @@ Marked by system as long-unused or anomalous app that consumed excessive CPU and
 | SCHEDULE_EXACT_ALARM | — | — | ✓ | optional |
 | INTERACT_ACROSS_PROFILES | — | — | ✓ | optional |
 | ACCESS_NOTIFICATIONS | — | ✓ | ✓ | optional |
+| SYSTEM_EXEMPT_FROM_SUSPENSION | — | ✓ | ✓ | optional |
+| RUN_USER_INITIATED_JOBS | — | — | ✓ | optional |
 | Standby Bucket | — | Rare | Restricted | optional |
 
 **List statuses**:
