@@ -1997,6 +1997,17 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                 .show();
     }
 
+    private View makeDivider(int paddingH) {
+        View divider = new View(this);
+        LinearLayout.LayoutParams p =
+                new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT, 1);
+        p.setMargins(paddingH, 4, paddingH, 4);
+        divider.setLayoutParams(p);
+        divider.setBackgroundColor(0x22888888);
+        return divider;
+    }
+
     private void updateSortButtonText(TextView btn, boolean open) {
         String label = getString(R.string.filter_sort_button);
         btn.setText(open ? label + "  ▲" : label + "  ▼");
