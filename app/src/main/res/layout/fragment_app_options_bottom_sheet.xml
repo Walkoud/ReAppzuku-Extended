@@ -2,7 +2,7 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical">
 
     <View
@@ -13,283 +13,299 @@
         android:layout_marginBottom="4dp"
         android:background="@drawable/bg_sheet_handle" />
 
-    <LinearLayout
-        android:id="@+id/sheet_app_header"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="20dp"
-        android:paddingBottom="16dp">
-
-        <ImageView
-            android:id="@+id/sheet_app_icon"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:scaleType="fitCenter" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:overScrollMode="ifContentScrolls"
+        android:fillViewport="true">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
             android:orientation="vertical">
 
+            <LinearLayout
+                android:id="@+id/sheet_app_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="16dp">
+
+                <ImageView
+                    android:id="@+id/sheet_app_icon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="fitCenter" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="12dp"
+                    android:orientation="vertical">
+
+
+                    <TextView
+                        android:id="@+id/sheet_app_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="?android:attr/textColorPrimary"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+
+                    <TextView
+                        android:id="@+id/sheet_package_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="?android:attr/textColorSecondary"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider" />
 
             <TextView
-                android:id="@+id/sheet_app_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
+                android:id="@+id/sheet_btn_app_info"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="@string/menu_app_info"
+                android:textSize="15sp"
                 android:textColor="?android:attr/textColorPrimary"
-                android:maxLines="1"
-                android:ellipsize="end" />
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
 
             <TextView
-                android:id="@+id/sheet_package_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="?android:attr/textColorSecondary"
-                android:maxLines="1"
-                android:ellipsize="end" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?android:attr/listDivider" />
-
-    <TextView
-        android:id="@+id/sheet_btn_app_info"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="@string/menu_app_info"
-        android:textSize="15sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true" />
-
-    <TextView
-        android:id="@+id/sheet_btn_app_triggers"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="@string/menu_app_triggers"
-        android:textSize="15sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true" />
-
-    <TextView
-        android:id="@+id/sheet_btn_uninstall"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="@string/menu_uninstall"
-        android:textSize="15sp"
-        android:textColor="@color/sheet_delete_color"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/sheet_btn_hidden_single"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:text="@string/menu_hidden"
-        android:textSize="15sp"
-        android:textColor="?android:attr/textColorPrimary"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone" />
-
-    <View
-        android:id="@+id/sheet_divider_add_to"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="?android:attr/listDivider"
-        android:visibility="gone" />
-
-    <LinearLayout
-        android:id="@+id/sheet_add_to_header"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:background="?attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:visibility="gone">
-
-        <TextView
-            android:id="@+id/sheet_add_to_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/menu_add_to"
-            android:textSize="15sp" />
-
-        <ImageView
-            android:id="@+id/sheet_add_to_arrow"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_arrow_down"
-            />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:id="@+id/sheet_add_to_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
-
-        <LinearLayout
-            android:id="@+id/sheet_item_whitelist"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/settings_mode_whitelist"
+                android:id="@+id/sheet_btn_app_triggers"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="@string/menu_app_triggers"
                 android:textSize="15sp"
-                android:textColor="?android:attr/textColorPrimary" />
-
-            <CheckBox
-                android:id="@+id/sheet_check_whitelist"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/sheet_item_blacklist"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
+                android:textColor="?android:attr/textColorPrimary"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/settings_mode_blacklist"
+                android:id="@+id/sheet_btn_uninstall"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:text="@string/menu_uninstall"
                 android:textSize="15sp"
-                android:textColor="?android:attr/textColorPrimary" />
-
-            <CheckBox
-                android:id="@+id/sheet_check_blacklist"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/sheet_item_hidden"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true">
+                android:textColor="@color/sheet_delete_color"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone" />
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:id="@+id/sheet_btn_hidden_single"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
                 android:text="@string/menu_hidden"
                 android:textSize="15sp"
-                android:textColor="?android:attr/textColorPrimary" />
+                android:textColor="?android:attr/textColorPrimary"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone" />
 
-            <CheckBox
-                android:id="@+id/sheet_check_hidden"
-                android:layout_width="wrap_content"
+            <View
+                android:id="@+id/sheet_divider_add_to"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="?android:attr/listDivider"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/sheet_add_to_header"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/sheet_add_to_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/menu_add_to"
+                    android:textSize="15sp" />
+
+                <ImageView
+                    android:id="@+id/sheet_add_to_arrow"
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_arrow_down"
+                    />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/sheet_add_to_container"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/sheet_item_whitelist"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_mode_whitelist"
+                        android:textSize="15sp"
+                        android:textColor="?android:attr/textColorPrimary" />
+
+                    <CheckBox
+                        android:id="@+id/sheet_check_whitelist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sheet_item_blacklist"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_mode_blacklist"
+                        android:textSize="15sp"
+                        android:textColor="?android:attr/textColorPrimary" />
+
+                    <CheckBox
+                        android:id="@+id/sheet_check_blacklist"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sheet_item_hidden"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/menu_hidden"
+                        android:textSize="15sp"
+                        android:textColor="?android:attr/textColorPrimary" />
+
+                    <CheckBox
+                        android:id="@+id/sheet_check_hidden"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sheet_item_bg_restriction"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/sheet_bg_restriction_label"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textSize="15sp"
+                        android:textColor="?android:attr/textColorPrimary" />
+
+                    <CheckBox
+                        android:id="@+id/sheet_check_bg_restriction"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/sheet_bottom_spacer"
+                android:layout_width="match_parent"
+                android:layout_height="8dp" />
 
         </LinearLayout>
 
-        <LinearLayout
-            android:id="@+id/sheet_item_bg_restriction"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/sheet_bg_restriction_label"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="15sp"
-                android:textColor="?android:attr/textColorPrimary" />
-
-            <CheckBox
-                android:id="@+id/sheet_check_bg_restriction"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:focusable="false" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
-    <View
-        android:id="@+id/sheet_bottom_spacer"
-        android:layout_width="match_parent"
-        android:layout_height="8dp" />
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>
