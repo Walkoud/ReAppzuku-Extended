@@ -729,12 +729,16 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
             context.getString(R.string.manual_op_schedule_exact_alarm),
             context.getString(R.string.manual_op_interact_across_profiles),
             context.getString(R.string.access_notifications),
-            
+            context.getString(R.string.system_exempt_from_suspension),
+            context.getString(R.string.run_user_initiated_jobs),
         };
     
+        // SDK-unsupported ops are checked=false and locked regardless of any stale saved bit.
+        int supportedMask = BackgroundAppManager.supportedOpsMask();
         boolean[] checked = new boolean[ops.length];
         for (int i = 0; i < ops.length; i++) {
-            checked[i] = (currentMask & (1 << i)) != 0;
+            boolean supported = (supportedMask & (1 << i)) != 0;
+            checked[i] = supported && (currentMask & (1 << i)) != 0;
         }
     
         android.widget.ScrollView scrollView = new android.widget.ScrollView(context);
@@ -746,11 +750,20 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         CheckBox[] boxes = new CheckBox[ops.length];
         for (int i = 0; i < ops.length; i++) {
             final int idx = i;
+            boolean supported = (supportedMask & (1 << idx)) != 0;
             CheckBox cb = new CheckBox(context);
             cb.setText(labels[i]);
             cb.setChecked(checked[i]);
             cb.setPadding(paddingH, paddingV * 3, paddingH, paddingV * 3);
-            cb.setOnCheckedChangeListener((btn, isChecked) -> checked[idx] = isChecked);
+            if (supported) {
+                cb.setOnCheckedChangeListener((btn, isChecked) -> checked[idx] = isChecked);
+            } else {
+                cb.setEnabled(false);
+                cb.setAlpha(0.4f);
+                AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: manualOps op unsupported on sdk="
+                        + android.os.Build.VERSION.SDK_INT + " op=" + ops[idx]);
+                // No listener attached — checked[idx] stays false and cannot be toggled by the user.
+            }
             boxes[i] = cb;
             listLayout.addView(cb);
         }
@@ -824,6 +837,7 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
                     for (int i = 0; i < ops.length; i++) {
                         if (checked[i]) mask |= (1 << i);
                     }
+                    mask = BackgroundAppManager.filterSupportedMask(mask);
                     if (mask == 0) {
                         AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: manualOps applied empty mask — reverting to SOFT pkg=" + app.getPackageName());
                         restrictionTypeMap.remove(app.getPackageName());
@@ -853,7 +867,9 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         if (hasAccent()) {
             android.content.res.ColorStateList tint =
                     android.content.res.ColorStateList.valueOf(accentColor);
-            for (CheckBox cb : boxes) cb.setButtonTintList(tint);
+            for (CheckBox cb : boxes) {
+                if (cb.isEnabled()) cb.setButtonTintList(tint);
+            }
             cbRare.setButtonTintList(tint);
             cbRestricted.setButtonTintList(tint);
             cbWhitelistRemoval.setButtonTintList(tint);
