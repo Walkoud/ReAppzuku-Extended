@@ -388,6 +388,14 @@ public class SettingsActivity extends SettingsActivityDialogs
 
         loadAdditionalScenariosSettings();
         updateShellModeText();
+        updateInstallTemplateSummary();
+    }
+
+    private void updateInstallTemplateSummary() {
+        boolean enabled = sharedPreferences.getBoolean(KEY_TEMPLATE_ENABLED, false);
+        binding.textInstallTemplateSummary.setText(
+                enabled ? R.string.settings_install_template_enabled
+                        : R.string.settings_install_template_disabled);
     }
 
     private void setupListeners() {
@@ -474,6 +482,7 @@ public class SettingsActivity extends SettingsActivityDialogs
             binding.layoutClearCache.setEnabled(false);
             appManager.clearCaches(() -> binding.layoutClearCache.setEnabled(true));
         });
+        binding.layoutInstallTemplate.setOnClickListener(v -> showInstallTemplateDialog());
         binding.layoutBackupRestore.setOnClickListener(v -> showBackupRestoreDialog());
         binding.layoutGithub.setOnClickListener(v -> openUrl("https://github.com/gree1d/ReAppzuku"));
         binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this, sharedPreferences));

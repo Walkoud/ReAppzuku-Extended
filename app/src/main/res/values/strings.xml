@@ -145,6 +145,24 @@
     <string name="filter_set_type_no_selection">No apps selected</string>
     <string name="filter_set_type_dialog_title">Set restriction type (%d)</string>
     <string name="filter_set_type_manual_hint">Manual ops can be configured per app later</string>
+    <string name="filter_selected">Selected</string>
+    <string name="filter_not_selected">Not selected</string>
+
+    <!-- App Install Template -->
+    <string name="settings_install_template_title">App Install Template</string>
+    <string name="settings_install_template_subtitle">Auto-apply actions to newly installed apps</string>
+    <string name="settings_install_template_enabled">Enabled</string>
+    <string name="settings_install_template_disabled">Disabled</string>
+    <string name="template_master_title">Enable template</string>
+    <string name="template_master_subtitle">Automatically apply actions when a new app is installed</string>
+    <string name="template_restriction_title">Background restriction</string>
+    <string name="template_restriction_subtitle">Apply background restriction on install</string>
+    <string name="template_sleep_title">Sleep mode</string>
+    <string name="template_sleep_subtitle">Add to sleep mode on install</string>
+    <string name="template_whitelist_title">Add to whitelist</string>
+    <string name="template_whitelist_subtitle">Protect from Auto-Kill</string>
+    <string name="template_blacklist_title">Add to blacklist</string>
+    <string name="template_blacklist_subtitle">Add as Auto-Kill target</string>
 
     <!-- FAB buttons -->
     <string name="fab_kill_app">Kill app</string>

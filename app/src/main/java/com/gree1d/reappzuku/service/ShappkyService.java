@@ -25,6 +25,9 @@ import java.util.concurrent.Executors;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import com.gree1d.reappzuku.core.ShellManager;
 import com.gree1d.reappzuku.manager.BackgroundAppManager;
 import com.gree1d.reappzuku.manager.AutoKillManager;
@@ -67,6 +70,7 @@ public class ShappkyService extends Service {
     private CollectStatsManager collectStatsManager;
     private RestrictionsScheduler scheduler;
     private KillTriggerReceiver screenOffReceiver;
+    private BroadcastReceiver packageAddedReceiver;
     private RestrictionsWatchdogManager watchdog;
     private AdditionalScenariosManager additionalScenariosManager;
     private RamKillShortcutManager ramKillShortcutManager;
@@ -152,6 +156,31 @@ public class ShappkyService extends Service {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screenOffReceiver, filter);
+
+        packageAddedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return;
+                android.net.Uri data = intent.getData();
+                if (data == null) return;
+                final String pkg = data.getSchemeSpecificPart();
+                if (pkg == null || pkg.equals(context.getPackageName())) return;
+                SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) return;
+                executor.execute(() -> {
+                    try {
+                        android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(pkg, 0);
+                        if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) return;
+                    } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+                        return;
+                    }
+                    handler.postDelayed(() -> applyInstallTemplate(pkg), 3000);
+                });
+            }
+        };
+        IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
+        pkgFilter.addDataScheme("package");
+        registerReceiver(packageAddedReceiver, pkgFilter);
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
         AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": AdditionalScenariosManager initialized");
@@ -598,6 +627,57 @@ public class ShappkyService extends Service {
     }
 
     @Override
+    private void applyInstallTemplate(String packageName) {
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        Set<String> packages = new HashSet<>();
+
+        if (prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false)) {
+            String typeStr = prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
+            BackgroundAppManager.RestrictionType type;
+            try {
+                type = BackgroundAppManager.RestrictionType.valueOf(typeStr);
+            } catch (IllegalArgumentException e) {
+                type = BackgroundAppManager.RestrictionType.SOFT;
+            }
+            appManager.setRestrictionType(packageName, type);
+            packages.add(packageName);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restriction " + type + " for " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false)) {
+            String sleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
+            Set<String> timerApps = sleepModeManager.getSleepModeApps();
+            Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
+            if ("PERMANENT".equals(sleepType)) {
+                permanentApps.add(packageName);
+            } else {
+                timerApps.add(packageName);
+            }
+            sleepModeManager.saveSleepModeApps(timerApps, permanentApps, null, null);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleep mode " + sleepType + " for " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false)) {
+            Set<String> whitelist = appManager.getWhitelistedApps();
+            whitelist.add(packageName);
+            appManager.saveWhitelistedApps(whitelist);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelisted " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false)) {
+            Set<String> blacklist = autoKillManager.getBlacklistedApps();
+            blacklist.add(packageName);
+            autoKillManager.saveBlacklistedApps(blacklist);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklisted " + packageName);
+        }
+
+        if (!packages.isEmpty()) {
+            appManager.applyBackgroundRestriction(packages, null);
+        }
+
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate completed for " + packageName);
+    }
+
     public void onDestroy() {
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onDestroy called, stopping service");
         isRunning = false;
@@ -609,6 +689,11 @@ public class ShappkyService extends Service {
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Shizuku-lost notification cancelled on service destroy");
         if (screenOffReceiver != null) {
             unregisterReceiver(screenOffReceiver);
+        }
+        if (packageAddedReceiver != null) {
+            try {
+                unregisterReceiver(packageAddedReceiver);
+            } catch (IllegalArgumentException ignored) {}
         }
         if (additionalScenariosManager != null) {
             AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": Stopping AdditionalScenariosManager (onDestroy)");

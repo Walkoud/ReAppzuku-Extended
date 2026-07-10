@@ -1877,6 +1877,9 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         final boolean[] showSystem  = {false};
         final boolean[] showUser    = {true};
         final boolean[] showRunning = {false};
+        final boolean[] showSelected    = {false};
+        final boolean[] showNotSelected = {false};
+        final Set<BackgroundAppManager.RestrictionType>[] showRestrictionTypes = new Set[]{new HashSet<>()};
 
         updateSortButtonText(btnSort, false);
 
@@ -1888,11 +1891,59 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                     .setCheckable(true).setChecked(showUser[0]);
             popup.getMenu().add(0, 2, 2, getString(R.string.filter_running))
                     .setCheckable(true).setChecked(showRunning[0]);
+            // Selection filters for all dialogs
+            popup.getMenu().add(0, 3, 3, getString(R.string.filter_selected))
+                    .setCheckable(true).setChecked(showSelected[0]);
+            popup.getMenu().add(0, 4, 4, getString(R.string.filter_not_selected))
+                    .setCheckable(true).setChecked(showNotSelected[0]);
+            // Restriction type filters (Background Restrictions only)
+            if (adapter.isRestrictionMode()) {
+                popup.getMenu().add(0, 5, 5, getString(R.string.filter_restriction_soft_option))
+                        .setCheckable(true)
+                        .setChecked(showRestrictionTypes[0].contains(BackgroundAppManager.RestrictionType.SOFT));
+                popup.getMenu().add(0, 6, 6, getString(R.string.filter_restriction_medium_option))
+                        .setCheckable(true)
+                        .setChecked(showRestrictionTypes[0].contains(BackgroundAppManager.RestrictionType.MEDIUM));
+                popup.getMenu().add(0, 7, 7, getString(R.string.filter_restriction_hard_option))
+                        .setCheckable(true)
+                        .setChecked(showRestrictionTypes[0].contains(BackgroundAppManager.RestrictionType.HARD));
+                popup.getMenu().add(0, 8, 8, getString(R.string.filter_restriction_manual_option))
+                        .setCheckable(true)
+                        .setChecked(showRestrictionTypes[0].contains(BackgroundAppManager.RestrictionType.MANUAL));
+            }
             popup.setOnMenuItemClickListener(item -> {
                 switch (item.getItemId()) {
                     case 0: showSystem[0]  = !showSystem[0];  item.setChecked(showSystem[0]);  break;
                     case 1: showUser[0]    = !showUser[0];    item.setChecked(showUser[0]);    break;
                     case 2: showRunning[0] = !showRunning[0]; item.setChecked(showRunning[0]); break;
+                    case 3:
+                        showSelected[0] = !showSelected[0];
+                        item.setChecked(showSelected[0]);
+                        adapter.setFilterSelection(showSelected[0], showNotSelected[0]);
+                        break;
+                    case 4:
+                        showNotSelected[0] = !showNotSelected[0];
+                        item.setChecked(showNotSelected[0]);
+                        adapter.setFilterSelection(showSelected[0], showNotSelected[0]);
+                        break;
+                    case 5: case 6: case 7: case 8: {
+                        BackgroundAppManager.RestrictionType rt;
+                        switch (item.getItemId()) {
+                            case 5:  rt = BackgroundAppManager.RestrictionType.SOFT; break;
+                            case 6:  rt = BackgroundAppManager.RestrictionType.MEDIUM; break;
+                            case 7:  rt = BackgroundAppManager.RestrictionType.HARD; break;
+                            default: rt = BackgroundAppManager.RestrictionType.MANUAL; break;
+                        }
+                        if (showRestrictionTypes[0].contains(rt)) {
+                            showRestrictionTypes[0].remove(rt);
+                            item.setChecked(false);
+                        } else {
+                            showRestrictionTypes[0].add(rt);
+                            item.setChecked(true);
+                        }
+                        adapter.setRestrictionTypeFilter(showRestrictionTypes[0]);
+                        break;
+                    }
                 }
                 adapter.setFilters(showSystem[0], showUser[0], showRunning[0]);
                 return true;
@@ -1995,6 +2046,205 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                     adapter.setRestrictionTypeForAllSelected(chosen);
                 })
                 .show();
+    }
+
+    protected void showInstallTemplateDialog() {
+        SharedPreferences prefs = getSharedPreferences();
+        int dp24 = (int) (24 * getResources().getDisplayMetrics().density);
+        int dp12 = (int) (12 * getResources().getDisplayMetrics().density);
+        int dp8 = (int) (8 * getResources().getDisplayMetrics().density);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp24, dp8, dp24, dp8);
+
+        // --- Master toggle ---
+        LinearLayout masterRow = new LinearLayout(this);
+        masterRow.setOrientation(LinearLayout.HORIZONTAL);
+        masterRow.setPadding(0, dp12, 0, dp12);
+        LinearLayout masterText = new LinearLayout(this);
+        masterText.setOrientation(LinearLayout.VERTICAL);
+        masterText.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView masterTitle = new TextView(this);
+        masterTitle.setText(R.string.template_master_title);
+        masterTitle.setTextColor(getColorFromAttr(android.R.attr.textColorPrimary));
+        masterTitle.setTextSize(16);
+        masterText.addView(masterTitle);
+        TextView masterSub = new TextView(this);
+        masterSub.setText(R.string.template_master_subtitle);
+        masterSub.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
+        masterSub.setTextSize(12);
+        masterText.addView(masterSub);
+        masterRow.addView(masterText);
+        MaterialSwitch masterSwitch = new MaterialSwitch(this);
+        masterSwitch.setChecked(prefs.getBoolean(KEY_TEMPLATE_ENABLED, false));
+        masterRow.addView(masterSwitch);
+        root.addView(masterRow);
+
+        root.addView(makeDivider(dp24));
+
+        // --- Sub-container (shown/hidden by master toggle) ---
+        LinearLayout subContainer = new LinearLayout(this);
+        subContainer.setOrientation(LinearLayout.VERTICAL);
+        subContainer.setVisibility(masterSwitch.isChecked() ? View.VISIBLE : View.GONE);
+
+        // Restriction row
+        LinearLayout restrictionRow = buildTemplateOptionRow(
+                getString(R.string.template_restriction_title),
+                getString(R.string.template_restriction_subtitle),
+                prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false));
+        CheckBox restrictionCheck = (CheckBox) restrictionRow.getTag();
+        subContainer.addView(restrictionRow);
+        TextView restrictionTypeLabel = new TextView(this);
+        String currentType = prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
+        restrictionTypeLabel.setText("Type: " + currentType);
+        restrictionTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
+        restrictionTypeLabel.setTextSize(14);
+        restrictionTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
+        restrictionTypeLabel.setVisibility(restrictionCheck.isChecked() ? View.VISIBLE : View.GONE);
+        subContainer.addView(restrictionTypeLabel);
+        restrictionRow.setOnClickListener(v -> {
+            restrictionCheck.toggle();
+            restrictionTypeLabel.setVisibility(restrictionCheck.isChecked() ? View.VISIBLE : View.GONE);
+            prefs.edit().putBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, restrictionCheck.isChecked()).apply();
+        });
+        restrictionTypeLabel.setOnClickListener(v -> {
+            String[] labels = {
+                    getString(R.string.filter_restriction_soft_option),
+                    getString(R.string.filter_restriction_medium_option),
+                    getString(R.string.filter_restriction_hard_option),
+                    getString(R.string.filter_restriction_manual_option)
+            };
+            String[] values = {"SOFT", "MEDIUM", "HARD", "MANUAL"};
+            int checked = java.util.Arrays.asList(values).indexOf(currentType);
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Select restriction type")
+                    .setSingleChoiceItems(labels, checked, (d, which) -> {
+                        currentType = values[which];
+                        restrictionTypeLabel.setText("Type: " + currentType);
+                        prefs.edit().putString(KEY_TEMPLATE_RESTRICTION_TYPE, currentType).apply();
+                        d.dismiss();
+                    })
+                    .setPositiveButton(R.string.dialog_cancel, null)
+                    .show();
+        });
+
+        subContainer.addView(makeDivider(dp24));
+
+        // Sleep mode row
+        LinearLayout sleepRow = buildTemplateOptionRow(
+                getString(R.string.template_sleep_title),
+                getString(R.string.template_sleep_subtitle),
+                prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false));
+        CheckBox sleepCheck = (CheckBox) sleepRow.getTag();
+        subContainer.addView(sleepRow);
+        TextView sleepTypeLabel = new TextView(this);
+        String currentSleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
+        sleepTypeLabel.setText("Type: " + currentSleepType);
+        sleepTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
+        sleepTypeLabel.setTextSize(14);
+        sleepTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
+        sleepTypeLabel.setVisibility(sleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        subContainer.addView(sleepTypeLabel);
+        sleepRow.setOnClickListener(v -> {
+            sleepCheck.toggle();
+            sleepTypeLabel.setVisibility(sleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+            prefs.edit().putBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, sleepCheck.isChecked()).apply();
+        });
+        sleepTypeLabel.setOnClickListener(v -> {
+            String[] sleepLabels = {"Timer", "Permanent"};
+            String[] sleepValues = {"TIMER", "PERMANENT"};
+            int checked = java.util.Arrays.asList(sleepValues).indexOf(currentSleepType);
+            new MaterialAlertDialogBuilder(this)
+                    .setTitle("Select sleep mode type")
+                    .setSingleChoiceItems(sleepLabels, checked, (d, which) -> {
+                        currentSleepType = sleepValues[which];
+                        sleepTypeLabel.setText("Type: " + currentSleepType);
+                        prefs.edit().putString(KEY_TEMPLATE_SLEEP_MODE_TYPE, currentSleepType).apply();
+                        d.dismiss();
+                    })
+                    .setPositiveButton(R.string.dialog_cancel, null)
+                    .show();
+        });
+
+        subContainer.addView(makeDivider(dp24));
+
+        // Whitelist row
+        LinearLayout whitelistRow = buildTemplateOptionRow(
+                getString(R.string.template_whitelist_title),
+                getString(R.string.template_whitelist_subtitle),
+                prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false));
+        CheckBox whitelistCheck = (CheckBox) whitelistRow.getTag();
+        whitelistRow.setOnClickListener(v -> {
+            whitelistCheck.toggle();
+            prefs.edit().putBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, whitelistCheck.isChecked()).apply();
+        });
+        subContainer.addView(whitelistRow);
+
+        subContainer.addView(makeDivider(dp24));
+
+        // Blacklist row
+        LinearLayout blacklistRow = buildTemplateOptionRow(
+                getString(R.string.template_blacklist_title),
+                getString(R.string.template_blacklist_subtitle),
+                prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false));
+        CheckBox blacklistCheck = (CheckBox) blacklistRow.getTag();
+        blacklistRow.setOnClickListener(v -> {
+            blacklistCheck.toggle();
+            prefs.edit().putBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, blacklistCheck.isChecked()).apply();
+        });
+        subContainer.addView(blacklistRow);
+
+        root.addView(subContainer);
+
+        masterSwitch.setOnCheckedChangeListener((btn, isChecked) -> {
+            subContainer.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+            prefs.edit().putBoolean(KEY_TEMPLATE_ENABLED, isChecked).apply();
+        });
+
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.addView(root);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.settings_install_template_title))
+                .setView(scrollView)
+                .setPositiveButton(getString(R.string.dialog_close), null)
+                .show();
+    }
+
+    private LinearLayout buildTemplateOptionRow(String title, String subtitle, boolean checked) {
+        int dp12 = (int) (12 * getResources().getDisplayMetrics().density);
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setPadding(0, dp12, 0, dp12);
+        CheckBox checkBox = new CheckBox(this);
+        checkBox.setChecked(checked);
+        row.addView(checkBox);
+        LinearLayout textCol = new LinearLayout(this);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+        textCol.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        TextView titleView = new TextView(this);
+        titleView.setText(title);
+        titleView.setTextColor(getColorFromAttr(android.R.attr.textColorPrimary));
+        titleView.setTextSize(16);
+        textCol.addView(titleView);
+        TextView subView = new TextView(this);
+        subView.setText(subtitle);
+        subView.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
+        subView.setTextSize(12);
+        textCol.addView(subView);
+        row.addView(textCol);
+        row.setTag(checkBox);
+        return row;
+    }
+
+    private int getColorFromAttr(int attr) {
+        TypedValue tv = new TypedValue();
+        getTheme().resolveAttribute(attr, tv, true);
+        if (tv.type >= TypedValue.TYPE_FIRST_COLOR_INT && tv.type <= TypedValue.TYPE_LAST_COLOR_INT) {
+            return tv.data;
+        }
+        return 0xFF888888;
     }
 
     private View makeDivider(int paddingH) {

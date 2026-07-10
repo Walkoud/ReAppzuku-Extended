@@ -44,6 +44,9 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     private boolean showSystem = false;
     private boolean showUser = true;
     private boolean showRunningOnly = false;
+    private boolean showSelected = false;
+    private boolean showNotSelected = false;
+    private final Set<BackgroundAppManager.RestrictionType> showRestrictionTypes = new HashSet<>();
     private CharSequence lastConstraint = "";
 
     private final boolean restrictionMode;
@@ -366,10 +369,35 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         getFilter().filter(lastConstraint);
     }
 
+    public void setFilterSelection(boolean showSelected, boolean showNotSelected) {
+        AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: setFilterSelection() selected=" + showSelected + ", notSelected=" + showNotSelected);
+        this.showSelected = showSelected;
+        this.showNotSelected = showNotSelected;
+        getFilter().filter(lastConstraint);
+    }
+
+    public void setRestrictionTypeFilter(Set<BackgroundAppManager.RestrictionType> types) {
+        AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: setRestrictionTypeFilter() types=" + types);
+        this.showRestrictionTypes.clear();
+        this.showRestrictionTypes.addAll(types);
+        getFilter().filter(lastConstraint);
+    }
+
     private boolean shouldShow(AppModel app) {
         if (app.isSystemApp() && !showSystem) return false;
         if (!app.isSystemApp() && !showUser) return false;
         if (showRunningOnly && app.getAppRamBytes() <= 0) return false;
+        // Selection filter: apply only when one flag is true and the other is false
+        if (showSelected != showNotSelected) {
+            if (showSelected && !app.isSelected()) return false;
+            if (showNotSelected && app.isSelected()) return false;
+        }
+        // Restriction type filter (only in restrictionMode when set is non-empty)
+        if (restrictionMode && !showRestrictionTypes.isEmpty()) {
+            BackgroundAppManager.RestrictionType type = restrictionTypeMap.getOrDefault(
+                    app.getPackageName(), BackgroundAppManager.RestrictionType.SOFT);
+            if (!showRestrictionTypes.contains(type)) return false;
+        }
         return true;
     }
 
