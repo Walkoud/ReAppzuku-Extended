@@ -49,6 +49,10 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
     private final boolean restrictionMode;
     private final boolean sleepMode;
 
+    public boolean isRestrictionMode() {
+        return restrictionMode;
+    }
+
     private final Map<String, BackgroundAppManager.RestrictionType> restrictionTypeMap;
     private final Map<String, SleepModeManager.FreezeType> freezeTypeMap;
     private final Map<String, SleepModeManager.FreezeMethod> freezeMethodMap;
@@ -317,6 +321,30 @@ public class FilterAppsAdapter extends BaseAdapter implements Filterable {
         for (AppModel app : filteredApps) {
             if (!app.isSelected()) {
                 app.setSelected(true);
+            }
+        }
+        notifyDataSetChanged();
+        notifySelectionChanged();
+    }
+
+    public void setRestrictionTypeForAllSelected(BackgroundAppManager.RestrictionType type) {
+        AppDebugManager.d(Category.SETTINGS_PAGE, "FilterAppsAdapter: setRestrictionTypeForAllSelected() type=" + type);
+        for (AppModel app : allApps) {
+            if (app.isSelected()) {
+                String pkg = app.getPackageName();
+                if (type == BackgroundAppManager.RestrictionType.SOFT) {
+                    restrictionTypeMap.remove(pkg);
+                    manualOpsMaskMap.remove(pkg);
+                    manualBucketMap.remove(pkg);
+                    manualWhitelistRemovalSet.remove(pkg);
+                } else {
+                    restrictionTypeMap.put(pkg, type);
+                    if (type != BackgroundAppManager.RestrictionType.MANUAL) {
+                        manualOpsMaskMap.remove(pkg);
+                        manualBucketMap.remove(pkg);
+                        manualWhitelistRemovalSet.remove(pkg);
+                    }
+                }
             }
         }
         notifyDataSetChanged();

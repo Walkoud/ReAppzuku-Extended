@@ -1905,6 +1905,96 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         btnClear.setOnClickListener(v -> adapter.clearSelection());
 
         btnSelectAll.setOnClickListener(v -> adapter.selectAllFiltered());
+
+        TextView btnSetType = dialogView.findViewById(R.id.filter_btn_set_type);
+        if (adapter.isRestrictionMode()) {
+            btnSetType.setVisibility(View.VISIBLE);
+            if (getSharedPreferences().getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM) {
+                btnSetType.setTextColor(getDialogAccentColor());
+            }
+            btnSetType.setOnClickListener(v -> {
+                if (adapter.getSelectedPackages().isEmpty()) {
+                    Toast.makeText(this, R.string.filter_set_type_no_selection, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                showBatchRestrictionTypeDialog(adapter, btnSetType);
+            });
+        }
+    }
+
+    private void showBatchRestrictionTypeDialog(FilterAppsAdapter adapter, TextView anchor) {
+        int paddingH = (int) (getResources().getDisplayMetrics().density * 24);
+
+        android.widget.LinearLayout container = new android.widget.LinearLayout(this);
+        container.setOrientation(android.widget.LinearLayout.VERTICAL);
+        container.setPadding(0, 16, 0, 8);
+
+        android.widget.RadioGroup radioGroup = new android.widget.RadioGroup(this);
+        radioGroup.setOrientation(android.widget.RadioGroup.VERTICAL);
+
+        android.widget.RadioButton softBtn = new android.widget.RadioButton(this);
+        softBtn.setId(View.generateViewId());
+        softBtn.setText(getString(R.string.filter_restriction_soft_option));
+        softBtn.setPadding(paddingH, 24, paddingH, 24);
+        softBtn.setChecked(true);
+        radioGroup.addView(softBtn);
+
+        radioGroup.addView(makeDivider(paddingH));
+
+        android.widget.RadioButton mediumBtn = new android.widget.RadioButton(this);
+        mediumBtn.setId(View.generateViewId());
+        mediumBtn.setText(getString(R.string.filter_restriction_medium_option));
+        mediumBtn.setPadding(paddingH, 24, paddingH, 24);
+        radioGroup.addView(mediumBtn);
+
+        radioGroup.addView(makeDivider(paddingH));
+
+        android.widget.RadioButton hardBtn = new android.widget.RadioButton(this);
+        hardBtn.setId(View.generateViewId());
+        hardBtn.setText(getString(R.string.filter_restriction_hard_option));
+        hardBtn.setPadding(paddingH, 24, paddingH, 24);
+        radioGroup.addView(hardBtn);
+
+        radioGroup.addView(makeDivider(paddingH));
+
+        android.widget.RadioButton manualBtn = new android.widget.RadioButton(this);
+        manualBtn.setId(View.generateViewId());
+        manualBtn.setText(getString(R.string.filter_restriction_manual_option));
+        manualBtn.setPadding(paddingH, 24, paddingH, 24);
+        radioGroup.addView(manualBtn);
+
+        container.addView(radioGroup);
+
+        int accent = getSharedPreferences().getInt(KEY_ACCENT, ACCENT_SYSTEM);
+        if (accent == ACCENT_CUSTOM) {
+            int color = getDialogAccentColor();
+            android.content.res.ColorStateList tint = android.content.res.ColorStateList.valueOf(color);
+            softBtn.setButtonTintList(tint);
+            mediumBtn.setButtonTintList(tint);
+            hardBtn.setButtonTintList(tint);
+            manualBtn.setButtonTintList(tint);
+        }
+
+        int count = adapter.getSelectedPackages().size();
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.filter_set_type_dialog_title, count))
+                .setView(container)
+                .setNegativeButton(getString(R.string.dialog_cancel), null)
+                .setPositiveButton(getString(R.string.dialog_apply), (dialog, which) -> {
+                    BackgroundAppManager.RestrictionType chosen;
+                    if (hardBtn.isChecked()) {
+                        chosen = BackgroundAppManager.RestrictionType.HARD;
+                    } else if (mediumBtn.isChecked()) {
+                        chosen = BackgroundAppManager.RestrictionType.MEDIUM;
+                    } else if (manualBtn.isChecked()) {
+                        chosen = BackgroundAppManager.RestrictionType.MANUAL;
+                        Toast.makeText(this, R.string.filter_set_type_manual_hint, Toast.LENGTH_LONG).show();
+                    } else {
+                        chosen = BackgroundAppManager.RestrictionType.SOFT;
+                    }
+                    adapter.setRestrictionTypeForAllSelected(chosen);
+                })
+                .show();
     }
 
     private void updateSortButtonText(TextView btn, boolean open) {

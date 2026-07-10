@@ -141,6 +141,10 @@
     <string name="filter_running">Running</string>
     <string name="filter_clear">Clear</string>
     <string name="filter_select_all">Select all</string>
+    <string name="filter_set_type">Type</string>
+    <string name="filter_set_type_no_selection">No apps selected</string>
+    <string name="filter_set_type_dialog_title">Set restriction type (%d)</string>
+    <string name="filter_set_type_manual_hint">Manual ops can be configured per app later</string>
 
     <!-- FAB buttons -->
     <string name="fab_kill_app">Kill app</string>
