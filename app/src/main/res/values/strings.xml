@@ -111,6 +111,8 @@
     <string name="manual_op_interact_across_profiles" translatable="false">INTERACT_ACROSS_PROFILES</string>
     <string name="access_notifications" translatable="false">ACCESS_NOTIFICATIONS</string>
     <string name="manual_whitelist_removal" translatable="false">Battery Whitelist (deviceidle) remove</string>
+    <string name="system_exempt_from_suspension" translatable="false">SYSTEM_EXEMPT_FROM_SUSPENSION</string>
+    <string name="run_user_initiated_jobs" translatable="false">RUN_USER_INITIATED_JOBS</string>
 
     <!-- Main menu (main.xml) -->
     <string name="menu_select_all">Select all</string>
