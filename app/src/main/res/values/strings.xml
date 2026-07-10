@@ -140,6 +140,7 @@
     <string name="filter_user">User</string>
     <string name="filter_running">Running</string>
     <string name="filter_clear">Clear</string>
+    <string name="filter_select_all">Select all</string>
 
     <!-- FAB buttons -->
     <string name="fab_kill_app">Kill app</string>

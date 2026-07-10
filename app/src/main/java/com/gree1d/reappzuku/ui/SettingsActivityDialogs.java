@@ -1865,11 +1865,13 @@ abstract class SettingsActivityDialogs extends BaseActivity {
     protected void setupFilterListeners(View dialogView, FilterAppsAdapter adapter) {
         TextView btnSort = dialogView.findViewById(R.id.filter_btn_sort);
         TextView btnClear = dialogView.findViewById(R.id.filter_btn_clear);
+        TextView btnSelectAll = dialogView.findViewById(R.id.filter_btn_select_all);
 
         if (getSharedPreferences().getInt(KEY_ACCENT, ACCENT_SYSTEM) == ACCENT_CUSTOM) {
             int color = getDialogAccentColor();
             btnSort.setTextColor(color);
             btnClear.setTextColor(color);
+            btnSelectAll.setTextColor(color);
         }
 
         final boolean[] showSystem  = {false};
@@ -1901,6 +1903,8 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         });
 
         btnClear.setOnClickListener(v -> adapter.clearSelection());
+
+        btnSelectAll.setOnClickListener(v -> adapter.selectAllFiltered());
     }
 
     private void updateSortButtonText(TextView btn, boolean open) {
