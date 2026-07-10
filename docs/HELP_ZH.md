@@ -769,7 +769,7 @@ Android 11–13：设备处于 Deep Doze 或 Light Doze。Wakelocks、网络、J
 `INTERACT_ACROSS_PROFILES ignore`\
 `ACCESS_NOTIFICATIONS ignore`\
 `SYSTEM_EXEMPT_FROM_SUSPENSION ignore`\
-`RUN_USER_INITIATED_JOBS`\
+`RUN_USER_INITIATED_JOBS ignore`\
 `电池优化白名单移除`\
 `Standby Bucket: Restricted`
 
