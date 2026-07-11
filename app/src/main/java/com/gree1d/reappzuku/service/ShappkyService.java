@@ -61,6 +61,7 @@ public class ShappkyService extends Service {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final java.util.Map<String, Integer> templateRetryCounts = new java.util.HashMap<>();
     private static boolean isRunning = false;
 
     private ShellManager shellManager;
@@ -167,15 +168,7 @@ public class ShappkyService extends Service {
                 if (pkg == null || pkg.equals(context.getPackageName())) return;
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
                 if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) return;
-                executor.execute(() -> {
-                    try {
-                        android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(pkg, 0);
-                        if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) return;
-                    } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-                        return;
-                    }
-                    handler.postDelayed(() -> applyInstallTemplate(pkg), 3000);
-                });
+                handler.postDelayed(() -> applyInstallTemplate(pkg), 3000);
             }
         };
         IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
@@ -626,7 +619,32 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
+    private void retryInstallTemplate(String packageName) {
+        int attempt = templateRetryCounts.getOrDefault(packageName, 0);
+        if (attempt >= 3) {
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": retryInstallTemplate: " + packageName + " not found after 3 retries, giving up");
+            templateRetryCounts.remove(packageName);
+            return;
+        }
+        templateRetryCounts.put(packageName, attempt + 1);
+        handler.postDelayed(() -> applyInstallTemplate(packageName), 5000L);
+    }
+
     private void applyInstallTemplate(String packageName) {
+        // Check system apps and retry if package not yet available
+        try {
+            android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
+            if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " is system app, skipping");
+                return;
+            }
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not yet available, will retry");
+            retryInstallTemplate(packageName);
+            return;
+        }
+        templateRetryCounts.remove(packageName);
+
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         Set<String> packages = new HashSet<>();
 
