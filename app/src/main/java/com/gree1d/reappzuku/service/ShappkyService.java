@@ -58,6 +58,7 @@ public class ShappkyService extends Service {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final java.util.Map<String, Integer> templateRetryCounts = new java.util.HashMap<>();
     private static boolean isRunning = false;
 
     private ShellManager shellManager;
@@ -67,6 +68,7 @@ public class ShappkyService extends Service {
     private CollectStatsManager collectStatsManager;
     private RestrictionsScheduler scheduler;
     private KillTriggerReceiver screenOffReceiver;
+    private BroadcastReceiver packageAddedReceiver;
     private RestrictionsWatchdogManager watchdog;
     private AdditionalScenariosManager additionalScenariosManager;
     private RamKillShortcutManager ramKillShortcutManager;
@@ -152,6 +154,23 @@ public class ShappkyService extends Service {
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         registerReceiver(screenOffReceiver, filter);
+
+        packageAddedReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return;
+                android.net.Uri data = intent.getData();
+                if (data == null) return;
+                final String pkg = data.getSchemeSpecificPart();
+                if (pkg == null || pkg.equals(context.getPackageName())) return;
+                SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) return;
+                handler.postDelayed(() -> applyInstallTemplate(pkg), 3000);
+            }
+        };
+        IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
+        pkgFilter.addDataScheme("package");
+        registerReceiver(packageAddedReceiver, pkgFilter);
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
         AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": AdditionalScenariosManager initialized");
@@ -597,7 +616,32 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
+    private void retryInstallTemplate(String packageName) {
+        int attempt = templateRetryCounts.getOrDefault(packageName, 0);
+        if (attempt >= 3) {
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": retryInstallTemplate: " + packageName + " not found after 3 retries, giving up");
+            templateRetryCounts.remove(packageName);
+            return;
+        }
+        templateRetryCounts.put(packageName, attempt + 1);
+        handler.postDelayed(() -> applyInstallTemplate(packageName), 5000L);
+    }
+
     private void applyInstallTemplate(String packageName) {
+        // Check system apps and retry if package not yet available
+        try {
+            android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
+            if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " is system app, skipping");
+                return;
+            }
+        } catch (android.content.pm.PackageManager.NameNotFoundException e) {
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not yet available, will retry");
+            retryInstallTemplate(packageName);
+            return;
+        }
+        templateRetryCounts.remove(packageName);
+
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         Set<String> packages = new HashSet<>();
 
@@ -677,6 +721,11 @@ public class ShappkyService extends Service {
         AppDebugManager.d(Category.CORE, FILE_NAME + ": Shizuku-lost notification cancelled on service destroy");
         if (screenOffReceiver != null) {
             unregisterReceiver(screenOffReceiver);
+        }
+        if (packageAddedReceiver != null) {
+            try {
+                unregisterReceiver(packageAddedReceiver);
+            } catch (IllegalArgumentException ignored) {}
         }
         if (additionalScenariosManager != null) {
             AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": Stopping AdditionalScenariosManager (onDestroy)");
