@@ -203,8 +203,8 @@ public class ShappkyService extends Service {
         pkgFilter.addDataScheme("package");
         AppDebugManager.d(Category.CORE, FILE_NAME + ": registering PACKAGE_ADDED receiver (SDK=" + Build.VERSION.SDK_INT + ")");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_EXPORTED);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered with RECEIVER_EXPORTED");
+            registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_NOT_EXPORTED);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered with RECEIVER_NOT_EXPORTED");
         } else {
             registerReceiver(packageAddedReceiver, pkgFilter);
             AppDebugManager.d(Category.CORE, FILE_NAME + ": registered without flags (legacy)");
