@@ -163,6 +163,9 @@
     <string name="template_whitelist_subtitle">Protect from Auto-Kill</string>
     <string name="template_blacklist_title">Add to blacklist</string>
     <string name="template_blacklist_subtitle">Add as Auto-Kill target</string>
+    <string name="template_notification_title">Notify when applied</string>
+    <string name="template_notification_subtitle">Show a notification when template is applied</string>
+    <string name="template_applied_notification">App Install Template applied to %1$s</string>
 
     <!-- FAB buttons -->
     <string name="fab_kill_app">Kill app</string>

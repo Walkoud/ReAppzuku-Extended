@@ -112,6 +112,7 @@ public class BackupManager {
             root.put(KEY_TEMPLATE_SLEEP_MODE_TYPE, prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER"));
             root.put(KEY_TEMPLATE_WHITELIST_ENABLED, getSafeBool(KEY_TEMPLATE_WHITELIST_ENABLED, false));
             root.put(KEY_TEMPLATE_BLACKLIST_ENABLED, getSafeBool(KEY_TEMPLATE_BLACKLIST_ENABLED, false));
+            root.put(KEY_TEMPLATE_NOTIFICATION_ENABLED, getSafeBool(KEY_TEMPLATE_NOTIFICATION_ENABLED, false));
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: template settings written");
 
             putPresets(root);
@@ -199,6 +200,7 @@ public class BackupManager {
             restoreString(editor, root, KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
             restoreBoolean(editor, root, KEY_TEMPLATE_WHITELIST_ENABLED);
             restoreBoolean(editor, root, KEY_TEMPLATE_BLACKLIST_ENABLED);
+            restoreBoolean(editor, root, KEY_TEMPLATE_NOTIFICATION_ENABLED);
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreBackupJson: template settings restored");
 
             editor.apply();

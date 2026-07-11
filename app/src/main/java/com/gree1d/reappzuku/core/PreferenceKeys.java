@@ -87,5 +87,6 @@ public final class PreferenceKeys {
     public static final String KEY_TEMPLATE_SLEEP_MODE_TYPE = "install_template_sleep_type";
     public static final String KEY_TEMPLATE_WHITELIST_ENABLED = "install_template_whitelist_enabled";
     public static final String KEY_TEMPLATE_BLACKLIST_ENABLED = "install_template_blacklist_enabled";
+    public static final String KEY_TEMPLATE_NOTIFICATION_ENABLED = "install_template_notification_enabled";
 
 }
