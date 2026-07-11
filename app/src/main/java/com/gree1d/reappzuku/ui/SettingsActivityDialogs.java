@@ -2050,11 +2050,11 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         restrictionTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         restrictionTypeLabel.setTextSize(14);
         restrictionTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
-        restrictionTypeLabel.setVisibility(restrictionCheck.isChecked() ? View.VISIBLE : View.GONE);
+        restrictionTypeLabel.setVisibility(View.VISIBLE);
         subContainer.addView(restrictionTypeLabel);
         restrictionRow.setOnClickListener(v -> {
             restrictionCheck.toggle();
-            restrictionTypeLabel.setVisibility(restrictionCheck.isChecked() ? View.VISIBLE : View.GONE);
+            restrictionTypeLabel.setVisibility(View.VISIBLE);
             prefs.edit().putBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, restrictionCheck.isChecked()).apply();
         });
         restrictionTypeLabel.setOnClickListener(v -> {
@@ -2093,11 +2093,11 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         sleepTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         sleepTypeLabel.setTextSize(14);
         sleepTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
-        sleepTypeLabel.setVisibility(sleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+        sleepTypeLabel.setVisibility(View.VISIBLE);
         subContainer.addView(sleepTypeLabel);
         sleepRow.setOnClickListener(v -> {
             sleepCheck.toggle();
-            sleepTypeLabel.setVisibility(sleepCheck.isChecked() ? View.VISIBLE : View.GONE);
+            sleepTypeLabel.setVisibility(View.VISIBLE);
             prefs.edit().putBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, sleepCheck.isChecked()).apply();
         });
         sleepTypeLabel.setOnClickListener(v -> {
@@ -2144,6 +2144,20 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         });
         subContainer.addView(blacklistRow);
 
+        subContainer.addView(makeDivider(dp24));
+
+        // Notification row
+        LinearLayout notificationRow = buildTemplateOptionRow(
+                getString(R.string.template_notification_title),
+                getString(R.string.template_notification_subtitle),
+                prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false));
+        CheckBox notificationCheck = (CheckBox) notificationRow.getTag();
+        notificationRow.setOnClickListener(v -> {
+            notificationCheck.toggle();
+            prefs.edit().putBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, notificationCheck.isChecked()).apply();
+        });
+        subContainer.addView(notificationRow);
+
         root.addView(subContainer);
 
         masterSwitch.setOnCheckedChangeListener((btn, isChecked) -> {
@@ -2154,11 +2168,12 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         ScrollView scrollView = new ScrollView(this);
         scrollView.addView(root);
 
-        new MaterialAlertDialogBuilder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setTitle(getString(R.string.settings_install_template_title))
                 .setView(scrollView)
                 .setPositiveButton(getString(R.string.dialog_close), null)
                 .show();
+        dialog.setOnDismissListener(d -> loadSettings());
     }
 
     private LinearLayout buildTemplateOptionRow(String title, String subtitle, boolean checked) {

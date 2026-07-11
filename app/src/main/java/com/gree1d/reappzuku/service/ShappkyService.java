@@ -645,6 +645,25 @@ public class ShappkyService extends Service {
             appManager.applyBackgroundRestriction(packages, null);
         }
 
+        if (prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false)) {
+            String appName = packageName;
+            try {
+                android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
+                CharSequence label = getPackageManager().getApplicationLabel(ai);
+                if (label != null) appName = label.toString();
+            } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ACTIONS)
+                    .setContentTitle(getString(R.string.settings_install_template_title))
+                    .setContentText(getString(R.string.template_applied_notification, appName))
+                    .setSmallIcon(R.drawable.ic_shappky)
+                    .setAutoCancel(true)
+                    .build();
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) {
+                nm.notify(NOTIFICATION_ID_TEMPLATE, notification);
+            }
+        }
+
         AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate completed for " + packageName);
     }
     public void onDestroy() {

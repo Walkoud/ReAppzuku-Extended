@@ -104,6 +104,16 @@ public class BackupManager {
             root.put(KEY_APP_LAUNCH_CLEAR_CACHE, getSafeBool(KEY_APP_LAUNCH_CLEAR_CACHE, false));
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: hardware triggers written");
 
+            // App Install Template
+            root.put(KEY_TEMPLATE_ENABLED, getSafeBool(KEY_TEMPLATE_ENABLED, false));
+            root.put(KEY_TEMPLATE_RESTRICTION_ENABLED, getSafeBool(KEY_TEMPLATE_RESTRICTION_ENABLED, false));
+            root.put(KEY_TEMPLATE_RESTRICTION_TYPE, prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT"));
+            root.put(KEY_TEMPLATE_SLEEP_MODE_ENABLED, getSafeBool(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false));
+            root.put(KEY_TEMPLATE_SLEEP_MODE_TYPE, prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER"));
+            root.put(KEY_TEMPLATE_WHITELIST_ENABLED, getSafeBool(KEY_TEMPLATE_WHITELIST_ENABLED, false));
+            root.put(KEY_TEMPLATE_BLACKLIST_ENABLED, getSafeBool(KEY_TEMPLATE_BLACKLIST_ENABLED, false));
+            root.put(KEY_TEMPLATE_NOTIFICATION_ENABLED, getSafeBool(KEY_TEMPLATE_NOTIFICATION_ENABLED, false));
+            AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: template settings written");
             putPresets(root);
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: presets written");
 
@@ -180,6 +190,17 @@ public class BackupManager {
             restoreBoolean(editor, root, KEY_APP_LAUNCH_TRIGGER_ENABLED);
             restoreBoolean(editor, root, KEY_APP_LAUNCH_CLEAR_CACHE);
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreBackupJson: hardware triggers restored");
+
+            // App Install Template
+            restoreBoolean(editor, root, KEY_TEMPLATE_ENABLED);
+            restoreBoolean(editor, root, KEY_TEMPLATE_RESTRICTION_ENABLED);
+            restoreString(editor, root, KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
+            restoreBoolean(editor, root, KEY_TEMPLATE_SLEEP_MODE_ENABLED);
+            restoreString(editor, root, KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
+            restoreBoolean(editor, root, KEY_TEMPLATE_WHITELIST_ENABLED);
+            restoreBoolean(editor, root, KEY_TEMPLATE_BLACKLIST_ENABLED);
+            restoreBoolean(editor, root, KEY_TEMPLATE_NOTIFICATION_ENABLED);
+            AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreBackupJson: template settings restored");
 
             editor.apply();
 

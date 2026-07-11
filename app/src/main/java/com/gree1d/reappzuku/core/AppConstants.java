@@ -33,6 +33,7 @@ public final class AppConstants {
         public static final int NOTIFICATION_ID_SERVICE = 1;
         public static final int NOTIFICATION_ID_KILL = 2;
         public static final int NOTIFICATION_ID_SHIZUKU_LOST = 3;
+        public static final int NOTIFICATION_ID_TEMPLATE = 4;
 
         // Notification Channels
         public static final String CHANNEL_ID_SERVICE = "AppzukuChannel";
