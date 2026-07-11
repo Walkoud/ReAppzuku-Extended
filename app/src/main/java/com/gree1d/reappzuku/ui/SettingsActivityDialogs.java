@@ -2096,8 +2096,8 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         CheckBox restrictionCheck = (CheckBox) restrictionRow.getTag();
         subContainer.addView(restrictionRow);
         TextView restrictionTypeLabel = new TextView(this);
-        String currentType = prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
-        restrictionTypeLabel.setText("Type: " + currentType);
+        final String[] currentType = {prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT")};
+        restrictionTypeLabel.setText("Type: " + currentType[0]);
         restrictionTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         restrictionTypeLabel.setTextSize(14);
         restrictionTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
@@ -2116,13 +2116,13 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                     getString(R.string.filter_restriction_manual_option)
             };
             String[] values = {"SOFT", "MEDIUM", "HARD", "MANUAL"};
-            int checked = java.util.Arrays.asList(values).indexOf(currentType);
+            int checked = java.util.Arrays.asList(values).indexOf(currentType[0]);
             new MaterialAlertDialogBuilder(this)
                     .setTitle("Select restriction type")
                     .setSingleChoiceItems(labels, checked, (d, which) -> {
-                        currentType = values[which];
-                        restrictionTypeLabel.setText("Type: " + currentType);
-                        prefs.edit().putString(KEY_TEMPLATE_RESTRICTION_TYPE, currentType).apply();
+                        currentType[0] = values[which];
+                        restrictionTypeLabel.setText("Type: " + currentType[0]);
+                        prefs.edit().putString(KEY_TEMPLATE_RESTRICTION_TYPE, currentType[0]).apply();
                         d.dismiss();
                     })
                     .setPositiveButton(R.string.dialog_cancel, null)
@@ -2139,8 +2139,8 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         CheckBox sleepCheck = (CheckBox) sleepRow.getTag();
         subContainer.addView(sleepRow);
         TextView sleepTypeLabel = new TextView(this);
-        String currentSleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
-        sleepTypeLabel.setText("Type: " + currentSleepType);
+        final String[] currentSleepType = {prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER")};
+        sleepTypeLabel.setText("Type: " + currentSleepType[0]);
         sleepTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         sleepTypeLabel.setTextSize(14);
         sleepTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
@@ -2154,13 +2154,13 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         sleepTypeLabel.setOnClickListener(v -> {
             String[] sleepLabels = {"Timer", "Permanent"};
             String[] sleepValues = {"TIMER", "PERMANENT"};
-            int checked = java.util.Arrays.asList(sleepValues).indexOf(currentSleepType);
+            int checked = java.util.Arrays.asList(sleepValues).indexOf(currentSleepType[0]);
             new MaterialAlertDialogBuilder(this)
                     .setTitle("Select sleep mode type")
                     .setSingleChoiceItems(sleepLabels, checked, (d, which) -> {
-                        currentSleepType = sleepValues[which];
-                        sleepTypeLabel.setText("Type: " + currentSleepType);
-                        prefs.edit().putString(KEY_TEMPLATE_SLEEP_MODE_TYPE, currentSleepType).apply();
+                        currentSleepType[0] = sleepValues[which];
+                        sleepTypeLabel.setText("Type: " + currentSleepType[0]);
+                        prefs.edit().putString(KEY_TEMPLATE_SLEEP_MODE_TYPE, currentSleepType[0]).apply();
                         d.dismiss();
                     })
                     .setPositiveButton(R.string.dialog_cancel, null)
