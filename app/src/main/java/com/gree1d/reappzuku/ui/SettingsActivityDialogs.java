@@ -2214,6 +2214,14 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         masterSwitch.setOnCheckedChangeListener((btn, isChecked) -> {
             subContainer.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             prefs.edit().putBoolean(KEY_TEMPLATE_ENABLED, isChecked).apply();
+            if (isChecked && !ShappkyService.isRunning()) {
+                Intent serviceIntent = new Intent(SettingsActivityDialogs.this, ShappkyService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    ContextCompat.startForegroundService(SettingsActivityDialogs.this, serviceIntent);
+                } else {
+                    startService(serviceIntent);
+                }
+            }
         });
 
         ScrollView scrollView = new ScrollView(this);

@@ -82,8 +82,13 @@ public class SettingsActivity extends SettingsActivityDialogs
             startAutomationService();
             AutoKillWorker.schedule(this, "Periodic Kill");
         } else {
-            AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": autoKill disabled, stopping service");
-            stopService(new Intent(this, ShappkyService.class));
+            boolean templateEnabled = sharedPreferences.getBoolean(KEY_TEMPLATE_ENABLED, false);
+            if (!templateEnabled) {
+                AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": autoKill disabled, stopping service");
+                stopService(new Intent(this, ShappkyService.class));
+            } else {
+                AppDebugManager.d(Category.SETTINGS_PAGE, FILE_NAME + ": autoKill disabled but template enabled, keeping service alive");
+            }
             AutoKillWorker.cancel(this);
         }
     };

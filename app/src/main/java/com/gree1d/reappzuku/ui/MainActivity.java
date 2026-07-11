@@ -949,7 +949,8 @@ public class MainActivity extends BaseActivity {
     }
 
     private void ensureServiceRunning() {
-        if (sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
+        if ((sharedPreferences.getBoolean(KEY_AUTO_KILL_ENABLED, false)
+                || sharedPreferences.getBoolean(KEY_TEMPLATE_ENABLED, false))
                 && !ShappkyService.isRunning()) {
             AppDebugManager.i(Category.MAIN_PAGE, "MainActivity: starting ShappkyService, was not running");
             Intent intent = new Intent(this, ShappkyService.class);
