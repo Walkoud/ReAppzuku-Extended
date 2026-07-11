@@ -60,6 +60,7 @@ public class ShappkyService extends Service {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private static boolean isRunning = false;
+    private final Set<String> mKnownPackages = new HashSet<>();
 
     private ShellManager shellManager;
     private BackgroundAppManager appManager;
@@ -232,6 +233,12 @@ public class ShappkyService extends Service {
         watchdog.startIfNeeded();
 
         UpdateChecker.schedulePeriodicCheck(getApplicationContext());
+
+        // Start package monitoring for install template (polling fallback for MIUI/OEMs that block PACKAGE_ADDED)
+        initKnownPackages();
+        startPeriodicPackageCheck();
+        Log.d("ShappkyTemplate", "package polling started");
+
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onCreate completed");
     }
 
@@ -654,6 +661,61 @@ public class ShappkyService extends Service {
             return defaultSource + " · " + pm.getPresetName(activePreset);
         }
         return defaultSource;
+    }
+
+    private void initKnownPackages() {
+        executor.execute(() -> {
+            try {
+                List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
+                mKnownPackages.clear();
+                for (android.content.pm.ApplicationInfo ai : apps) {
+                    mKnownPackages.add(ai.packageName);
+                }
+                Log.d("ShappkyTemplate", "initKnownPackages: " + mKnownPackages.size() + " packages cached");
+            } catch (Exception e) {
+                Log.e("ShappkyTemplate", "initKnownPackages failed", e);
+            }
+        });
+    }
+
+    private void startPeriodicPackageCheck() {
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!isRunning) return;
+                SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+                if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) {
+                    handler.postDelayed(this, 120000);
+                    return;
+                }
+                executor.execute(() -> {
+                    try {
+                        List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
+                        Set<String> currentPackages = new HashSet<>();
+                        for (android.content.pm.ApplicationInfo ai : apps) {
+                            currentPackages.add(ai.packageName);
+                        }
+
+                        Set<String> newPackages = new HashSet<>(currentPackages);
+                        newPackages.removeAll(mKnownPackages);
+                        newPackages.remove(getPackageName());
+
+                        if (!newPackages.isEmpty()) {
+                            for (String pkg : newPackages) {
+                                Log.d("ShappkyTemplate", "polling detected new package: " + pkg);
+                                applyInstallTemplate(pkg);
+                            }
+                        }
+
+                        mKnownPackages.clear();
+                        mKnownPackages.addAll(currentPackages);
+                    } catch (Exception e) {
+                        Log.e("ShappkyTemplate", "checkNewPackages failed", e);
+                    }
+                    handler.postDelayed(this, 60000);
+                });
+            }
+        }, 10000);
     }
 
     private void sendTemplateDebugNotification(String packageName, boolean willApply) {
