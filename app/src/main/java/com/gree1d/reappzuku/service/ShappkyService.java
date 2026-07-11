@@ -160,27 +160,57 @@ public class ShappkyService extends Service {
         packageAddedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return;
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED received, extras=" + intent.getExtras());
+                if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
+                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED is a replacement (update), skipping");
+                    return;
+                }
                 android.net.Uri data = intent.getData();
-                if (data == null) return;
+                if (data == null) {
+                    AppDebugManager.w(Category.CORE, FILE_NAME + ": PACKAGE_ADDED has no data, skipping");
+                    return;
+                }
                 final String pkg = data.getSchemeSpecificPart();
-                if (pkg == null || pkg.equals(context.getPackageName())) return;
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED for package=" + pkg);
+                if (pkg == null || pkg.equals(context.getPackageName())) {
+                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED skipped (null or self)");
+                    return;
+                }
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-                if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) return;
+                boolean templateEnabled = prefs.getBoolean(KEY_TEMPLATE_ENABLED, false);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED templateEnabled=" + templateEnabled);
+                if (!templateEnabled) {
+                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED template disabled, sending debug notification");
+                    sendTemplateDebugNotification(pkg, false);
+                    return;
+                }
+                sendTemplateDebugNotification(pkg, true);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED queuing template apply for " + pkg + " in 3s");
                 executor.execute(() -> {
                     try {
                         Thread.sleep(3000);
-                    } catch (InterruptedException ignored) {}
-                    applyInstallTemplate(pkg);
+                        AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED delay done, applying template for " + pkg);
+                    } catch (InterruptedException e) {
+                        AppDebugManager.w(Category.CORE, FILE_NAME + ": PACKAGE_ADDED delay interrupted for " + pkg);
+                        return;
+                    }
+                    try {
+                        applyInstallTemplate(pkg);
+                    } catch (Exception e) {
+                        AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate threw uncaught exception", e);
+                    }
                 });
             }
         };
         IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
         pkgFilter.addDataScheme("package");
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": registering PACKAGE_ADDED receiver (SDK=" + Build.VERSION.SDK_INT + ")");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_EXPORTED);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered with RECEIVER_EXPORTED");
         } else {
             registerReceiver(packageAddedReceiver, pkgFilter);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered without flags (legacy)");
         }
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
@@ -627,7 +657,24 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
+    private void sendTemplateDebugNotification(String packageName, boolean willApply) {
+        try {
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ACTIONS)
+                    .setContentTitle("Install Template " + (willApply ? "triggered" : "disabled"))
+                    .setContentText(packageName + (willApply ? " — applying in 3s" : " — template is OFF"))
+                    .setSmallIcon(R.drawable.ic_shappky)
+                    .setAutoCancel(true)
+                    .build();
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm != null) nm.notify(9999, notification);
+        } catch (Exception e) {
+            AppDebugManager.e(Category.CORE, FILE_NAME + ": sendTemplateDebugNotification failed", e);
+        }
+    }
+
     private void applyInstallTemplate(String packageName) {
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: start for " + packageName);
+
         // Skip system apps
         try {
             android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
@@ -635,74 +682,133 @@ public class ShappkyService extends Service {
                 AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " is system app, skipping");
                 return;
             }
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " is user app, proceeding");
         } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-            AppDebugManager.w(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not found, skipping");
-            return;
+            AppDebugManager.w(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not found, retrying...");
+            // Retry once after 2s more — package manager might not be ready
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
+            try {
+                android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
+                if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
+                    AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " is system app (retry), skipping");
+                    return;
+                }
+            } catch (android.content.pm.PackageManager.NameNotFoundException e2) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " still not found after retry, giving up", e2);
+                return;
+            }
         }
 
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         Set<String> packages = new HashSet<>();
 
-        if (prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false)) {
+        boolean restrictionEnabled = prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restrictionEnabled=" + restrictionEnabled);
+        if (restrictionEnabled) {
             String typeStr = prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restrictionType=" + typeStr);
             BackgroundAppManager.RestrictionType type;
             try {
                 type = BackgroundAppManager.RestrictionType.valueOf(typeStr);
             } catch (IllegalArgumentException e) {
+                AppDebugManager.w(Category.CORE, FILE_NAME + ": applyInstallTemplate: invalid type '" + typeStr + "', using SOFT");
                 type = BackgroundAppManager.RestrictionType.SOFT;
             }
-            appManager.setRestrictionType(packageName, type);
-            packages.add(packageName);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restriction " + type + " for " + packageName);
-        }
-
-        if (prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false)) {
-            String sleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
-            Set<String> timerApps = sleepModeManager.getSleepModeApps();
-            Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
-            if ("PERMANENT".equals(sleepType)) {
-                permanentApps.add(packageName);
-            } else {
-                timerApps.add(packageName);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: calling setRestrictionType(" + packageName + ", " + type + ")");
+            try {
+                appManager.setRestrictionType(packageName, type);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: setRestrictionType OK");
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: setRestrictionType FAILED", e);
             }
-            sleepModeManager.saveSleepModeApps(timerApps, permanentApps, null, null);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleep mode " + sleepType + " for " + packageName);
+            packages.add(packageName);
         }
 
-        if (prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false)) {
-            Set<String> whitelist = appManager.getWhitelistedApps();
-            whitelist.add(packageName);
-            appManager.saveWhitelistedApps(whitelist);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelisted " + packageName);
+        boolean sleepEnabled = prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleepModeEnabled=" + sleepEnabled);
+        if (sleepEnabled) {
+            String sleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleepType=" + sleepType);
+            try {
+                Set<String> timerApps = sleepModeManager.getSleepModeApps();
+                Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: timerApps=" + timerApps.size() + " permanentApps=" + permanentApps.size());
+                if ("PERMANENT".equals(sleepType)) {
+                    permanentApps.add(packageName);
+                } else {
+                    timerApps.add(packageName);
+                }
+                sleepModeManager.saveSleepModeApps(timerApps, permanentApps, null, null);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleep mode saved OK");
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleep mode FAILED", e);
+            }
         }
 
-        if (prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false)) {
-            Set<String> blacklist = autoKillManager.getBlacklistedApps();
-            blacklist.add(packageName);
-            autoKillManager.saveBlacklistedApps(blacklist);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklisted " + packageName);
+        boolean whitelistEnabled = prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelistEnabled=" + whitelistEnabled);
+        if (whitelistEnabled) {
+            try {
+                Set<String> whitelist = appManager.getWhitelistedApps();
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelist before=" + whitelist.size());
+                whitelist.add(packageName);
+                appManager.saveWhitelistedApps(whitelist);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelist saved OK");
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelist FAILED", e);
+            }
         }
 
+        boolean blacklistEnabled = prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklistEnabled=" + blacklistEnabled);
+        if (blacklistEnabled) {
+            try {
+                Set<String> blacklist = autoKillManager.getBlacklistedApps();
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklist before=" + blacklist.size());
+                blacklist.add(packageName);
+                autoKillManager.saveBlacklistedApps(blacklist);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklist saved OK");
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklist FAILED", e);
+            }
+        }
+
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: packages to restrict=" + packages.size());
         if (!packages.isEmpty()) {
-            appManager.applyBackgroundRestriction(packages, null);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: calling applyBackgroundRestriction for " + packages.size() + " packages");
+            try {
+                appManager.applyBackgroundRestriction(packages, null);
+                AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: applyBackgroundRestriction returned OK");
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: applyBackgroundRestriction FAILED", e);
+            }
         }
 
-        if (prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false)) {
+        boolean notifyEnabled = prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: notifyEnabled=" + notifyEnabled);
+        if (notifyEnabled) {
             String appName = packageName;
             try {
                 android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
                 CharSequence label = getPackageManager().getApplicationLabel(ai);
                 if (label != null) appName = label.toString();
             } catch (android.content.pm.PackageManager.NameNotFoundException ignored) {}
-            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ACTIONS)
-                    .setContentTitle(getString(R.string.settings_install_template_title))
-                    .setContentText(getString(R.string.template_applied_notification, appName))
-                    .setSmallIcon(R.drawable.ic_shappky)
-                    .setAutoCancel(true)
-                    .build();
-            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (nm != null) {
-                nm.notify(NOTIFICATION_ID_TEMPLATE, notification);
+            try {
+                Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ACTIONS)
+                        .setContentTitle(getString(R.string.settings_install_template_title))
+                        .setContentText(getString(R.string.template_applied_notification, appName))
+                        .setSmallIcon(R.drawable.ic_shappky)
+                        .setAutoCancel(true)
+                        .build();
+                NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null) {
+                    nm.notify(NOTIFICATION_ID_TEMPLATE, notification);
+                    AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: notification sent");
+                }
+            } catch (Exception e) {
+                AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: notification FAILED", e);
             }
         }
 
