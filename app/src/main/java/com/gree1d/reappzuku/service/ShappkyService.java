@@ -61,7 +61,6 @@ public class ShappkyService extends Service {
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final java.util.Map<String, Integer> templateRetryCounts = new java.util.HashMap<>();
     private static boolean isRunning = false;
 
     private ShellManager shellManager;
@@ -619,19 +618,8 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
-    private void retryInstallTemplate(String packageName) {
-        int attempt = templateRetryCounts.getOrDefault(packageName, 0);
-        if (attempt >= 3) {
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": retryInstallTemplate: " + packageName + " not found after 3 retries, giving up");
-            templateRetryCounts.remove(packageName);
-            return;
-        }
-        templateRetryCounts.put(packageName, attempt + 1);
-        handler.postDelayed(() -> applyInstallTemplate(packageName), 5000L);
-    }
-
     private void applyInstallTemplate(String packageName) {
-        // Check system apps and retry if package not yet available
+        // Skip system apps
         try {
             android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
             if ((ai.flags & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0) {
@@ -639,11 +627,9 @@ public class ShappkyService extends Service {
                 return;
             }
         } catch (android.content.pm.PackageManager.NameNotFoundException e) {
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not yet available, will retry");
-            retryInstallTemplate(packageName);
+            AppDebugManager.w(Category.CORE, FILE_NAME + ": applyInstallTemplate: " + packageName + " not found, skipping");
             return;
         }
-        templateRetryCounts.remove(packageName);
 
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         Set<String> packages = new HashSet<>();
