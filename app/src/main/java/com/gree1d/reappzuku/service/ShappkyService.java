@@ -668,18 +668,16 @@ public class ShappkyService extends Service {
     }
 
     private void initKnownPackages() {
-        executor.execute(() -> {
-            try {
-                List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
-                mKnownPackages.clear();
-                for (android.content.pm.ApplicationInfo ai : apps) {
-                    mKnownPackages.add(ai.packageName);
-                }
-                Log.d("ShappkyTemplate", "initKnownPackages: " + mKnownPackages.size() + " packages cached");
-            } catch (Exception e) {
-                Log.e("ShappkyTemplate", "initKnownPackages failed", e);
+        try {
+            List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
+            mKnownPackages.clear();
+            for (android.content.pm.ApplicationInfo ai : apps) {
+                mKnownPackages.add(ai.packageName);
             }
-        });
+            Log.d("ShappkyTemplate", "initKnownPackages: " + mKnownPackages.size() + " packages cached");
+        } catch (Exception e) {
+            Log.e("ShappkyTemplate", "initKnownPackages failed", e);
+        }
     }
 
     private void startPeriodicPackageCheck() {
