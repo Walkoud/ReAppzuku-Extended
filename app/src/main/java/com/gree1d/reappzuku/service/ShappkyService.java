@@ -181,14 +181,19 @@ public class ShappkyService extends Service {
                     Log.d(RTAG, "skipped (null or self)");
                     return;
                 }
+                synchronized (mKnownPackages) {
+                    if (mKnownPackages.contains(pkg)) {
+                        Log.d(RTAG, "package " + pkg + " already in mKnownPackages, skipping receiver application");
+                        return;
+                    }
+                    mKnownPackages.add(pkg);
+                }
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
                 boolean templateEnabled = prefs.getBoolean(KEY_TEMPLATE_ENABLED, false);
                 Log.d(RTAG, "templateEnabled=" + templateEnabled + " for " + pkg);
                 if (!templateEnabled) {
-                    sendTemplateDebugNotification(pkg, false);
                     return;
                 }
-                sendTemplateDebugNotification(pkg, true);
                 Log.d(RTAG, "queuing template apply for " + pkg + " in 3s on executor");
                 executor.execute(() -> {
                     try {
@@ -210,8 +215,8 @@ public class ShappkyService extends Service {
         pkgFilter.addDataScheme("package");
         Log.d("ShappkyTemplate", "registering PACKAGE_ADDED receiver (SDK=" + Build.VERSION.SDK_INT + ")");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_NOT_EXPORTED);
-            Log.d("ShappkyTemplate", "registered with RECEIVER_NOT_EXPORTED");
+            registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_EXPORTED);
+            Log.d("ShappkyTemplate", "registered with RECEIVER_EXPORTED");
         } else {
             registerReceiver(packageAddedReceiver, pkgFilter);
             Log.d("ShappkyTemplate", "registered without flags (legacy)");
@@ -670,11 +675,15 @@ public class ShappkyService extends Service {
     private void initKnownPackages() {
         try {
             List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
-            mKnownPackages.clear();
-            for (android.content.pm.ApplicationInfo ai : apps) {
-                mKnownPackages.add(ai.packageName);
+            synchronized (mKnownPackages) {
+                mKnownPackages.clear();
+                for (android.content.pm.ApplicationInfo ai : apps) {
+                    mKnownPackages.add(ai.packageName);
+                }
             }
-            Log.d("ShappkyTemplate", "initKnownPackages: " + mKnownPackages.size() + " packages cached");
+            synchronized (mKnownPackages) {
+                Log.d("ShappkyTemplate", "initKnownPackages: " + mKnownPackages.size() + " packages cached");
+            }
         } catch (Exception e) {
             Log.e("ShappkyTemplate", "initKnownPackages failed", e);
         }
@@ -687,7 +696,18 @@ public class ShappkyService extends Service {
                 if (!isRunning) return;
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
                 if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) {
-                    handler.postDelayed(this, 120000);
+                    executor.execute(() -> {
+                        try {
+                            List<android.content.pm.ApplicationInfo> apps = getPackageManager().getInstalledApplications(0);
+                            synchronized (mKnownPackages) {
+                                mKnownPackages.clear();
+                                for (android.content.pm.ApplicationInfo ai : apps) {
+                                    mKnownPackages.add(ai.packageName);
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    });
+                    handler.postDelayed(this, 30000);
                     return;
                 }
                 executor.execute(() -> {
@@ -699,7 +719,9 @@ public class ShappkyService extends Service {
                         }
 
                         Set<String> newPackages = new HashSet<>(currentPackages);
-                        newPackages.removeAll(mKnownPackages);
+                        synchronized (mKnownPackages) {
+                            newPackages.removeAll(mKnownPackages);
+                        }
                         newPackages.remove(getPackageName());
 
                         if (!newPackages.isEmpty()) {
@@ -709,8 +731,10 @@ public class ShappkyService extends Service {
                             }
                         }
 
-                        mKnownPackages.clear();
-                        mKnownPackages.addAll(currentPackages);
+                        synchronized (mKnownPackages) {
+                            mKnownPackages.clear();
+                            mKnownPackages.addAll(currentPackages);
+                        }
                     } catch (Exception e) {
                         Log.e("ShappkyTemplate", "checkNewPackages failed", e);
                     }
@@ -718,21 +742,6 @@ public class ShappkyService extends Service {
                 });
             }
         }, 10000);
-    }
-
-    private void sendTemplateDebugNotification(String packageName, boolean willApply) {
-        try {
-            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID_ACTIONS)
-                    .setContentTitle("Install Template " + (willApply ? "triggered" : "disabled"))
-                    .setContentText(packageName + (willApply ? " — applying in 3s" : " — template is OFF"))
-                    .setSmallIcon(R.drawable.ic_shappky)
-                    .setAutoCancel(true)
-                    .build();
-            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (nm != null) nm.notify(9999, notification);
-        } catch (Exception e) {
-            AppDebugManager.e(Category.CORE, FILE_NAME + ": sendTemplateDebugNotification failed", e);
-        }
     }
 
     private void applyInstallTemplate(String packageName) {
@@ -849,7 +858,10 @@ public class ShappkyService extends Service {
             }
         }
 
-        String appName = packageName;
+        boolean notifyEnabled = prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false);
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: notifyEnabled=" + notifyEnabled);
+        if (notifyEnabled) {
+            String appName = packageName;
             try {
                 android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
                 CharSequence label = getPackageManager().getApplicationLabel(ai);
@@ -870,6 +882,7 @@ public class ShappkyService extends Service {
             } catch (Exception e) {
                 AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: notification FAILED", e);
             }
+        }
 
         AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate completed for " + packageName);
     }

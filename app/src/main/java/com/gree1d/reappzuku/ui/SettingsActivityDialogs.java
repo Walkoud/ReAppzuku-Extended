@@ -2101,12 +2101,14 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         restrictionTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         restrictionTypeLabel.setTextSize(14);
         restrictionTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
-        restrictionTypeLabel.setVisibility(View.VISIBLE);
+        restrictionTypeLabel.setVisibility(prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false) ? View.VISIBLE : View.GONE);
         subContainer.addView(restrictionTypeLabel);
+        restrictionCheck.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefs.edit().putBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, isChecked).apply();
+            restrictionTypeLabel.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
         restrictionRow.setOnClickListener(v -> {
             restrictionCheck.toggle();
-            restrictionTypeLabel.setVisibility(View.VISIBLE);
-            prefs.edit().putBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, restrictionCheck.isChecked()).apply();
         });
         restrictionTypeLabel.setOnClickListener(v -> {
             String[] labels = {
@@ -2144,12 +2146,14 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         sleepTypeLabel.setTextColor(getColorFromAttr(android.R.attr.textColorSecondary));
         sleepTypeLabel.setTextSize(14);
         sleepTypeLabel.setPadding(dp24 + dp12, 0, 0, dp8);
-        sleepTypeLabel.setVisibility(View.VISIBLE);
+        sleepTypeLabel.setVisibility(prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false) ? View.VISIBLE : View.GONE);
         subContainer.addView(sleepTypeLabel);
+        sleepCheck.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefs.edit().putBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, isChecked).apply();
+            sleepTypeLabel.setVisibility(isChecked ? View.VISIBLE : View.GONE);
+        });
         sleepRow.setOnClickListener(v -> {
             sleepCheck.toggle();
-            sleepTypeLabel.setVisibility(View.VISIBLE);
-            prefs.edit().putBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, sleepCheck.isChecked()).apply();
         });
         sleepTypeLabel.setOnClickListener(v -> {
             String[] sleepLabels = {"Timer", "Permanent"};
@@ -2175,9 +2179,11 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                 getString(R.string.template_whitelist_subtitle),
                 prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false));
         CheckBox whitelistCheck = (CheckBox) whitelistRow.getTag();
+        whitelistCheck.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefs.edit().putBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, isChecked).apply();
+        });
         whitelistRow.setOnClickListener(v -> {
             whitelistCheck.toggle();
-            prefs.edit().putBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, whitelistCheck.isChecked()).apply();
         });
         subContainer.addView(whitelistRow);
 
@@ -2189,9 +2195,11 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                 getString(R.string.template_blacklist_subtitle),
                 prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false));
         CheckBox blacklistCheck = (CheckBox) blacklistRow.getTag();
+        blacklistCheck.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefs.edit().putBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, isChecked).apply();
+        });
         blacklistRow.setOnClickListener(v -> {
             blacklistCheck.toggle();
-            prefs.edit().putBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, blacklistCheck.isChecked()).apply();
         });
         subContainer.addView(blacklistRow);
 
@@ -2203,9 +2211,11 @@ abstract class SettingsActivityDialogs extends BaseActivity {
                 getString(R.string.template_notification_subtitle),
                 prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false));
         CheckBox notificationCheck = (CheckBox) notificationRow.getTag();
+        notificationCheck.setOnCheckedChangeListener((btn, isChecked) -> {
+            prefs.edit().putBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, isChecked).apply();
+        });
         notificationRow.setOnClickListener(v -> {
             notificationCheck.toggle();
-            prefs.edit().putBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, notificationCheck.isChecked()).apply();
         });
         subContainer.addView(notificationRow);
 
