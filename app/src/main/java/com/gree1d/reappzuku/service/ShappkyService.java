@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
@@ -158,59 +159,60 @@ public class ShappkyService extends Service {
         registerReceiver(screenOffReceiver, filter);
 
         packageAddedReceiver = new BroadcastReceiver() {
+            private final String RTAG = "ShappkyTemplate";
+
             @Override
             public void onReceive(Context context, Intent intent) {
-                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED received, extras=" + intent.getExtras());
+                Log.d(RTAG, "PACKAGE_ADDED received, extras=" + intent.getExtras());
                 if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
-                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED is a replacement (update), skipping");
+                    Log.d(RTAG, "is a replacement (update), skipping");
                     return;
                 }
                 android.net.Uri data = intent.getData();
                 if (data == null) {
-                    AppDebugManager.w(Category.CORE, FILE_NAME + ": PACKAGE_ADDED has no data, skipping");
+                    Log.w(RTAG, "has no data, skipping");
                     return;
                 }
                 final String pkg = data.getSchemeSpecificPart();
-                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED for package=" + pkg);
+                Log.d(RTAG, "package=" + pkg);
                 if (pkg == null || pkg.equals(context.getPackageName())) {
-                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED skipped (null or self)");
+                    Log.d(RTAG, "skipped (null or self)");
                     return;
                 }
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
                 boolean templateEnabled = prefs.getBoolean(KEY_TEMPLATE_ENABLED, false);
-                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED templateEnabled=" + templateEnabled);
+                Log.d(RTAG, "templateEnabled=" + templateEnabled + " for " + pkg);
                 if (!templateEnabled) {
-                    AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED template disabled, sending debug notification");
                     sendTemplateDebugNotification(pkg, false);
                     return;
                 }
                 sendTemplateDebugNotification(pkg, true);
-                AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED queuing template apply for " + pkg + " in 3s");
+                Log.d(RTAG, "queuing template apply for " + pkg + " in 3s on executor");
                 executor.execute(() -> {
                     try {
                         Thread.sleep(3000);
-                        AppDebugManager.d(Category.CORE, FILE_NAME + ": PACKAGE_ADDED delay done, applying template for " + pkg);
+                        Log.d(RTAG, "delay done, applying template for " + pkg);
                     } catch (InterruptedException e) {
-                        AppDebugManager.w(Category.CORE, FILE_NAME + ": PACKAGE_ADDED delay interrupted for " + pkg);
+                        Log.w(RTAG, "delay interrupted for " + pkg);
                         return;
                     }
                     try {
                         applyInstallTemplate(pkg);
                     } catch (Exception e) {
-                        AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate threw uncaught exception", e);
+                        Log.e(RTAG, "applyInstallTemplate threw uncaught exception for " + pkg, e);
                     }
                 });
             }
         };
         IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
         pkgFilter.addDataScheme("package");
-        AppDebugManager.d(Category.CORE, FILE_NAME + ": registering PACKAGE_ADDED receiver (SDK=" + Build.VERSION.SDK_INT + ")");
+        Log.d("ShappkyTemplate", "registering PACKAGE_ADDED receiver (SDK=" + Build.VERSION.SDK_INT + ")");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_NOT_EXPORTED);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered with RECEIVER_NOT_EXPORTED");
+            Log.d("ShappkyTemplate", "registered with RECEIVER_NOT_EXPORTED");
         } else {
             registerReceiver(packageAddedReceiver, pkgFilter);
-            AppDebugManager.d(Category.CORE, FILE_NAME + ": registered without flags (legacy)");
+            Log.d("ShappkyTemplate", "registered without flags (legacy)");
         }
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
