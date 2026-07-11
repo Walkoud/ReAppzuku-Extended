@@ -27,6 +27,7 @@ import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.gree1d.reappzuku.core.ShellManager;
