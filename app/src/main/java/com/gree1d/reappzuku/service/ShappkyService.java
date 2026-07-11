@@ -626,7 +626,6 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
-    @Override
     private void applyInstallTemplate(String packageName) {
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
         Set<String> packages = new HashSet<>();
