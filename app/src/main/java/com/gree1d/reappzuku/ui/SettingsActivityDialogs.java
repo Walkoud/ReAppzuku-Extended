@@ -2234,6 +2234,8 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         row.setPadding(0, dp12, 0, dp12);
         CheckBox checkBox = new CheckBox(this);
         checkBox.setChecked(checked);
+        checkBox.setClickable(false);
+        checkBox.setFocusable(false);
         row.addView(checkBox);
         LinearLayout textCol = new LinearLayout(this);
         textCol.setOrientation(LinearLayout.VERTICAL);
