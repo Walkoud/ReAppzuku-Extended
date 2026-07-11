@@ -164,12 +164,21 @@ public class ShappkyService extends Service {
                 if (pkg == null || pkg.equals(context.getPackageName())) return;
                 SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
                 if (!prefs.getBoolean(KEY_TEMPLATE_ENABLED, false)) return;
-                handler.postDelayed(() -> applyInstallTemplate(pkg), 3000);
+                executor.execute(() -> {
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {}
+                    applyInstallTemplate(pkg);
+                });
             }
         };
         IntentFilter pkgFilter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
         pkgFilter.addDataScheme("package");
-        registerReceiver(packageAddedReceiver, pkgFilter);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(packageAddedReceiver, pkgFilter, Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(packageAddedReceiver, pkgFilter);
+        }
 
         additionalScenariosManager = new AdditionalScenariosManager(this);
         AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": AdditionalScenariosManager initialized");
