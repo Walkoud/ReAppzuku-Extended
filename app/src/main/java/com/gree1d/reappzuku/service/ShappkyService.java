@@ -597,7 +597,56 @@ public class ShappkyService extends Service {
         return defaultSource;
     }
 
-    @Override
+    private void applyInstallTemplate(String packageName) {
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        Set<String> packages = new HashSet<>();
+
+        if (prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false)) {
+            String typeStr = prefs.getString(KEY_TEMPLATE_RESTRICTION_TYPE, "SOFT");
+            BackgroundAppManager.RestrictionType type;
+            try {
+                type = BackgroundAppManager.RestrictionType.valueOf(typeStr);
+            } catch (IllegalArgumentException e) {
+                type = BackgroundAppManager.RestrictionType.SOFT;
+            }
+            appManager.setRestrictionType(packageName, type);
+            packages.add(packageName);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restriction " + type + " for " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_SLEEP_MODE_ENABLED, false)) {
+            String sleepType = prefs.getString(KEY_TEMPLATE_SLEEP_MODE_TYPE, "TIMER");
+            Set<String> timerApps = sleepModeManager.getSleepModeApps();
+            Set<String> permanentApps = sleepModeManager.getPermanentFreezeApps();
+            if ("PERMANENT".equals(sleepType)) {
+                permanentApps.add(packageName);
+            } else {
+                timerApps.add(packageName);
+            }
+            sleepModeManager.saveSleepModeApps(timerApps, permanentApps, null, null);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: sleep mode " + sleepType + " for " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_WHITELIST_ENABLED, false)) {
+            Set<String> whitelist = appManager.getWhitelistedApps();
+            whitelist.add(packageName);
+            appManager.saveWhitelistedApps(whitelist);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: whitelisted " + packageName);
+        }
+
+        if (prefs.getBoolean(KEY_TEMPLATE_BLACKLIST_ENABLED, false)) {
+            Set<String> blacklist = autoKillManager.getBlacklistedApps();
+            blacklist.add(packageName);
+            autoKillManager.saveBlacklistedApps(blacklist);
+            AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: blacklisted " + packageName);
+        }
+
+        if (!packages.isEmpty()) {
+            appManager.applyBackgroundRestriction(packages, null);
+        }
+
+        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate completed for " + packageName);
+    }
     public void onDestroy() {
         AppDebugManager.d(Category.FOREGROUND_SERVICE, FILE_NAME + ": onDestroy called, stopping service");
         isRunning = false;
