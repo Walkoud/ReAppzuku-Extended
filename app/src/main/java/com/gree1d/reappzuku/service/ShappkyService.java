@@ -714,7 +714,7 @@ public class ShappkyService extends Service {
                     } catch (Exception e) {
                         Log.e("ShappkyTemplate", "checkNewPackages failed", e);
                     }
-                    handler.postDelayed(this, 60000);
+                    handler.postDelayed(this, 15000);
                 });
             }
         }, 10000);
@@ -849,10 +849,7 @@ public class ShappkyService extends Service {
             }
         }
 
-        boolean notifyEnabled = prefs.getBoolean(KEY_TEMPLATE_NOTIFICATION_ENABLED, false);
-        AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: notifyEnabled=" + notifyEnabled);
-        if (notifyEnabled) {
-            String appName = packageName;
+        String appName = packageName;
             try {
                 android.content.pm.ApplicationInfo ai = getPackageManager().getApplicationInfo(packageName, 0);
                 CharSequence label = getPackageManager().getApplicationLabel(ai);
@@ -873,7 +870,6 @@ public class ShappkyService extends Service {
             } catch (Exception e) {
                 AppDebugManager.e(Category.CORE, FILE_NAME + ": applyInstallTemplate: notification FAILED", e);
             }
-        }
 
         AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate completed for " + packageName);
     }
