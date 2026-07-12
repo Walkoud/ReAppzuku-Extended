@@ -489,7 +489,7 @@ public class SettingsActivity extends SettingsActivityDialogs
         });
         binding.layoutInstallTemplate.setOnClickListener(v -> showInstallTemplateDialog());
         binding.layoutBackupRestore.setOnClickListener(v -> showBackupRestoreDialog());
-        binding.layoutGithub.setOnClickListener(v -> openUrl("https://github.com/gree1d/ReAppzuku"));
+        binding.layoutGithub.setOnClickListener(v -> openUrl("https://github.com/Walkoud/ReAppzuku-Extended"));
         binding.layoutCheckUpdates.setOnClickListener(v -> UpdateChecker.checkForUpdatesManual(this, sharedPreferences));
         binding.layoutTelegram.setOnClickListener(v -> openUrl("https://t.me/AkM0o"));
         binding.layoutSpecialThanks.setOnClickListener(v -> showSpecialThanksDialog());

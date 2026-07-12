@@ -54,9 +54,9 @@ public class UpdateChecker {
     private static final String FILE_NAME = "UpdateChecker";
 
     static final String GITHUB_API_URL =
-            "https://api.github.com/repos/gree1d/ReAppzuku/releases/latest";
+            "https://api.github.com/repos/Walkoud/ReAppzuku-Extended/releases/latest";
     private static final String RELEASES_URL =
-            "https://github.com/gree1d/ReAppzuku/releases";
+            "https://github.com/Walkoud/ReAppzuku-Extended/releases";
 
     private static final String CHANNEL_ID = "reappzuku_updates";
     private static final int    NOTIF_ID   = 9001;

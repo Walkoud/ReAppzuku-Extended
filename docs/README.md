@@ -1,4 +1,4 @@
-**English** | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | [Espanol](./README_ES.md) | [Українська](./README_UK.md) | [Deutsch](./README_DE.md)
+**English** | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | [Espanol](./README_ES.md) | [Українська](./README_UK.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md)
 
 ---
 
@@ -72,6 +72,39 @@ Root or Shizuku privileges are required.
 * **Background operation:** disable battery optimization for ReAppzuku and pin it in Recents — otherwise system may kill management service itself.
 * **Choose your strategy:** Whitelist + periodic Kill for maximum savings, or Blacklist-only for targeted control of specific apps.
 
+## ⭐ Best Use (my preference)
+
+This is my personal recommended setup for maximum battery savings with minimal trade-offs.
+
+### Setup Steps
+
+1. **Enable Background Service** — Go to Settings → Automation → toggle ON "Background Service". This ensures ReAppzuku can apply and maintain restrictions even after you leave the settings.
+
+2. **Enable App Install Template** — Settings → Advanced Tools → App Install Template → toggle ON, then:
+   - Check **Background restriction** → set to **HARD**
+   - Check **Notify when applied** — this sends a notification each time a new app is installed and the template is applied to it, so you know exactly what happened and can adjust if needed.
+   - Leave the rest unchecked (Sleep mode, Whitelist, Blacklist).
+
+3. **Bulk-set HARD mode on all user apps:**
+   - Go to **Background Restrictions** → tap **Sort** → select **User** to show only your installed apps.
+   - Tap **Select All** (top-right) to select every visible app.
+   - Tap **Type** (top-right, appears when apps are selected) → choose **Hard** → Confirm.
+   - All your user apps are now in HARD mode.
+
+4. **Exceptions — apps that need notifications or have widgets:**
+   - In the same Background Restrictions screen, **uncheck** or switch to **Soft** mode for:
+     - Messaging apps (WhatsApp, Signal, Telegram, Discord) — Soft keeps FCM notifications instant.
+     - Apps with widgets on your home screen (widgets may not update in HARD mode).
+     - Any app where you want to keep receiving push notifications.
+
+### Restriction Modes Reference
+
+| Mode | What it does technically (via Android/Shizuku) | Why use it? | Impact on Notifications | Example target apps |
+|---|---|---|---|---|
+| 🟢 SOFT | • Disables only RUN_ANY_IN_BACKGROUND.<br>• Leaves the app passively in RAM. | • Prevents the app from auto-launching.<br>• Preserves maximum fluidity (no reload/logo when switching back). | Instant (100% functional via Google FCM servers). | WhatsApp, Signal, Discord, Gmail, Uber. |
+| 🟡 MEDIUM | • Disables 6 key AppOps (ACCESS_NOTIFICATIONS, GET_USAGE_STATS, etc.).<br>• Sets app to Standby Bucket RARE. | • Blocks tracking and spying (app can no longer see your other activity).<br>• Still allows music playback or GPS in background while in use. | Blocked or heavily delayed (only delivered in batches). | Instagram, X (Twitter), Spotify, YouTube, Chrome/Firefox. |
+| 🔴 HARD | • Disables all 11 available AppOps (including WAKE_LOCK, START_FOREGROUND, SCHEDULE_EXACT_ALARM).<br>• Standby Bucket RESTRICTED.<br>• One initial force-stop on activation. | • Maximum battery protection.<br>• Completely cripples the app as soon as it goes to background.<br>• No more parasitic processes overnight or while screen is off. | Completely blocked (app is silent until you open it). | TikTok, AliExpress, Temu, Shein, Mobile Games, Banking apps. |
+
 ## 🛡 Safety
 
 ReAppzuku automatically protects critical system processes — Google Play Services, System UI, current keyboard, current launcher, telephony, Bluetooth, NFC, and Shizuku itself. OEM-specific system apps (Xiaomi Security Center, Samsung Device Care, OPPO Phone Manager, etc.) are also protected.
@@ -110,7 +143,7 @@ ReAppzuku is licensed under [GNU General Public License v3.0](LICENSE).
 
 ## Credits
 
-Forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
+Forked from [gree1d/ReAppzuku](https://github.com/gree1d/ReAppzuku), originally forked from [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
 <br><br>
 >![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)

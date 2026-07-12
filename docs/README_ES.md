@@ -1,4 +1,4 @@
-[English](./README.md) | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | **Español** | [Українська](./README_UK.md) | [Deutsch](./README_DE.md)
+[English](./README.md) | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | **Español** | [Українська](./README_UK.md) | [Deutsch](./README_DE.md) | [Français](./README_FR.md)
 
 ---
 
@@ -61,6 +61,37 @@ Se requieren privilegios de Root o Shizuku.
 * **Operación en segundo plano:** deshabilita la optimización de batería para ReAppzuku y fíjala en las apps recientes — de lo contrario, el sistema podría cerrar el propio servicio de gestión.
 * **Elige tu estrategia:** Lista blanca + Kill periódico para el máximo ahorro, o solo Lista negra para un control específico de aplicaciones particulares.
 
+## ⭐ Mejor Uso (mi preferencia)
+
+Esta es mi configuración personal recomendada para el máximo ahorro de batería con mínimas concesiones.
+
+### Pasos de configuración
+
+1. **Activar el servicio en segundo plano** — Ve a Ajustes → Automatización → activa "Servicio en segundo plano". Esto permite que ReAppzuku mantenga las restricciones incluso después de salir de los ajustes.
+
+2. **Activar la Plantilla de Instalación** — Ajustes → Herramientas avanzadas → App Install Template → ACTIVAR, luego:
+   - Marcar **Restricción de segundo plano** → establecer en **HARD**
+   - Marcar **Notificar al aplicar** — envía una notificación cuando se instale una nueva app.
+
+3. **Modo HARD para todas las apps de usuario:**
+   - Ve a **Restricciones de segundo plano** → toca **Ordenar** → selecciona **Usuario**.
+   - Toca **Seleccionar todo** (arriba a la derecha).
+   - Toca **Tipo** (arriba a la derecha) → elige **Hard** → Confirmar.
+
+4. **Excepciones — apps con notificaciones o widgets:**
+   - **Desmarcar** o cambiar a **Soft** para:
+     - Apps de mensajería (WhatsApp, Signal, Telegram, Discord) — Soft mantiene las notificaciones FCM instantáneas.
+     - Apps con widgets en la pantalla de inicio.
+     - Cualquier app donde quieras recibir notificaciones push.
+
+### Tabla de referencia de modos de restricción
+
+| Modo | Qué hace técnicamente (via Android/Shizuku) | ¿Por qué usarlo? | Impacto en Notificaciones | Apps de ejemplo |
+|---|---|---|---|---|
+| 🟢 SOFT | • Desactiva solo RUN_ANY_IN_BACKGROUND.<br>• Deja la app pasivamente en RAM. | • Evita que la app se auto-inicie.<br>• Máxima fluidez (sin recarga al cambiar). | Instantáneas (100% funcionales via FCM de Google). | WhatsApp, Signal, Discord, Gmail, Uber. |
+| 🟡 MEDIUM | • Desactiva 6 AppOps clave (ACCESS_NOTIFICATIONS, GET_USAGE_STATS, etc.).<br>• Establece Standby Bucket RARE. | • Bloquea el rastreo y espionaje.<br>• Permite música/GPS en segundo plano durante uso activo. | Bloqueadas o muy retrasadas (solo por lotes). | Instagram, X (Twitter), Spotify, YouTube, Chrome/Firefox. |
+| 🔴 HARD | • Desactiva los 11 AppOps disponibles (incluyendo WAKE_LOCK, START_FOREGROUND, SCHEDULE_EXACT_ALARM).<br>• Standby Bucket RESTRICTED.<br>• Un force-stop inicial al activar. | • Máxima protección de batería.<br>• Inmoviliza la app al minimizarla.<br>• Sin procesos parásitos por la noche. | Totalmente bloqueadas (app silenciosa hasta abrirla). | TikTok, AliExpress, Temu, Shein, Juegos Móviles, Apps Bancarias. |
+
 ## 🛡 Seguridad
 
 ReAppzuku protege automáticamente los procesos críticos del sistema — Google Play Services, System UI, el teclado actual, el lanzador (launcher) actual, telefonía, Bluetooth, NFC y el propio Shizuku. Las apps de sistema específicas de fabricantes (Xiaomi Security Center, Samsung Device Care, OPPO Phone Manager, etc.) también están protegidas.
@@ -97,7 +128,7 @@ ReAppzuku está bajo la licencia [GNU General Public License v3.0](LICENSE).
 
 ## Créditos
 
-Fork de [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
+Fork de [gree1d/ReAppzuku](https://github.com/gree1d/ReAppzuku), originalmente fork de [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
 <br><br>
 >![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)

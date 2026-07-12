@@ -1,4 +1,4 @@
-[English](./README.md) | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | [Espanol](./README_ES.md) | [Українська](./README_UK.md) | **Deutsch**
+[English](./README.md) | [Русский](./README_RU.md) | [简体中文](./README_ZH.md) | [Espanol](./README_ES.md) | [Українська](./README_UK.md) | **Deutsch** | [Français](./README_FR.md)
 
 ---
 
@@ -61,6 +61,37 @@ Root- oder Shizuku-Rechte sind erforderlich.
 2. Akkuoptimierung für ReAppzuku deaktivieren und App in der Übersicht (Recents) angeheftet lassen – andernfalls kann das System den Verwaltungsdienst selbst beenden.
 3. Whitelist- oder Blacklist-Strategie auswählen: Whitelist + periodisches Schließen für maximale Ersparnis, oder reine Blacklist für die gezielte Kontrolle bestimmter Apps.
 
+## ⭐ Optimale Nutzung (meine Empfehlung)
+
+Dies ist meine persönliche empfohlene Einrichtung für maximale Batterieersparnis bei minimalen Kompromissen.
+
+### Einrichtungsschritte
+
+1. **Hintergrunddienst aktivieren** — Gehe zu Einstellungen → Automatisierung → schalte "Hintergrunddienst" EIN. So kann ReAppzuku die Einschränkungen auch nach dem Verlassen der Einstellungen anwenden und aufrechterhalten.
+
+2. **App Install Template aktivieren** — Einstellungen → Erweiterte Werkzeuge → App Install Template → EINSCHALTEN, dann:
+   - **Hintergrundbeschränkung** aktivieren → auf **HARD** setzen
+   - **Benachrichtigen bei Anwendung** aktivieren — dies sendet eine Benachrichtigung, wenn eine neue App installiert und die Vorlage angewendet wurde.
+
+3. **HARD-Modus für alle Benutzer-Apps:**
+   - Gehe zu **Hintergrundbeschränkungen** → tippe auf **Sortieren** → wähle **Benutzer** aus.
+   - Tippe auf **Alle auswählen** (oben rechts).
+   - Tippe auf **Typ** (oben rechts) → wähle **Hard** → Bestätigen.
+
+4. **Ausnahmen — Apps mit Benachrichtigungen oder Widgets:**
+   - **Abwählen** oder auf **Soft** setzen für:
+     - Messaging-Apps (WhatsApp, Signal, Telegram, Discord) — Soft hält FCM-Benachrichtigungen sofortig.
+     - Apps mit Widgets auf dem Startbildschirm.
+     - Jede App, bei der du Push-Benachrichtigungen empfangen möchtest.
+
+### Referenztabelle der Einschränkungsmodi
+
+| Modus | Technische Funktionsweise (über Android/Shizuku) | Warum verwenden? | Auswirkung auf Benachrichtigungen | Beispielziel-Apps |
+|---|---|---|---|---|
+| 🟢 SOFT | • Deaktiviert nur RUN_ANY_IN_BACKGROUND.<br>• Lässt die App passiv im RAM. | • Verhindert automatisches Starten der App.<br>• Maximale Flüssigkeit (kein Neuladen beim Wechsel). | Sofort (100% funktionsfähig über Google FCM). | WhatsApp, Signal, Discord, Gmail, Uber. |
+| 🟡 MEDIUM | • Deaktiviert 6 wichtige AppOps (ACCESS_NOTIFICATIONS, GET_USAGE_STATS, etc.).<br>• Setzt App auf Standby Bucket RARE. | • Blockiert Tracking und Spionage.<br>• Erlaubt Musik-/GPS-Nutzung im Hintergrund bei aktiver Nutzung. | Blockiert oder stark verzögert (nur in Batches). | Instagram, X (Twitter), Spotify, YouTube, Chrome/Firefox. |
+| 🔴 HARD | • Deaktiviert alle 11 verfügbaren AppOps (inkl. WAKE_LOCK, START_FOREGROUND, SCHEDULE_EXACT_ALARM).<br>• Standby Bucket RESTRICTED.<br>• Einmaliger force-stop bei Aktivierung. | • Maximaler Batterieschutz.<br>• App wird beim Minimieren komplett lahmgelegt.<br>• Keine parasitären Prozesse über Nacht. | Vollständig blockiert (App ist stumm bis zum Öffnen). | TikTok, AliExpress, Temu, Shein, Mobile Spiele, Banking-Apps. |
+
 ## 🛡️ Sicherheit
 
 Kritische Systemprozesse wie Google Play-Dienste, System UI, aktuelle Tastatur, aktueller Launcher, Bluetooth, NFC, Telefonie und Shizuku werden automatisch geschützt. OEM-spezifische System-Apps (Xiaomi Sicherheits-Center, Samsung Device Care, OPPO Telefon-Manager usw.) werden ebenfalls geschützt.
@@ -98,7 +129,7 @@ GNU General Public License v3.0 (GPLv3).
 
 ## Danksagung
 
-Original von [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
+Original von [gree1d/ReAppzuku](https://github.com/gree1d/ReAppzuku), basierend auf [northmendo/Appzuku](https://github.com/northmendo/Appzuku).
 <br><br>
 >![Claude](https://img.shields.io/badge/Claude-D97757?logo=claude&logoColor=fff)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-886FBF?logo=googlegemini&logoColor=fff)
