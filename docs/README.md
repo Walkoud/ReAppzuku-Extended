@@ -2,22 +2,33 @@
 
 ---
 
-![Logo](https://github.com/gree1d/ReAppzuku/blob/main/docs/images/logo.png)
+![Logo](https://github.com/Walkoud/ReAppzuku-Extended/blob/main/docs/images/logo.png)
 <p align="center">
-<img src="https://img.shields.io/github/v/release/gree1d/ReAppzuku?label=Release&" alt="Latest Release">
-<img src="https://img.shields.io/github/downloads/gree1d/ReAppzuku/total?label=Downloads&color=a855f7" alt="Downloads">
+<img src="https://img.shields.io/github/v/release/Walkoud/ReAppzuku-Extended?label=Release&" alt="Latest Release">
+<img src="https://img.shields.io/github/downloads/Walkoud/ReAppzuku-Extended/total?label=Downloads&color=a855f7" alt="Downloads">
 <img src="https://img.shields.io/badge/License-GPLv3-64748b.svg" alt="License">
 <img src="https://img.shields.io/badge/Android-6.0%2B-f97316.svg" alt="Android">
 <img src="https://img.shields.io/badge/Root-Supported-brightgreen.svg"/>
 <img src="https://img.shields.io/badge/Shizuku-Supported-brightgreen.svg"/>
 </p>
 
-ReAppzuku is a fork of Appzuku (Shappky) with enhanced control over background activity of Android apps.
+ReAppzuku Extended is a fork of [ReAppzuku](https://github.com/gree1d/ReAppzuku) with additional features for enhanced control over background activity of Android apps.
 
 Monitor and stop apps that consume RAM, drain battery, and load CPU in background.\
 One-tap manual force-stop, periodic Kill via a timer, and flexible background restrictions for selected apps.\
 \
 Root or Shizuku privileges are required.
+
+## ✨ Extended Features
+
+* **Select All Filtered:** Select or deselect all visible apps in any dialog with one tap — Whitelist, Blacklist, Background Restrictions, Sleep Mode, Hidden apps, etc.
+* **Enhanced Sort & Filters:**
+  * Filter by selection state: show only selected or unselected apps.
+  * Filter by restriction type (Soft / Medium / Hard / Manual) in Background Restrictions dialogs.
+  * Batch set restriction type for multiple selected apps at once.
+* **Auto Install Template:** Automatically apply background restriction, sleep mode, whitelist, or blacklist to newly installed apps. Configure once in Settings → Advanced Tools → App Install Template.
+* **Android 14+ & HyperOS Support:** Package detection via both broadcast receiver and active polling fallback for reliable operation on OEMs that block standard events.
+* **Extended Backup:** Custom standby buckets, whitelist removal flags, and sleep mode suspend method are now preserved during backup and restore.
 
 ## ⚙️ Features
 
