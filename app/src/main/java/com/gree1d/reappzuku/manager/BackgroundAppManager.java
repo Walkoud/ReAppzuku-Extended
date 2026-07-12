@@ -1114,7 +1114,8 @@ public class BackgroundAppManager {
                 }
 
                 AppDebugManager.w(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": watchdog: drift detected " + pkg + " missing=" + missing);
-                if (autoKillManager != null) {
+                if (autoKillManager != null
+                        && (hardSet.contains(pkg) || manualSet.contains(pkg) || getMediumRestrictedApps().contains(pkg))) {
                     AppDebugManager.d(Category.BACKGROUND_RESTRICTIONS, FILE_NAME + ": watchdog: killing before repair: " + pkg);
                     autoKillManager.killPackageSync(pkg);
                 }

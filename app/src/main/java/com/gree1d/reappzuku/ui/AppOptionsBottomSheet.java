@@ -19,6 +19,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import com.gree1d.reappzuku.utils.AppModel;
+import com.gree1d.reappzuku.utils.FocusHighlightUtil;
 import com.gree1d.reappzuku.R;
 import com.gree1d.reappzuku.core.AppDebugManager;
 import com.gree1d.reappzuku.core.AppDebugManager.Category;
@@ -184,6 +185,14 @@ public class AppOptionsBottomSheet extends BottomSheetDialogFragment {
         checkBlacklist.setButtonTintList(accentTint);
         checkHidden.setButtonTintList(accentTint);
         checkBgRestrict.setButtonTintList(accentTint);
+
+        for (View row : new View[] {
+                btnInfo, btnTriggers, btnUninstall, btnHiddenSingle,
+                addToHeader, itemWhitelist, itemBlacklist, itemHidden, itemBgRestrict }) {
+            FocusHighlightUtil.apply(row);
+        }
+
+        btnInfo.post(btnInfo::requestFocus);
 
         btnInfo.setOnClickListener(v -> {
             AppDebugManager.d(Category.MAIN_PAGE, "AppOptionsBottomSheet: app info clicked for pkg=" + pkg);

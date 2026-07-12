@@ -51,6 +51,7 @@ import android.widget.CheckBox;
 import rikka.shizuku.Shizuku;
 
 import com.gree1d.reappzuku.utils.AppModel;
+import com.gree1d.reappzuku.utils.FocusHighlightUtil;
 
 import static com.gree1d.reappzuku.core.PreferenceKeys.*;
 import static com.gree1d.reappzuku.core.AppConstants.*;
@@ -224,6 +225,11 @@ public class MainActivity extends BaseActivity {
                 startActivity(new Intent(this, SettingsActivity.class)));
         binding.bottomNavigation.navBtnStatistics.setOnClickListener(v ->
                 startActivity(new Intent(this, StatisticsActivity.class)));
+
+        FocusHighlightUtil.apply(binding.bottomNavigation.navBtnMain, 8, 2);
+        FocusHighlightUtil.apply(binding.bottomNavigation.navBtnSettings, 8, 2);
+        FocusHighlightUtil.apply(binding.bottomNavigation.navBtnStatistics, 8, 2);
+
         applyNavBarInsets(binding.bottomNavigation.getRoot());
     }
 

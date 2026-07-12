@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">ReAppzuku</string>
+    <string name="app_name" translatable="false">ReAppzuku Extended</string>
     <string name="special_thanks_title">Special Thanks</string>
     <string name="special_thanks_desc">Users who contributed to development of ReAppzuku:</string>
 
@@ -58,7 +58,7 @@
     <string name="time_unit_hour">h</string>
 
     <!-- Help URL -->
-    <string name="url_help">https://github.com/gree1d/ReAppzuku/blob/main/docs/HELP.md</string>
+    <string name="url_help">https://github.com/Walkoud/ReAppzuku-Extended/blob/main/docs/HELP.md</string>
 
     <!-- ══════════════════════════════════════════════
          MAIN ACTIVITY
@@ -212,12 +212,12 @@
     <!-- ══════════════════════════════════════════════
          BACKGROUND SERVICE (ShappkyService)
          ══════════════════════════════════════════════ -->
-    <string name="service_notification_title">ReAppzuku Service</string>
+    <string name="service_notification_title">ReAppzuku Extended Service</string>
     <string name="service_notification_text">Monitoring background apps</string>
-    <string name="service_shizuku_lost_title">ReAppzuku services</string>
+    <string name="service_shizuku_lost_title">ReAppzuku Extended services</string>
     <string name="service_shizuku_lost_text">No Shizuku access — app can\'t continue.</string>
-    <string name="service_channel_foreground_name">ReAppzuku Foreground Service</string>
-    <string name="service_channel_actions_name">ReAppzuku Notifications</string>
+    <string name="service_channel_foreground_name">ReAppzuku Extended Foreground Service</string>
+    <string name="service_channel_actions_name">ReAppzuku Extended Notifications</string>
 
     <!-- ══════════════════════════════════════════════
          SETTINGS ACTIVITY
@@ -448,7 +448,7 @@
     <string name="settings_source_code_title">Source code</string>
     <string name="settings_source_code_subtitle">Open GitHub repository</string>
     <string name="settings_check_updates_title">Check for updates</string>
-    <string name="settings_version_label">ReAppzuku v%1$s</string>
+    <string name="settings_version_label">ReAppzuku Extended v%1$s</string>
 
     <!-- ══════════════════════════════════════════════
          BACKGROUND RESTRICTIONS LIST

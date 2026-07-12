@@ -1266,7 +1266,8 @@ abstract class SettingsActivityDialogs extends BaseActivity {
         int paddingV = (int) (16 * getResources().getDisplayMetrics().density);
         textView.setPadding(paddingH, paddingV, paddingH, paddingV);
 
-        int maxHeightPx = (int) (400 * getResources().getDisplayMetrics().density);
+        int screenHeight = getResources().getDisplayMetrics().heightPixels;
+        int maxHeightPx = (int) (screenHeight * 0.6f);
         ScrollView scrollView = new ScrollView(this) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {

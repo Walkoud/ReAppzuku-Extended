@@ -13,7 +13,11 @@
         android:layout_height="64dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="false"
+        android:nextFocusRight="@id/nav_btn_settings">
 
         <ImageView
             android:id="@+id/nav_icon_main"
@@ -41,7 +45,12 @@
         android:layout_height="64dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="false"
+        android:nextFocusLeft="@id/nav_btn_main"
+        android:nextFocusRight="@id/nav_btn_statistics">
 
         <ImageView
             android:id="@+id/nav_icon_settings"
@@ -69,7 +78,11 @@
         android:layout_height="64dp"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:gravity="center">
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:focusableInTouchMode="false"
+        android:nextFocusLeft="@id/nav_btn_settings">
 
         <ImageView
             android:id="@+id/nav_icon_statistics"
