@@ -19,6 +19,8 @@ public class BackupManager {
     private static final String KEY_BACKUP_VERSION = "backup_version";
     private static final int BACKUP_VERSION = 4;
     private static final String KEY_MANUAL_OPS_MASKS = "manual_ops_masks";
+    private static final String KEY_MANUAL_BUCKETS = "manual_buckets";
+    private static final String KEY_MANUAL_WHITELIST_REMOVALS = "manual_whitelist_removals";
     private static final String KEY_PRESETS = "presets";
     private static final String KEY_PRESET_PREFIX = "preset_";
 
@@ -57,10 +59,12 @@ public class BackupManager {
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: app lists written");
 
             putManualOpsMasks(root);
+            putManualBuckets(root);
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: createBackupJson: manual ops masks written");
 
             putStringSet(root, KEY_SLEEP_MODE_APPS);
             putStringSet(root, KEY_SLEEP_MODE_APPS_PERMANENT);
+            putStringSet(root, KEY_SLEEP_MODE_APPS_SUSPEND_METHOD);
             putStringSet(root, KEY_MEDIUM_RESTRICTION_APPS);
             putStringSet(root, KEY_BATTERY_WHITELIST_REMOVED);
             putStringSet(root, KEY_APP_LAUNCH_TRIGGER_PACKAGES);
@@ -145,10 +149,12 @@ public class BackupManager {
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreBackupJson: app lists restored");
 
             restoreManualOpsMasks(editor, root);
+            restoreManualBuckets(editor, root);
             AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreBackupJson: manual ops masks restored");
 
             restoreSet(editor, root, KEY_SLEEP_MODE_APPS);
             restoreSet(editor, root, KEY_SLEEP_MODE_APPS_PERMANENT);
+            restoreSet(editor, root, KEY_SLEEP_MODE_APPS_SUSPEND_METHOD);
             restoreSet(editor, root, KEY_MEDIUM_RESTRICTION_APPS);
             restoreSet(editor, root, KEY_BATTERY_WHITELIST_REMOVED);
             restoreSet(editor, root, KEY_APP_LAUNCH_TRIGGER_PACKAGES);
@@ -258,6 +264,51 @@ public class BackupManager {
             count++;
         }
         AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreManualOpsMasks: " + count + " packages");
+    }
+
+    private void putManualBuckets(JSONObject root) throws Exception {
+        Set<String> manualPackages = prefs.getStringSet(KEY_MANUAL_RESTRICTION_APPS, new java.util.HashSet<>());
+        if (manualPackages == null) manualPackages = new java.util.HashSet<>();
+        JSONObject buckets = new JSONObject();
+        JSONObject whitelistRemovals = new JSONObject();
+        for (String pkg : manualPackages) {
+            int bucket = prefs.getInt(KEY_MANUAL_BUCKET_PREFIX + pkg, 0);
+            if (bucket != 0) {
+                buckets.put(pkg, bucket);
+            }
+            boolean whitelistRemoval = prefs.getBoolean(KEY_MANUAL_WHITELIST_REMOVAL_PREFIX + pkg, false);
+            if (whitelistRemoval) {
+                whitelistRemovals.put(pkg, true);
+            }
+        }
+        root.put(KEY_MANUAL_BUCKETS, buckets);
+        root.put(KEY_MANUAL_WHITELIST_REMOVALS, whitelistRemovals);
+        AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: putManualBuckets: custom buckets=" + buckets.length() + ", whitelistRemovals=" + whitelistRemovals.length());
+    }
+
+    private void restoreManualBuckets(SharedPreferences.Editor editor, JSONObject root) throws Exception {
+        if (root.has(KEY_MANUAL_BUCKETS)) {
+            JSONObject buckets = root.getJSONObject(KEY_MANUAL_BUCKETS);
+            java.util.Iterator<String> keys = buckets.keys();
+            int count = 0;
+            while (keys.hasNext()) {
+                String pkg = keys.next();
+                editor.putInt(KEY_MANUAL_BUCKET_PREFIX + pkg, buckets.getInt(pkg));
+                count++;
+            }
+            AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreManualBuckets: " + count + " buckets restored");
+        }
+        if (root.has(KEY_MANUAL_WHITELIST_REMOVALS)) {
+            JSONObject removals = root.getJSONObject(KEY_MANUAL_WHITELIST_REMOVALS);
+            java.util.Iterator<String> keys = removals.keys();
+            int count = 0;
+            while (keys.hasNext()) {
+                String pkg = keys.next();
+                editor.putBoolean(KEY_MANUAL_WHITELIST_REMOVAL_PREFIX + pkg, removals.getBoolean(pkg));
+                count++;
+            }
+            AppDebugManager.d(Category.BACKUP_RESTORE, "BackupManager: restoreManualWhitelistRemovals: " + count + " packages");
+        }
     }
 
     private void putPresets(JSONObject root) throws Exception {

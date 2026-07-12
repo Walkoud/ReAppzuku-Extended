@@ -774,7 +774,7 @@ public class ShappkyService extends Service {
         }
 
         SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
-        Set<String> packages = new HashSet<>();
+        Set<String> packages = appManager.getBackgroundRestrictedApps();
 
         boolean restrictionEnabled = prefs.getBoolean(KEY_TEMPLATE_RESTRICTION_ENABLED, false);
         AppDebugManager.d(Category.CORE, FILE_NAME + ": applyInstallTemplate: restrictionEnabled=" + restrictionEnabled);
