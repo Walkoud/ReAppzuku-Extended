@@ -43,9 +43,7 @@ android {
 
     buildTypes {
         release {
-            if (signingConfigs.findByName("release")) {
-                signingConfig signingConfigs.release
-            }
+            signingConfig signingConfigs.findByName("release") ?: signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
