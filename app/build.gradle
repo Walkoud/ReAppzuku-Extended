@@ -30,19 +30,21 @@ android {
     }
 
     signingConfigs {
-        release {
-            storeFile file("release.keystore")
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+        if (file("release.keystore").exists() && System.getenv("KEYSTORE_PASSWORD") != null) {
+            release {
+                storeFile file("release.keystore")
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
         }
     }
 
     buildTypes {
         release {
-            def keystoreExists = file("release.keystore").exists()
-            def envOk = System.getenv("KEYSTORE_PASSWORD") != null
-            signingConfig keystoreExists && envOk ? signingConfigs.release : signingConfigs.debug
+            if (signingConfigs.findByName("release")) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
