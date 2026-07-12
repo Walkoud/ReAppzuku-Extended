@@ -30,9 +30,10 @@ android {
     }
 
     signingConfigs {
-        if (file("release.keystore").exists() && System.getenv("KEYSTORE_PASSWORD") != null) {
+        def ksFile = file("release.keystore")
+        if (ksFile.exists() && ksFile.length() > 0 && System.getenv("KEYSTORE_PASSWORD") != null) {
             release {
-                storeFile file("release.keystore")
+                storeFile ksFile
                 storePassword System.getenv("KEYSTORE_PASSWORD")
                 keyAlias System.getenv("KEY_ALIAS")
                 keyPassword System.getenv("KEY_PASSWORD")
