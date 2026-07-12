@@ -40,7 +40,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            def keystoreExists = file("release.keystore").exists()
+            def envOk = System.getenv("KEYSTORE_PASSWORD") != null
+            signingConfig keystoreExists && envOk ? signingConfigs.release : signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
