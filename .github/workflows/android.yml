@@ -1,15 +1,17 @@
 name: Android CI
 
 on:
-  workflow_dispatch
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v6
+
     - name: set up JDK 17
       uses: actions/setup-java@v5
       with:
@@ -26,13 +28,10 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > app/release.keystore
           echo "Keystore decoded successfully"
         else
-          echo "KEYSTORE_BASE64 not set, skipping keystore"
+          echo "KEYSTORE_BASE64 not set, using debug signing"
         fi
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-
-    - name: Update Lint Baseline
-      run: ./gradlew updateLintBaseline
 
     - name: Build Release APK
       run: ./gradlew assembleRelease
@@ -41,8 +40,8 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    - name: Upload APK
-      uses: actions/upload-artifact@v7
+    - name: Upload APK to Release
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
       with:
-        name: app-release
-        path: app/build/outputs/apk/release/*.apk
+        files: app/build/outputs/apk/release/*.apk
