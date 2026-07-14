@@ -34,6 +34,9 @@ jobs:
       env:
         KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
 
+    - name: Update Lint Baseline
+      run: ./gradlew updateLintBaseline
+
     - name: Build Release APK
       run: ./gradlew assembleRelease
       env:
