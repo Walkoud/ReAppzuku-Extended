@@ -1,8 +1,9 @@
 name: Android CI
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -40,8 +41,19 @@ jobs:
         KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-    - name: Upload APK to Release
-      if: github.event_name == 'release'
+    - name: Create Release and Upload APK
       uses: softprops/action-gh-release@v2
       with:
+        name: ${{ github.ref_name }}
+        body: |
+          **v1.8.5-extended**
+
+          New features compared to the original ReAppzuku:
+
+          - **Select All Filtered:** Select/deselect all visible apps in one tap — Whitelist, Blacklist, Background Restrictions, Sleep Mode, Hidden apps.
+          - **Enhanced Filters:** Filter by restriction type (Soft/Medium/Hard/Manual) in Background Restrictions dialogs.
+          - **Batch restriction type:** Apply Soft/Medium/Hard to multiple selected apps at once.
+          - **Auto Install Template:** Automatically apply background restriction (Soft/Medium/Hard) to newly installed apps.
+          - **Android 14+ & HyperOS support:** Reliable package detection on Chinese OEMs.
+          - **Extended Backup:** Custom standby buckets, whitelist removal flags, and sleep mode suspend method are preserved during backup/restore.
         files: app/build/outputs/apk/release/*.apk
