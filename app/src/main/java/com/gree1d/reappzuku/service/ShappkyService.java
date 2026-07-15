@@ -80,6 +80,7 @@ public class ShappkyService extends Service {
 
     private boolean isFrozen = false;
     private boolean shizukuLostNotificationShown = false;
+    private SharedPreferences.OnSharedPreferenceChangeListener prefsListener;
 
     public static boolean isRunning() {
         return isRunning;
@@ -226,6 +227,19 @@ public class ShappkyService extends Service {
         AppDebugManager.d(Category.ADVANCED_CONDITIONS, FILE_NAME + ": AdditionalScenariosManager initialized");
         additionalScenariosManager.updateHardwareReceiverState();
         ramKillShortcutManager = new RamKillShortcutManager(this, shellManager);
+
+        // Listen for auto-kill setting changes to restart the kill loop
+        SharedPreferences prefs = getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE);
+        prefsListener = (sharedPreferences, key) -> {
+            if (KEY_AUTO_KILL_ENABLED.equals(key) || KEY_PERIODIC_KILL_ENABLED.equals(key)) {
+                boolean enabled = sharedPreferences.getBoolean(key, false);
+                if (enabled) {
+                    AppDebugManager.d(Category.AUTO_KILL_BASE, FILE_NAME + ": Auto-kill enabled via pref change, rescheduling kill loop");
+                    scheduleNextKill();
+                }
+            }
+        };
+        prefs.registerOnSharedPreferenceChangeListener(prefsListener);
 
         scheduleNextKill();
         scheduler.scheduleNext();
@@ -642,8 +656,7 @@ public class ShappkyService extends Service {
                         autoKillManager.performAutoKill(() -> handler.post(this::scheduleNextKill), resolveKillSource("Service Periodic Kill"));
                     }
                 } else {
-                    AppDebugManager.d(Category.AUTO_KILL_BASE, FILE_NAME + ": scheduleNextKill: skipped (autoKill=" + autoKillEnabled + " periodic=" + periodicKillEnabled + ")");
-                    handler.post(this::scheduleNextKill);
+                    AppDebugManager.d(Category.AUTO_KILL_BASE, FILE_NAME + ": scheduleNextKill: skipped (autoKill=" + autoKillEnabled + " periodic=" + periodicKillEnabled + ") - not rescheduling");
                 }
             });
         }, killInterval);
@@ -910,6 +923,11 @@ public class ShappkyService extends Service {
         }
         if (watchdog != null) {
             watchdog.stop();
+        }
+        if (prefsListener != null) {
+            getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+                    .unregisterOnSharedPreferenceChangeListener(prefsListener);
+            prefsListener = null;
         }
         handler.removeCallbacksAndMessages(null);
         super.onDestroy();
